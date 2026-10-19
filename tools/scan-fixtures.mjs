@@ -11,6 +11,8 @@ const SKIP = [
   /^tools\/scan-fixtures\.mjs$/,
 ];
 const UUID = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
+// Pinned action hashes can contain runs of digits that look like ids. Only `uses:` lines are exempt.
+const PINNED_USES = /^(\s*(?:-\s+)?uses:\s*[\w./-]+@)[0-9a-f]{40}\b/;
 const ALLOWED_EMAIL_DOMAIN =
   /@(?:[a-z0-9-]+\.)*(?:example|test|invalid|localhost)$|@example\.(?:com|org|net)$|@noreply\.anthropic\.com$|@users\.noreply\.github\.com$/i;
 
@@ -38,7 +40,7 @@ for (const file of files) {
   }
   if (text.includes("\u0000")) continue; // binary
   text.split("\n").forEach((rawLine, i) => {
-    const line = rawLine.replace(UUID, "<uuid>");
+    const line = rawLine.replace(UUID, "<uuid>").replace(PINNED_USES, "$1<sha>");
     for (const c of checks) {
       for (const m of line.matchAll(c.re)) {
         if (c.allow?.(m[0])) continue;
