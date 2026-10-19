@@ -1,5 +1,6 @@
 import CoreModels
 import DesignSystem
+import FeatureImport
 import Persistence
 import SwiftUI
 
@@ -8,6 +9,7 @@ public struct CaseloadView: View {
     @Environment(PrototypeStore.self) private var store
     @Binding private var selection: UUID?
     @State private var addingStudent = false
+    @State private var importingStudents = false
 
     public init(selection: Binding<UUID?>) {
         _selection = selection
@@ -42,10 +44,21 @@ public struct CaseloadView: View {
                     }
                     .accessibilityIdentifier(AccessibilityID.addStudent)
                 }
+                ToolbarItem {
+                    Button {
+                        importingStudents = true
+                    } label: {
+                        Label("Import from file", systemImage: "square.and.arrow.down")
+                    }
+                    .accessibilityIdentifier("import-from-file")
+                }
             }
         }
         .sheet(isPresented: $addingStudent) {
             StudentFormView(mode: .add) { selection = $0.id }
+        }
+        .sheet(isPresented: $importingStudents) {
+            CaseloadImportView()
         }
     }
 }
