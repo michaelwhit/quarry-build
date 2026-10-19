@@ -7,6 +7,7 @@ import SwiftUI
 public struct CaseloadView: View {
     @Environment(PrototypeStore.self) private var store
     @Binding private var selection: UUID?
+    @State private var addingStudent = false
 
     public init(selection: Binding<UUID?>) {
         _selection = selection
@@ -31,6 +32,21 @@ public struct CaseloadView: View {
         .background(Theme.background)
         .accessibilityIdentifier(AccessibilityID.caseloadList)
         .navigationTitle("Caseload")
+        .toolbar {
+            if store.canManageStudents {
+                ToolbarItem {
+                    Button {
+                        addingStudent = true
+                    } label: {
+                        Label("Add student", systemImage: "person.badge.plus")
+                    }
+                    .accessibilityIdentifier(AccessibilityID.addStudent)
+                }
+            }
+        }
+        .sheet(isPresented: $addingStudent) {
+            StudentFormView(mode: .add) { selection = $0.id }
+        }
     }
 }
 

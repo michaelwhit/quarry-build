@@ -8,6 +8,8 @@ import SwiftUI
 public struct StudentDetailView<GoalDestination: View>: View {
     @Environment(PrototypeStore.self) private var store
 
+    @State private var editing = false
+
     private let student: Student
     private let goalDestination: (Goal) -> GoalDestination
 
@@ -45,6 +47,17 @@ public struct StudentDetailView<GoalDestination: View>: View {
         .accessibilityIdentifier(AccessibilityID.goalList)
         .themedList()
         .navigationTitle(student.displayName)
+        .toolbar {
+            if store.canManageStudents {
+                ToolbarItem {
+                    Button("Edit") { editing = true }
+                        .accessibilityIdentifier(AccessibilityID.editStudent)
+                }
+            }
+        }
+        .sheet(isPresented: $editing) {
+            StudentFormView(mode: .edit(student))
+        }
     }
 }
 

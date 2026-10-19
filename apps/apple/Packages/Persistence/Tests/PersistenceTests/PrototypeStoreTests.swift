@@ -216,4 +216,113 @@ struct PrototypeStoreTests {
         let third = try makeStore(stateURL: url)
         #expect(third.addedPoints.isEmpty)
     }
+
+    @Test("a case manager adds a student who then appears only on their own list")
+    func addingStudent() throws {
+        let store = try makeStore()
+        let manager = try staff(store, .caseManager)
+        store.signIn(as: manager)
+        let school = try #require(store.dataset.schools.first)
+        let before = store.visibleStudents.count
+
+        let student = try store.addStudent(
+            firstName: "  Robin ", lastName: "Test", preferredName: "  ", grade: " 4 ",
+            schoolID: school.id)
+        #expect(student.firstName == "Robin")
+        #expect(student.preferredName == nil)
+        #expect(student.grade == "4")
+        #expect(store.visibleStudents.count == before + 1)
+        #expect(store.visibleStudents.contains { $0.id == student.id })
+
+        let other = try #require(
+            store.dataset.staff.first { $0.role == .caseManager && $0.id != manager.id })
+        store.signIn(as: other)
+        #expect(!store.visibleStudents.contains { $0.id == student.id })
+
+        store.signIn(as: try staff(store, .spedDirector))
+        #expect(store.visibleStudents.contains { $0.id == student.id })
+    }
+
+    @Test("adding a student needs a name, a grade and a real school, and the right role")
+    func addingStudentRules() throws {
+        let store = try makeStore()
+        let school = try #require(store.dataset.schools.first)
+        #expect(throws: PrototypeStore.StoreError.notSignedIn) {
+            try store.addStudent(firstName: "A", lastName: "B", grade: "1", schoolID: school.id)
+        }
+
+        store.signIn(as: try staff(store, .paraprofessional))
+        #expect(throws: PrototypeStore.StoreError.notAllowed) {
+            try store.addStudent(firstName: "A", lastName: "B", grade: "1", schoolID: school.id)
+        }
+
+        store.signIn(as: try staff(store, .caseManager))
+        #expect(throws: PrototypeStore.StoreError.invalidStudent(.firstNameMissing)) {
+            try store.addStudent(firstName: " ", lastName: "B", grade: "1", schoolID: school.id)
+        }
+        #expect(throws: PrototypeStore.StoreError.invalidStudent(.lastNameMissing)) {
+            try store.addStudent(firstName: "A", lastName: "", grade: "1", schoolID: school.id)
+        }
+        #expect(throws: PrototypeStore.StoreError.invalidStudent(.gradeMissing)) {
+            try store.addStudent(firstName: "A", lastName: "B", grade: "  ", schoolID: school.id)
+        }
+        #expect(throws: PrototypeStore.StoreError.unknownSchool) {
+            try store.addStudent(firstName: "A", lastName: "B", grade: "1", schoolID: UUIDv7.make())
+        }
+        #expect(store.addedStudents.isEmpty)
+    }
+
+    @Test("editing changes a student on the list, and only one the person can see")
+    func editingStudent() throws {
+        let store = try makeStore()
+        let manager = try staff(store, .caseManager)
+        store.signIn(as: manager)
+        let existing = try #require(store.visibleStudents.first)
+        let school = try #require(store.dataset.schools.first)
+
+        let changed = try store.updateStudent(
+            id: existing.id, firstName: "Alex", lastName: existing.lastName,
+            preferredName: "Lex", grade: "5", schoolID: school.id)
+        #expect(changed.displayName == "Lex")
+        let shown = try #require(store.visibleStudents.first { $0.id == existing.id })
+        #expect(shown.firstName == "Alex")
+        #expect(shown.grade == "5")
+
+        let outside = try #require(
+            store.dataset.students.first { student in
+                !store.visibleStudents.contains { $0.id == student.id }
+            })
+        #expect(throws: PrototypeStore.StoreError.notAllowed) {
+            try store.updateStudent(
+                id: outside.id, firstName: "X", lastName: "Y", grade: "1", schoolID: school.id)
+        }
+    }
+
+    @Test("added and edited students come back after a restart, and reset clears them")
+    func studentPersistence() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("iep-proto-\(UUID().uuidString)/state.json")
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+
+        let first = try makeStore(stateURL: url)
+        first.signIn(as: try staff(first, .spedDirector))
+        let school = try #require(first.dataset.schools.first)
+        let added = try first.addStudent(
+            firstName: "Robin", lastName: "Test", grade: "2", schoolID: school.id)
+        let existing = try #require(first.dataset.students.first)
+        try first.updateStudent(
+            id: existing.id, firstName: "Alex", lastName: existing.lastName, grade: "6",
+            schoolID: existing.schoolID)
+
+        let second = try makeStore(stateURL: url)
+        second.signIn(as: try staff(second, .spedDirector))
+        #expect(second.addedStudents.map(\.id) == [added.id])
+        #expect(second.visibleStudents.contains { $0.id == added.id })
+        #expect(second.visibleStudents.first { $0.id == existing.id }?.firstName == "Alex")
+
+        second.resetLocalData()
+        let third = try makeStore(stateURL: url)
+        #expect(third.addedStudents.isEmpty)
+        #expect(third.studentEdits.isEmpty)
+    }
 }
