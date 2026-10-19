@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Demo App on the web: installable app for Windows and phones. Fake data only.",
+  "description": "GoalLine on the web: installable app for Windows and phones. Fake data only.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

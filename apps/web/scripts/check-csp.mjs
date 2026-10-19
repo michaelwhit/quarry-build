@@ -21,6 +21,11 @@ if (!html.includes("Content-Security-Policy")) problems.push("missing CSP meta f
 if (!CSP.includes("frame-ancestors 'none'") || /unsafe-/.test(CSP))
   problems.push("CSP is too loose");
 
+// Meta policies cannot carry frame-ancestors, so the meta must match the header policy without it.
+const meta = html.match(/http-equiv="Content-Security-Policy"\s+content="([^"]*)"/)?.[1];
+const expectedMeta = CSP.replace(/;\s*frame-ancestors[^;]*/, "");
+if (meta !== expectedMeta) problems.push("CSP meta differs from the header policy");
+
 for (const f of readdirSync(new URL("assets/", dist))) {
   if (!f.endsWith(".js")) continue;
   const js = readFileSync(new URL(`assets/${f}`, dist), "utf8");

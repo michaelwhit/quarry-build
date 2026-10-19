@@ -9,6 +9,7 @@ import {
   students,
 } from "./data/district.ts";
 import { Chip } from "./ui/Chip.tsx";
+import { Home, More, PlannedScreen } from "./ui/Home.tsx";
 import { GoalPanel } from "./ui/GoalPanel.tsx";
 import { Graph, Sparkline } from "./ui/Graph.tsx";
 import { type Saved, TrackGoal, TrackPicker } from "./ui/Track.tsx";
@@ -23,6 +24,22 @@ function useRoute(): string {
   return hash;
 }
 
+const TABS = [
+  { id: "home", title: "Home", href: "#/", icon: "⌂" },
+  { id: "today", title: "Today", href: "#/today", icon: "☑" },
+  { id: "caseload", title: "Caseload", href: "#/caseload", icon: "👥" },
+  { id: "libraries", title: "Libraries", href: "#/libraries", icon: "📚" },
+  { id: "more", title: "More", href: "#/more", icon: "⋯" },
+];
+
+function activeTab(hash: string): string {
+  if (hash.startsWith("#/student") || hash === "#/caseload") return "caseload";
+  if (hash === "#/today") return "today";
+  if (hash === "#/libraries") return "libraries";
+  if (hash === "#/more") return "more";
+  return "home";
+}
+
 function useTheme() {
   const [theme, setTheme] = useState<"dark" | "light" | null>(null);
   useEffect(() => {
@@ -35,7 +52,7 @@ function useTheme() {
   };
 }
 
-function Dashboard() {
+function Caseload() {
   const counts: Record<GoalStatus, number> = {
     met: 0,
     on_track: 0,
@@ -66,9 +83,6 @@ function Dashboard() {
           </li>
         ))}
       </ul>
-      <a className="btn cta" href="#/track">
-        ▶ Track a goal now
-      </a>
       <h2>Caseload (needs attention first)</h2>
       <ul className="cards">
         {sorted.map((s) => {
@@ -136,15 +150,55 @@ export function App() {
   const hash = useRoute();
   const theme = useTheme();
   const m = /^#\/student\/(.+)$/.exec(hash);
+  const active = activeTab(hash);
   const t = /^#\/track\/([^/]+)\/([^/]+)$/.exec(hash);
   const [saved, setSaved] = useState<Saved>({});
+  const [noticeSeen, setNoticeSeen] = useState(false);
   const onSave = (goalId: string, p: Saved[string][number]) =>
     setSaved((x) => ({ ...x, [goalId]: [...(x[goalId] ?? []), p] }));
+  const screen =
+    t?.[1] && t[2] ? (
+      <TrackGoal studentId={t[1]} goalId={t[2]} saved={saved} onSave={onSave} />
+    ) : hash.startsWith("#/track") ? (
+      <TrackPicker saved={saved} />
+    ) : m?.[1] ? (
+      <StudentPage id={decodeURIComponent(m[1])} />
+    ) : hash === "#/caseload" ? (
+      <Caseload />
+    ) : hash === "#/today" ? (
+      <PlannedScreen
+        title="Today"
+        text="Today's sessions are not on the web yet. Use Track progress to record data for a goal."
+      />
+    ) : hash === "#/libraries" ? (
+      <PlannedScreen
+        title="Libraries"
+        text="The goal and accommodation libraries are not on the web yet."
+      />
+    ) : hash === "#/more" ? (
+      <More saved={Object.values(saved).flat().length} onReset={() => setSaved({})} />
+    ) : (
+      <Home />
+    );
   return (
     <>
       <a className="skip" href="#main">
         Skip to content
       </a>
+      {noticeSeen ? null : (
+        <div className="notice-backdrop">
+          <div className="notice" role="dialog" aria-modal="true" aria-labelledby="notice-title">
+            <h2 id="notice-title">Practice data, no real students</h2>
+            <p>
+              Everything here is made up. Please do not type real student names or details. Nothing
+              you do is saved or sent anywhere, and it is gone when you close or reload the page.
+            </p>
+            <button type="button" autoFocus onClick={() => setNoticeSeen(true)}>
+              I understand
+            </button>
+          </div>
+        </div>
+      )}
       <div className="watermark" role="note">
         TEST DATA · fake students only
       </div>
@@ -153,29 +207,29 @@ export function App() {
       </div>
       <header className="top">
         <h1>
-          Demo App
+          GoalLine
           <span className="sub">
             {districtName} · {staffName}
           </span>
         </h1>
-        <a className="btn" href="#/track">
-          Track
-        </a>
         <button type="button" onClick={theme.toggle}>
           {theme.label}
         </button>
       </header>
-      <main id="main">
-        {t?.[1] && t[2] ? (
-          <TrackGoal studentId={t[1]} goalId={t[2]} saved={saved} onSave={onSave} />
-        ) : hash.startsWith("#/track") ? (
-          <TrackPicker saved={saved} />
-        ) : m?.[1] ? (
-          <StudentPage id={decodeURIComponent(m[1])} />
-        ) : (
-          <Dashboard />
-        )}
-      </main>
+      <main id="main">{screen}</main>
+      <nav className="tabbar" aria-label="Main">
+        {TABS.map((tab) => (
+          <a
+            key={tab.id}
+            href={tab.href}
+            className={tab.id === active ? "tab on" : "tab"}
+            aria-current={tab.id === active ? "page" : undefined}
+          >
+            <span aria-hidden="true">{tab.icon}</span>
+            {tab.title}
+          </a>
+        ))}
+      </nav>
       <footer>Fake data bundled with the app. Nothing is stored in this browser.</footer>
     </>
   );

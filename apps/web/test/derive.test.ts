@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { progressFor, seriesFor, worstStatus } from "../src/data/derive.ts";
 import { trendLine } from "../src/ui/Graph.tsx";
-import { dataTotals, students } from "../src/data/district.ts";
+import { dataTotals, goalCounts, students } from "../src/data/district.ts";
 
 const plan = { target_value: 10 };
 const mk = (vals: number[]) =>
@@ -59,5 +59,14 @@ describe("trendLine", () => {
     const t = trendLine(mk([1, 2, 3, 4, 5]));
     expect(t?.start).toBeCloseTo(1);
     expect(t?.end).toBeCloseTo(5);
+  });
+});
+
+describe("goalCounts", () => {
+  it("splits every goal into on track or needs a look", () => {
+    const c = goalCounts();
+    expect(c.goals).toBe(dataTotals.goals);
+    expect(c.onTrack + c.needsLook).toBe(c.goals);
+    expect(c.met).toBeLessThanOrEqual(c.onTrack);
   });
 });
