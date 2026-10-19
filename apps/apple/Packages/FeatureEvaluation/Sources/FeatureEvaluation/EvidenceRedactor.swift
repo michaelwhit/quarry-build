@@ -13,49 +13,99 @@ public enum EvidenceRedactor {
         public var isWithheld: Bool { !withheldReasons.isEmpty }
     }
 
+    /// Every name that must not appear, compiled once. Build one per set of names and reuse it.
+    public struct NameMatcher: @unchecked Sendable {
+        fileprivate let regex: NSRegularExpression?
+
+        /// Names are matched as whole words, ignoring case, longest first so "Maria Lopez"
+        /// goes before "Maria". One-letter entries are ignored.
+        public init(names: [String]) {
+            let cleaned = Set(names.map { $0.trimmingCharacters(in: .whitespaces) })
+                .filter { $0.count >= 2 }
+                .sorted { $0.count != $1.count ? $0.count > $1.count : $0 < $1 }
+            guard !cleaned.isEmpty else {
+                regex = nil
+                return
+            }
+            let alternatives = cleaned.map { NSRegularExpression.escapedPattern(for: $0) }
+            regex = try? NSRegularExpression(
+                pattern: "\\b(?:" + alternatives.joined(separator: "|") + ")\\b",
+                options: [.caseInsensitive])
+        }
+    }
+
     /// Words that mark a paragraph as one the teacher should reword or remove.
-    static let withheldPhrases: [(phrase: String, reason: String)] = [
-        ("date of birth", "birth date"), ("dob", "birth date"), ("home address", "home address"), ("street address", "home address"),
-        ("mailing address", "home address"),
+    private static let withheldPhrases: [(phrase: String, reason: String)] = [
+        ("date of birth", "birth date"), ("dob", "birth date"), ("home address", "home address"),
+        ("street address", "home address"), ("mailing address", "home address"),
         ("social security", "identification number"), ("medicaid", "insurance details"),
         ("disability category", "disability category"), ("primary disability", "disability category"),
         ("eligible", "eligibility conclusion"), ("eligibility", "eligibility conclusion"),
     ]
 
-    private static let patterns: [(label: String, token: String, pattern: String)] = [
-        ("emails", "[email]", "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"),
-        ("ids", "[id]", "\\b\\d{3}-\\d{2}-\\d{4}\\b"),
-        ("phones", "[phone]", "\\(?\\b\\d{3}\\)?[-. ]\\d{3}[-. ]\\d{4}\\b"),
-        ("dates", "[date]", "\\b\\d{1,2}/\\d{1,2}/\\d{2,4}\\b|\\b\\d{4}-\\d{2}-\\d{2}\\b"),
-        (
+    private struct Pattern: @unchecked Sendable {
+        let label: String
+        let token: String
+        let regex: NSRegularExpression?
+        init(_ label: String, _ token: String, _ pattern: String) {
+            self.label = label
+            self.token = token
+            regex = try? NSRegularExpression(pattern: pattern)
+        }
+    }
+
+    private static let patterns: [Pattern] = [
+        Pattern("emails", "[email]", "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"),
+        Pattern("ids", "[id]", "\\b\\d{3}-\\d{2}-\\d{4}\\b"),
+        Pattern("phones", "[phone]", "\\(?\\b\\d{3}\\)?[-. ]\\d{3}[-. ]\\d{4}\\b"),
+        Pattern("dates", "[date]", "\\b\\d{1,2}/\\d{1,2}/\\d{2,4}\\b|\\b\\d{4}-\\d{2}-\\d{2}\\b"),
+        Pattern(
             "dates", "[date]",
             "\\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\\.? (?:\\d{1,2}, )?\\d{4}\\b"
         ),
-        ("numbers", "[number]", "\\b\\d{7,}\\b"),
+        Pattern("numbers", "[number]", "\\b\\d{7,}\\b"),
     ]
 
+    private struct Phrase: @unchecked Sendable {
+        let regex: NSRegularExpression?
+        let reason: String
+    }
+
+    private static let phraseMatchers: [Phrase] = withheldPhrases.map {
+        Phrase(
+            regex: try? NSRegularExpression(
+                pattern: "\\b" + NSRegularExpression.escapedPattern(for: $0.phrase) + "\\b",
+                options: [.caseInsensitive]),
+            reason: $0.reason)
+    }
+
     /// `names` are every name that must not appear: students, staff, the examiner, the school.
+    /// For many paragraphs, build a `NameMatcher` once and use the other overload.
     public static func redact(_ paragraph: String, names: [String]) -> Result {
+        redact(paragraph, matcher: NameMatcher(names: names))
+    }
+
+    public static func redact(_ paragraph: String, matcher: NameMatcher) -> Result {
         var text = paragraph
         var replaced: [String: Int] = [:]
 
-        for name in Set(names.map { $0.trimmingCharacters(in: .whitespaces) })
-            .filter({ $0.count >= 2 }).sorted(by: { $0.count > $1.count })
-        {
-            let pattern = "\\b" + NSRegularExpression.escapedPattern(for: name) + "\\b"
-            let count = replace(&text, pattern: pattern, with: "[name]", caseInsensitive: true)
+        if let regex = matcher.regex {
+            let count = replace(&text, regex: regex, token: "[name]")
             if count > 0 { replaced["names", default: 0] += count }
         }
         for item in patterns {
-            let count = replace(&text, pattern: item.pattern, with: item.token, caseInsensitive: false)
+            guard let regex = item.regex else { continue }
+            let count = replace(&text, regex: regex, token: item.token)
             if count > 0 { replaced[item.label, default: 0] += count }
         }
 
-        let lowered = text.lowercased()
         var reasons: [String] = []
-        for (phrase, reason) in withheldPhrases
-        where containsWord(lowered, phrase) && !reasons.contains(reason) {
-            reasons.append(reason)
+        let range = NSRange(text.startIndex..., in: text)
+        for phrase in phraseMatchers {
+            guard let regex = phrase.regex, !reasons.contains(phrase.reason),
+                regex.firstMatch(in: text, range: range) != nil
+            else { continue }
+            reasons.append(phrase.reason)
         }
         return Result(text: text, replaced: replaced, withheldReasons: reasons)
     }
@@ -68,18 +118,7 @@ public enum EvidenceRedactor {
             .filter { !$0.isEmpty }
     }
 
-    private static func containsWord(_ text: String, _ word: String) -> Bool {
-        text.range(of: "\\b" + NSRegularExpression.escapedPattern(for: word) + "\\b", options: .regularExpression)
-            != nil
-    }
-
-    private static func replace(
-        _ text: inout String, pattern: String, with token: String, caseInsensitive: Bool
-    ) -> Int {
-        guard
-            let regex = try? NSRegularExpression(
-                pattern: pattern, options: caseInsensitive ? [.caseInsensitive] : [])
-        else { return 0 }
+    private static func replace(_ text: inout String, regex: NSRegularExpression, token: String) -> Int {
         let range = NSRange(text.startIndex..., in: text)
         let count = regex.numberOfMatches(in: text, range: range)
         guard count > 0 else { return 0 }

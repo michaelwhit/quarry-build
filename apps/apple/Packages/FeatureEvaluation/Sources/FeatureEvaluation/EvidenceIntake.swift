@@ -47,7 +47,10 @@ public struct ScoreRow: Identifiable, Equatable, Sendable {
     public init() {}
 
     public var numericValue: Double? {
-        Double(value.trimmingCharacters(in: .whitespaces))
+        guard let number = Double(value.trimmingCharacters(in: .whitespaces)), number.isFinite else {
+            return nil
+        }
+        return number
     }
 
     public var isBlank: Bool {
@@ -99,6 +102,17 @@ public final class EvidenceIntake {
     public var names: [String]
     private var confirmedFingerprint: String?
 
+    /// The preview is read many times per screen update, so it is built once per change.
+    private struct CacheKey: Equatable {
+        var instrument: String
+        var rows: [ScoreRow]
+        var summary: String
+        var recommendations: String
+        var names: [String]
+    }
+    @ObservationIgnored private var cachedKey: CacheKey?
+    @ObservationIgnored private var cachedItems: [PreviewItem] = []
+
     public init(names: [String] = []) {
         self.names = names
     }
@@ -118,9 +132,21 @@ public final class EvidenceIntake {
 
     /// Everything that would be sent, redacted, in order. Pasted text is split line by line.
     public var preview: [PreviewItem] {
+        let key = CacheKey(
+            instrument: instrument, rows: rows, summary: summary, recommendations: recommendations,
+            names: names)
+        if key == cachedKey { return cachedItems }
+        let items = buildPreview()
+        cachedKey = key
+        cachedItems = items
+        return items
+    }
+
+    private func buildPreview() -> [PreviewItem] {
         var items: [PreviewItem] = []
+        let matcher = EvidenceRedactor.NameMatcher(names: names)
         func add(_ id: String, _ label: String, _ source: String) {
-            let result = EvidenceRedactor.redact(source, names: names)
+            let result = EvidenceRedactor.redact(source, matcher: matcher)
             items.append(
                 PreviewItem(
                     id: id, label: label, text: result.text, replaced: result.replaced,
@@ -165,7 +191,7 @@ public final class EvidenceIntake {
 
     /// A short description of exactly what the preview holds. If it changes, the check is stale.
     private var fingerprint: String {
-        preview.map { "\($0.id)|\($0.text)|\($0.isWithheld)" }.joined(separator: "\n")
+        ([kind.rawValue] + preview.map { "\($0.id)|\($0.text)|\($0.isWithheld)" }).joined(separator: "\n")
     }
 
     public var isConfirmed: Bool { confirmedFingerprint != nil && confirmedFingerprint == fingerprint }

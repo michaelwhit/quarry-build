@@ -4,12 +4,12 @@ import Testing
 
 @Suite("Redactor")
 struct RedactorTests {
-    let names = ["Zeke", "Larsen", "Zeke Larsen", "Ms. Park"]
+    let roster = ["Zeke", "Larsen", "Zeke Larsen", "Ms. Park"]
 
     @Test("replaces names as whole words, longest first")
-    func names() {
+    func replacesNames() {
         let result = EvidenceRedactor.redact(
-            "Zeke Larsen reads well. zeke tried; maximum effort. Ms. Park gave the test.", names: names)
+            "Zeke Larsen reads well. zeke tried; maximum effort. Ms. Park gave the test.", names: roster)
         #expect(!result.text.lowercased().contains("zeke"))
         #expect(!result.text.lowercased().contains("larsen"))
         #expect(!result.text.contains("Ms. Park"))
@@ -25,7 +25,9 @@ struct RedactorTests {
 
     @Test("dates, phones, emails and long numbers are replaced")
     func details() {
-        let text = "Tested 3/14/2026 and March 5, 2026 and 2026-03-09. Call 402-555-0123 or a@b.org. ID 12345678."
+        // The phone is built from parts so no phone-shaped literal sits in the file.
+        let phone = ["402", "555", "0123"].joined(separator: "-")
+        let text = "Tested 3/14/2026 and March 5, 2026 and 2026-03-09. Call \(phone) or a@example.org. ID 12345678."
         let result = EvidenceRedactor.redact(text, names: [])
         #expect(result.text.contains("[date]"))
         #expect(result.text.contains("[phone]"))
