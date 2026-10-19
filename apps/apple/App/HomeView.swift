@@ -45,7 +45,8 @@ struct HomeView: View {
             HomeTile(
                 title: "Draft from evaluation",
                 subtitle: "Goals and accommodations from test results",
-                systemImage: "doc.text.magnifyingglass", destination: nil),
+                systemImage: "doc.text.magnifyingglass",
+                destination: store.canUseAI ? .evaluation : nil),
             HomeTile(
                 title: "Present levels", subtitle: "Draft the present-levels section",
                 systemImage: "text.alignleft", destination: nil),

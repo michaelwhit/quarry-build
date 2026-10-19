@@ -35,6 +35,7 @@ packages:
   FeatureStudents: { path: Packages/FeatureStudents }
   FeatureDataCollection: { path: Packages/FeatureDataCollection }
   FeatureSession: { path: Packages/FeatureSession }
+  FeatureEvaluation: { path: Packages/FeatureEvaluation }
   FeatureAIAssist: { path: Packages/FeatureAIAssist }
   FeatureAdmin: { path: Packages/FeatureAdmin }
   PDFKitRendering: { path: Packages/PDFKitRendering }
@@ -71,6 +72,7 @@ targets:
       - package: FeatureStudents
       - package: FeatureDataCollection
       - package: FeatureSession
+      - package: FeatureEvaluation
       - package: FeatureAIAssist
       - package: FeatureAdmin
       - package: PDFKitRendering
