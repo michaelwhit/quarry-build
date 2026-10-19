@@ -19,6 +19,6 @@ The spec was silent in 12 places. The project manager decided them in `the proje
 ## Tests to add
 
 - **Draft durability.** A session draft survives app kill, reboot and low battery. Plan: a Persistence test that writes a draft, drops the store object without ending the session, reopens the database file, and finds the draft and every tap with its `observed_at`; the same against a copy of the file taken mid-write. The kill and reboot cases run as an XCUITest on a Mac.
-- **Clock drift.** `observed_at` is the device time per tap; the server flags `client_created_at` more than 5 minutes ahead. A test for a lower bound on backdating is to add.
+- **Clock drift.** `observed_at` is the device time per tap; the server flags `client_created_at` more than 5 minutes ahead.
 - **Auto-end.** A session left open for 20 minutes ends itself and keeps its data.
 - **Undo.** One tap undoes the last tap, including across a draft resume.

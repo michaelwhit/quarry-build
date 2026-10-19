@@ -30,9 +30,9 @@ public struct CommitContext: Sendable {
 }
 
 extension SessionDraft {
-    /// Turns the recorded entries into append-only data points, one per student and goal
-    ///. Prompt-level goals make one point per trial until `trials jsonb` exists
-    ///, so no tap is lost. Call once; the result is kept in `committedPoints`.
+    /// Turns the recorded entries into append-only data points, one per student and goal.
+    /// Prompt-level goals make one point per trial until `trials jsonb` exists, so no tap is lost.
+    /// Call once; the result is kept in `committedPoints`.
     public func commit(
         context: CommitContext, plans: [UUID: MeasurementPlan], at now: Date
     ) -> CommitResult {
