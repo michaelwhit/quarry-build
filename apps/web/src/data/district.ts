@@ -15,7 +15,7 @@ import {
 } from "./derive.ts";
 
 // Slice one: the synthetic district is bundled into the app. Nothing here is fetched, stored in
-// the browser, or cached by the service worker. Real data will come from the API.
+// the browser, or cached by the service worker.
 const district = raw as unknown as SyntheticDistrict;
 if (district.synthetic !== true) throw new Error("Refusing to load a dataset not marked synthetic");
 
@@ -92,4 +92,19 @@ export function goalById(
   const s = studentById(studentId);
   const g = s?.goals.find((x) => x.goal.id === goalId);
   return s && g ? { s, g } : undefined;
+}
+
+/** Goal counts for Home and the Caseload summary. "On track" includes met targets. */
+export function goalCounts(list: StudentView[] = students) {
+  const c = { goals: 0, onTrack: 0, needsLook: 0, met: 0, needsAttention: 0 };
+  for (const s of list)
+    for (const g of s.goals) {
+      c.goals++;
+      const st = g.progress.status;
+      if (st === "met") c.met++;
+      if (st === "met" || st === "on_track") c.onTrack++;
+      else c.needsLook++;
+      if (st === "needs_attention") c.needsAttention++;
+    }
+  return c;
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Serves apps/web/dist with the security headers the app is designed for. Binds to loopback only;
-// put a private HTTPS proxy in front of it (never expose it publicly).
+// a reverse proxy or the static host puts HTTPS in front of it.
 // Usage: node scripts/serve.mjs [port]   (default 5180)
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
@@ -56,4 +56,4 @@ const server = createServer(async (req, res) => {
 });
 
 const port = Number(process.argv[2] ?? 5180);
-server.listen(port, "127.0.0.1", () => console.log(`Demo App web on http://127.0.0.1:${port}`));
+server.listen(port, "127.0.0.1", () => console.log(`GoalLine web on http://127.0.0.1:${port}`));
