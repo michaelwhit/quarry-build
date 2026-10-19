@@ -4,7 +4,7 @@ import type { StaffRole } from "@iep/policies";
 export type { StaffRole };
 
 /**
- * What the data modules need to know about the caller. Track 1's auth module verifies the
+ * What the data modules need to know about the caller. The auth module verifies the
  * session and sets `req.auth`; nothing here reads the tenant from client input.
  */
 export interface Session {

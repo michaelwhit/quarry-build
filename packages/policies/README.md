@@ -1,8 +1,6 @@
 # packages/policies
 
-Owned by Track 1.
-
-Cedar authorization for the api (architecture section 5.3, security design section 3.3). Role, relationship and section sensitivity (S1 to S5) decide every request. Anything no `permit` covers is denied.
+Cedar authorization for the api. Role, relationship and section sensitivity (S1 to S5) decide every request. Anything no `permit` covers is denied.
 
 - `cedar/iep.cedarschema`: entities, actions and the request context. Policies are validated against it in strict mode (`validatePolicies()`, run by the tests).
 - `cedar/iep.cedar`: the policies. Every policy has an `@id`, and decisions return the ids that fired so the audit log can name them.
@@ -19,5 +17,5 @@ Changing a policy is a security-relevant PR: it needs a second reviewer.
 visible-student scope and delegation at the recording time in SQL instead of calling
 `app.authorizeItem` per mutation. The change feed (`/v0/sync/changes`) and the goals read do use
 Cedar. Moving push onto `authorizeItem` (so the policy files are the single authority and every
-accepted write is audited with its policy id) is backlog item T2-22; until then a change to the
+accepted write is audited with its policy id) is not built yet; until then a change to the
 `AddDataPoint` rule needs the matching SQL edit.

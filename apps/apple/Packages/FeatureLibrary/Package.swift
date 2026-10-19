@@ -1,6 +1,6 @@
 // swift-tools-version:6.0
-// Library screens: browse the goal and accommodation libraries, preview an item (T3-18), then the
-// fill-in form (T3-19). Second screens worker (Fiddler); paths are Track 3's under .github/ownership.yml.
+// Library screens: browse the goal and accommodation libraries, preview an item, then the
+// fill-in form. Library screens.
 // Search and filtering are Foundation-only and unit tested; views sit on top.
 import PackageDescription
 

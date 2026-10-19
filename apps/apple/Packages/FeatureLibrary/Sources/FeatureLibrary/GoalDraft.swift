@@ -27,7 +27,7 @@ public struct MeasurabilityCheck: Equatable, Sendable, Identifiable {
     public var fix: String?
 }
 
-/// A library goal being filled in (spec 6.2). Pure value logic: the form edits `values` and `dates`,
+/// A library goal being filled in. Pure value logic: the form edits `values` and `dates`,
 /// the preview and the checks are recomputed from them, so they can never disagree. No student data
 /// is stored here; `studentName` is only what the screen shows.
 public struct GoalDraft: Sendable, Equatable {
@@ -103,7 +103,7 @@ public struct GoalDraft: Sendable, Equatable {
         }.joined()
     }
 
-    // MARK: Measurability checks (spec section 3 quality bar, items 1 to 3)
+    // MARK: Measurability checks
 
     static let vagueVerbs = ["understand", "improve", "be aware of", "appreciate", "know", "learn about", "enjoy"]
 

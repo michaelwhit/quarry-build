@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Cedar authorization policies and the engine wrapper (Track 1).",
+  "description": "Cedar authorization policies and the engine wrapper.",
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

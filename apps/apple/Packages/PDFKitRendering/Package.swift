@@ -1,5 +1,5 @@
 // swift-tools-version:6.0
-// On-device data sheets and charts. Owned by Track 3.
+// On-device data sheets and charts.
 import PackageDescription
 
 let package = Package(

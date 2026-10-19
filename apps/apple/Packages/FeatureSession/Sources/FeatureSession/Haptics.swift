@@ -6,7 +6,7 @@ import SwiftUI
     import AppKit
 #endif
 
-/// The tick on every recorded tap, so a teacher need not look at the screen (spec 10.2).
+/// The tick on every recorded tap, so a teacher need not look at the screen.
 public enum Haptics {
     @MainActor
     public static func tick() {

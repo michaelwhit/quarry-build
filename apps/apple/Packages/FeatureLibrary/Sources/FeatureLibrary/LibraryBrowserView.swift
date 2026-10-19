@@ -2,7 +2,7 @@ import DesignSystem
 import StarterLibrary
 import SwiftUI
 
-/// Goal and accommodation library browser (spec 6.1). It owns no navigation: the shell puts it in
+/// Goal and accommodation library browser. It owns no navigation: the shell puts it in
 /// a tab or sidebar detail, and it opens previews itself (a sheet on iPhone, a third pane on Mac),
 /// so it needs no routes from the shell.
 public struct LibraryBrowserView: View {

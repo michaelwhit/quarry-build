@@ -1,5 +1,5 @@
 // swift-tools-version:6.0
-// Client-side audit event queue. Owned by Track 1.
+// Client-side audit event queue.
 import PackageDescription
 
 let package = Package(

@@ -1,5 +1,5 @@
 // swift-tools-version:6.0
-// Type, color, spacing, accessible components, TEST DATA watermark. Owned by Track 3.
+// Type, color, spacing, accessible components, TEST DATA watermark.
 import PackageDescription
 
 let package = Package(

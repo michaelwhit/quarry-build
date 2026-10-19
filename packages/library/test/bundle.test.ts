@@ -157,7 +157,7 @@ describe("district hide list", () => {
   });
 });
 
-// Track 6's shared answer key (PR #14); the same file the Swift lint and the reference tests use.
+// The shared answer key; the same file the Swift lint and the reference tests use.
 const vectors = JSON.parse(
   readFileSync(
     new URL("../../synthetic-data/vectors/blocked-frequencies.json", import.meta.url),

@@ -1,5 +1,5 @@
 {
-  "spec": "libraries-and-monitoring-spec.md section 7.2 (blocked frequencies); decisions BF-1 and BF-2 in rule-decisions-2026-10-18.md",
+  "spec": "Blocked frequency phrases",
   "rule": "A frequency statement is blocked when its whole typed text contains any of: as needed, as necessary, when appropriate, PRN, if needed, per teacher discretion. Case-insensitive. Hyphens, underscores and runs of whitespace (including line breaks) count as one space before matching. PRN matches as a whole word only.",
   "cases": [
     {

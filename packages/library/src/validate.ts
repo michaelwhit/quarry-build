@@ -22,7 +22,7 @@ const BLOCKED_PHRASES =
  * Frequency wording the spec bans (section 7.2), checked on the whole typed text. Case does not
  * matter, and hyphens, underscores and runs of whitespace (including line breaks) count as one
  * space, so "as-needed" and "as\n needed" do not slip past (rule decision BF-1, BF-2). Also used by
- * the curator lint (T2-9).
+ * the curator lint.
  */
 export function isBlockedFrequency(text: string): boolean {
   return BLOCKED_PHRASES.test(
@@ -51,7 +51,7 @@ const oneOf = (list: readonly string[], v: unknown) => typeof v === "string" && 
 /**
  * Structural check of a bundle payload: shape, enums, references between records and uniqueness.
  * Reports where and why, never what, so a content mistake cannot leak text into logs. Quality
- * rules for wording (vague verbs, readability) are the curator lint (T2-9), not this.
+ * rules for wording (vague verbs, readability) are the curator lint, not this.
  */
 export function validatePayload(
   input: unknown,

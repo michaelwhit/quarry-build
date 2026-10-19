@@ -16,7 +16,7 @@ const RECORDERS = new Set([
   "gen_ed_teacher",
   "paraprofessional",
 ]);
-// Delegated roles record only for goals a case manager handed them (architecture section 5.2).
+// Delegated roles record only for goals a case manager handed them.
 const NEEDS_DELEGATION = new Set(["gen_ed_teacher", "paraprofessional"]);
 
 /** Reasons are machine-readable and never contain student data. */

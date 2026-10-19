@@ -37,7 +37,7 @@ function readBody(raw: unknown): ImportBody {
 }
 
 /**
- * Director-only CSV loads (architecture section 9.4). Every upload is a preview first: with
+ * Director-only CSV loads. Every upload is a preview first: with
  * `commit: false` nothing is written and the report lists row-level problems; with `commit: true`
  * the file loads all-or-nothing, in one transaction. The CSV text is never stored or logged.
  * TODO(track 1): write the audit event for each import once the audit writer lands.

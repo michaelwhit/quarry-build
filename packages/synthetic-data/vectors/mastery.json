@@ -1,5 +1,5 @@
 {
-  "spec": "libraries-and-monitoring-spec.md section 2.4 (mastery criteria); decisions MA-1 to MA-4 in rule-decisions-2026-10-18.md",
+  "spec": "Mastery criteria",
   "rule": "A session passes when its value meets threshold under the comparator (>= or <=, boundary inclusive). 'consecutive' with window n needs the latest n sessions to all pass. 'best_of' with window n of m needs at least n passes among the latest m sessions, and m sessions must exist (MA-1). Fewer sessions than the window length means not mastered. prompt_ceiling (MA-2): a trial counts as correct only if it was correct at a prompt level at or below the ceiling (order: independent, gestural, verbal, model, partial_physical, full_physical); every trial stays in the denominator. across (MA-3): the passing sessions in the window must cover at least `across.count` different values of `across.kind` (setting, adult or material). maintenance (MA-4): re-probes are due 14 and 28 days after the mastery date; a day that is not a school day moves to the next school day.",
   "cases": [
     {

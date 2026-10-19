@@ -1,5 +1,5 @@
 // swift-tools-version:6.0
-// Sign-in, session, app lock (AuthSession API for Track 3). Owned by Track 1.
+// Sign-in, session, app lock.
 import PackageDescription
 
 let package = Package(

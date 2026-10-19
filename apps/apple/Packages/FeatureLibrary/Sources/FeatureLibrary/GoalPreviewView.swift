@@ -4,7 +4,7 @@ import SwiftUI
 
 /// The read-only preview of a library goal: the wording with slots shown as bracketed words, how it
 /// will be measured, when it counts as met, and where it came from. Attach is "Planned" until the
-/// goal fields it writes exist (T2-21).
+/// goal fields it writes exist.
 struct GoalPreviewView: View {
     let goal: GoalTemplate
     let index: LibraryIndex

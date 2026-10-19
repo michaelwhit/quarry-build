@@ -122,7 +122,7 @@ public struct Student: Identifiable, Hashable, Codable, Sendable {
     }
 }
 
-/// The relationship that gives a staff member access to a student (security design 3.1).
+/// The relationship that gives a staff member access to a student.
 public struct CaseloadAssignment: Identifiable, Hashable, Codable, Sendable {
     public enum Relationship: String, Codable, Sendable {
         case caseload

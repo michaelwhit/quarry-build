@@ -143,7 +143,7 @@ const ENTITIES: EntityQuery[] = [
 ];
 
 // The caller's own assignments, including ended and deleted ones: a tombstone here tells the
-// device to purge that student (architecture section 6.1). Directors see all assignments.
+// device to purge that student. Directors see all assignments.
 const ASSIGNMENTS: EntityQuery = {
   entity: "caseload_assignment",
   sql: `SELECT t.id, t.server_seq AS eff, (t.deleted_at IS NOT NULL) AS deleted, t.staff_id,

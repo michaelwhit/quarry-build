@@ -10,7 +10,7 @@ export interface AuthContext {
 
 /**
  * Turns a request into a verified session, or null. The real implementation (Google ID token,
- * device-bound DPoP access token, refresh rotation) lands with T1-3; tests and demo builds use
+ * device-bound DPoP access token, refresh rotation) lands later; tests and demo builds use
  * the demo and mock verifiers. A verifier must never throw for a bad credential, only return null.
  */
 export interface SessionVerifier {
@@ -47,7 +47,7 @@ export interface AuditEvent {
   requestId: string;
 }
 
-/** Appends to the hash-chained audit log (T1-4). Rejecting makes the request fail closed. */
+/** Appends to the hash-chained audit log. Rejecting makes the request fail closed. */
 export interface AuditSink {
   record(event: AuditEvent): Promise<void>;
 }

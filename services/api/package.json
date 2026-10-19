@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "The api service (Fastify). Track 2 owns the skeleton; auth, audit, reports and ai modules belong to Tracks 1, 1, 5 and 4.",
+  "description": "The api service (Fastify). Modules: auth, audit, reports and ai.",
   "scripts": {
     "start": "node src/server.ts",
     "dev": "node --watch src/server.ts",

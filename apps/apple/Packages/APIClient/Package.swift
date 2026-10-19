@@ -1,5 +1,5 @@
 // swift-tools-version:6.0
-// Client generated from packages/openapi/api.yaml. Owned by Track 2.
+// Client generated from packages/openapi/api.yaml.
 import PackageDescription
 
 let package = Package(

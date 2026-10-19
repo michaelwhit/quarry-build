@@ -1,5 +1,5 @@
 // swift-tools-version:6.0
-// Director and admin screens (caseload upload). Owned by Track 3.
+// Director and admin screens (caseload upload).
 import PackageDescription
 
 let package = Package(

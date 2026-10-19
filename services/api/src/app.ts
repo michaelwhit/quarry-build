@@ -87,7 +87,7 @@ export async function buildApp(
     await app.register(syncModule, { db, crypto: fieldCrypto });
   }
 
-  // Still to land: audit (Track 1) · reports (Track 5) · ai (Track 4)
+  // Still to land: audit · reports · ai
 
   return app;
 }

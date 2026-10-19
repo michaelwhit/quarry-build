@@ -1,5 +1,5 @@
 # XcodeGen spec. The .xcodeproj is generated, never committed: `xcodegen generate` in this folder
-# (CI does it before every build). Owned by Track 3.
+# (CI does it before every build).
 name: IEPAssistant
 options:
   bundleIdPrefix: com.example.app

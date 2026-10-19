@@ -35,7 +35,7 @@ public enum SyncError: Error, Equatable, Sendable {
     case malformedResponse
 }
 
-/// Outbox push, then change-feed pull (architecture section 6.3).
+/// Outbox push, then change-feed pull.
 ///
 /// Safe to run any time and as often as you like: pushes are idempotent, pulls are upserts, and
 /// the cursor moves only together with the rows it covers. A failure part-way leaves the outbox

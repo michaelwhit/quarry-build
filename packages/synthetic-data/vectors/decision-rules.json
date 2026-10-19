@@ -1,7 +1,7 @@
 {
-  "spec": "libraries-and-monitoring-spec.md section 2.5 (progress decision rules); decisions DR-1 to DR-6 in rule-decisions-2026-10-18.md",
+  "spec": "Progress decision rules",
   "rule": "Aim line (DR-3): runs in a straight line by calendar date from the baseline (median of the first 3 points, at the date of the third point) to the target at the goal end date; with fewer than 3 points no aim line is drawn. Four-point rule (DR-1, DR-2): needs at least 6 points and looks at the latest 4, direction-aware. For a >= goal, 4 points all strictly below the aim line give change_instruction and 4 all strictly above give raise_goal. For a <= goal the sides swap: 4 strictly above give change_instruction, 4 strictly below give lower_target. A point on the line breaks the run. Trend (DR-4): ordinary least squares over the latest 8 points by calendar day, compared with the aim slope: within 10 percent of the aim slope is on_track, below is behind, above is ahead (for a <= goal both slopes are read in the favourable direction, so a steeper fall is ahead and a flat line against a falling aim line is behind). If the aim slope is zero, or fewer than 8 points exist, there is no trend status. Stale (DR-5, DR-6): 10 or more school days with no data, counted after the last data date, or after the goal start date (or the day it was attached) when there is no data yet, up to and including today.",
-  "note": "The 10 percent tolerance, using the latest 4 points, and the baseline date are choices made by Track 6 where the spec is silent. They are listed in open_questions. Change them with the spec, not silently.",
+  "note": "The 10 percent tolerance, using the latest 4 points, and the baseline date are choices made where the spec is silent. They are listed in open_questions. Change them with the spec, not silently.",
   "aim_line": [
     {
       "name": "baseline is the median of the first three",

@@ -1,7 +1,7 @@
 import CoreModels
 import Foundation
 
-/// Why a goal got no data in a session. Shown as a labeled gap on the graph (spec 10.3).
+/// Why a goal got no data in a session. Shown as a labeled gap on the graph.
 public enum NoDataReason: String, Codable, CaseIterable, Sendable {
     case absent
     case refused
@@ -79,7 +79,7 @@ public struct SessionEntry: Codable, Hashable, Sendable, Identifiable {
     public var promptHierarchy: [String]
     public var trials: [Trial]
     public var tally: Int
-    /// Completed timer episodes, in seconds. Several episodes add up (spec 10.3).
+    /// Completed timer episodes, in seconds. Several episodes add up.
     public var episodes: [Double]
     public var runningSince: Date?
     public var noDataReason: NoDataReason?
@@ -125,11 +125,11 @@ public struct SessionEntry: Codable, Hashable, Sendable, Identifiable {
 }
 
 /// A session in progress or just ended. Saved to the device after every tap so that an app
-/// kill, reboot or dead battery loses nothing (spec 10.2 and 10.8). All changes go through the
+/// kill, reboot or dead battery loses nothing. All changes go through the
 /// mutating methods, which keep the undo log and the idle clock current.
 public struct SessionDraft: Codable, Hashable, Sendable, Identifiable {
     /// A teacher can run these on the session screen. Others (rate, latency, rubric, interval,
-    /// task analysis and so on) arrive with T3-15a and T3-15b; until then they use the goal screen.
+    /// task analysis and so on) arrive in a later change; until then they use the goal screen.
     public static func supports(_ type: MeasurementType) -> Bool {
         switch type {
         case .trials, .yesNo, .promptLevel, .frequency, .duration: true
@@ -137,7 +137,7 @@ public struct SessionDraft: Codable, Hashable, Sendable, Identifiable {
         }
     }
 
-    /// A session with no tap for this long ends on its own, keeping everything (spec 10.3).
+    /// A session with no tap for this long ends on its own, keeping everything.
     public static let idleLimit: TimeInterval = 20 * 60
 
     public var id: UUID

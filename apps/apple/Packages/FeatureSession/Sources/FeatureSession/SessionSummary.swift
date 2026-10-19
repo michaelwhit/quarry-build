@@ -23,8 +23,8 @@ public enum Trend: Sendable, Equatable {
     }
 }
 
-/// What the teacher sees per goal after ending a session (spec 10.3): today's value, the last
-/// five sessions, and a trend arrow. Decision-rule flags join in T3-14b.
+/// What the teacher sees per goal after ending a session: today's value, the last
+/// five sessions, and a trend arrow. Decision-rule flags join later.
 public struct GoalSummary: Identifiable, Sendable, Equatable {
     public var id: UUID
     public var studentID: UUID

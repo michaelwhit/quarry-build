@@ -33,7 +33,7 @@ public protocol SyncStore: Sendable {
 
 /// A dictionary-backed store with the same rules as the real one: upserts by id, tombstones
 /// remove rows, and losing the caller's own last caseload assignment for a student purges that
-/// student (architecture section 6.1). Only the caller's own assignments count: a tenant-wide
+/// student. Only the caller's own assignments count: a tenant-wide
 /// reader (director, building coordinator) also receives other staff members' assignment changes
 /// and must never lose a student because someone else's assignment ended. Without an
 /// `ownStaffId` the store never purges on assignment changes.

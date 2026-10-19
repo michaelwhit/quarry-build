@@ -16,7 +16,7 @@ const RELATIONSHIPS = new Set(["caseload", "service", "class_roster", "delegated
 
 /**
  * Assigns staff to students from a second CSV. The director grants every row, so a teacher can
- * never add themselves (security design section 3.1): a row naming the uploader is an error.
+ * never add themselves: a row naming the uploader is an error.
  */
 export async function importAssignments(
   c: pg.PoolClient,

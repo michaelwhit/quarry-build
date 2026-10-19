@@ -1,4 +1,4 @@
-// Authorization schema for the IEP assistant (security design 3.1 to 3.3, architecture 5.3).
+// Authorization schema for the IEP assistant.
 // Role x relationship x section sensitivity. The server resolves the relationship from
 // caseload_assignment (never from the client) and passes it in the request context.
 

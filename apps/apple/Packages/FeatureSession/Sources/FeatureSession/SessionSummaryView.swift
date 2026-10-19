@@ -3,7 +3,7 @@ import DesignSystem
 import SwiftUI
 
 /// Shown the moment a session ends: per goal, today's value, the last five sessions and a trend
-/// arrow (spec 10.3). The data is already saved by the time this appears.
+/// arrow. The data is already saved by the time this appears.
 struct SessionSummaryView: View {
     let model: SessionModel
     let hideNames: Bool

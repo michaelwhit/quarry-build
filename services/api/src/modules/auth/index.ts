@@ -61,7 +61,6 @@ const problem = (reply: FastifyReply, status: 401 | 403 | 404 | 503, title: stri
   reply.code(status).type("application/problem+json").send({ type: "about:blank", title, status });
 
 /**
- * Track 1 owns this module.
  *
  * - onRequest: public allowlist, otherwise a verified session or 401. An allowlist, not a /v0
  *   prefix match, so a differently shaped path can never skip the check. App-wide (fastify-plugin)
@@ -216,7 +215,7 @@ export function createAuthModule(deps: AuthDeps) {
               }
             }
           } catch (err) {
-            // Audit or policy lookup failed: the request does not proceed (architecture 5.3).
+            // Audit or policy lookup failed: the request does not proceed.
             req.log.error({ err: (err as Error).name }, "authorization failed closed");
             return problem(reply, 503, "Service Unavailable");
           }

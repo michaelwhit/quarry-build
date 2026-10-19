@@ -2,9 +2,9 @@ import DesignSystem
 import StarterLibrary
 import SwiftUI
 
-/// The fill-in form (spec 6.2): one field per blank, the finished goal updating as the teacher types,
+/// The fill-in form: one field per blank, the finished goal updating as the teacher types,
 /// and the measurability checklist beside it. Adding the goal to a student's plan is "Planned"
-/// until the goal fields it writes exist (T2-21).
+/// until the goal fields it writes exist.
 struct GoalFillInView: View {
     @State private var draft: GoalDraft
     let today: Date

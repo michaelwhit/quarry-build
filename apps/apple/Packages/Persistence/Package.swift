@@ -1,5 +1,5 @@
 // swift-tools-version:6.0
-// Local store, repositories and (later) the GRDB + SQLCipher database. Owned by Track 2.
+// Local store, repositories and (later) the GRDB + SQLCipher database.
 import PackageDescription
 
 let package = Package(

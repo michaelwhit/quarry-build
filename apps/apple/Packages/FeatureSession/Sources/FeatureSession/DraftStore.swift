@@ -19,7 +19,7 @@ public struct SessionDeliveryError: Error, Sendable {
 /// Keeps the draft in one file, written atomically after every tap. On iOS the file is protected
 /// until first unlock so a rebooted, locked phone can still take a Live Activity tap later.
 ///
-/// This is the interim store for the fake-data build. The encrypted database (Track 2) takes over
+/// This is the interim store for the fake-data build. The encrypted database takes over
 /// behind the same protocol, so the session screens do not change.
 public struct FileDraftStore: SessionDraftStoring {
     private let url: URL

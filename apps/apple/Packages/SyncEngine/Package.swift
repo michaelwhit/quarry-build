@@ -1,5 +1,5 @@
 // swift-tools-version:6.0
-// Outbox push and change-feed pull (architecture 6.3). Owned by Track 2.
+// Outbox push and change-feed pull.
 import PackageDescription
 
 let package = Package(

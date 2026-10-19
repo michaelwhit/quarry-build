@@ -54,8 +54,8 @@ public enum ValueFormat {
 
 /// The picture of how a goal is going: the plotted samples, the target, and simple statistics.
 ///
-/// Prototype rules, not the final Sufficient calculation. Track 5 owns the real rule for the
-/// SRS progress report (architecture 9.2a); this exists so the demo can show a graph, a trend
+/// Prototype rules, not the final Sufficient calculation. The real rule for the
+/// SRS progress report; this exists so the demo can show a graph, a trend
 /// and a suggested Yes/No.
 public struct GoalProgress: Sendable {
     public struct Sample: Identifiable, Hashable, Sendable {

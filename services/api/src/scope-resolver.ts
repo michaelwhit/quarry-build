@@ -5,7 +5,7 @@ import type { ScopeResolver } from "./modules/auth/index.ts";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** What each role's active assignment means to the policies (security design 3.3). */
+/** What each role's active assignment means to the policies. */
 const ASSIGNED: Partial<Record<string, Relationship>> = {
   case_manager: "caseload",
   related_service_provider: "service",

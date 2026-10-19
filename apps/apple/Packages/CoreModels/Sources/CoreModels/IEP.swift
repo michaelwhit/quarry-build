@@ -1,7 +1,7 @@
 import Foundation
 
 public struct IEP: Identifiable, Hashable, Codable, Sendable {
-    /// SRS holds the legal version; the app tracks where the draft is (architecture 5.2).
+    /// SRS holds the legal version; the app tracks where the draft is.
     public enum Status: String, Codable, Sendable {
         case draft
         case readyForSRS = "ready_for_srs"
@@ -182,7 +182,7 @@ public struct MeasurementPlan: Identifiable, Hashable, Codable, Sendable {
     }
 }
 
-/// A school's progress-report date, keyed to the reports SRS creates (architecture 5.2a).
+/// A school's progress-report date, keyed to the reports SRS creates.
 public struct ReportingPeriod: Identifiable, Hashable, Codable, Sendable {
     public var id: UUID
     public var tenantID: UUID

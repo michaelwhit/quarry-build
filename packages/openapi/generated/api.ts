@@ -220,7 +220,7 @@ export interface components {
             detail?: string;
         };
         /**
-         * @description Roles from security design section 3.3.
+         * @description Roles.
          * @enum {string}
          */
         StaffRole: "sped_director" | "building_coordinator" | "case_manager" | "related_service_provider" | "gen_ed_teacher" | "paraprofessional" | "district_it_admin" | "vendor_support";

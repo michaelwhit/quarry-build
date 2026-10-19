@@ -1,5 +1,5 @@
 // swift-tools-version:6.0
-// IEP editor (sprint three). Owned by Track 3.
+// IEP editor (sprint three).
 import PackageDescription
 
 let package = Package(
