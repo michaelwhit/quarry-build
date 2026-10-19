@@ -212,6 +212,7 @@ public struct CaseloadImportView: View {
 
     private func confirm() {
         guard let plan else { return }
+        problem = nil
         var added = 0
         for row in plan.ready {
             guard let schoolID = row.schoolID else { continue }
