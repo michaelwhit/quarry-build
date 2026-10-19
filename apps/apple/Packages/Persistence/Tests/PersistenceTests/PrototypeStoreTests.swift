@@ -266,6 +266,14 @@ struct PrototypeStoreTests {
         #expect(throws: PrototypeStore.StoreError.invalidStudent(.gradeMissing)) {
             try store.addStudent(firstName: "A", lastName: "B", grade: "  ", schoolID: school.id)
         }
+        let tooLong = String(repeating: "x", count: PrototypeStore.maxNameLength + 1)
+        #expect(throws: PrototypeStore.StoreError.invalidStudent(.nameTooLong)) {
+            try store.addStudent(firstName: tooLong, lastName: "B", grade: "1", schoolID: school.id)
+        }
+        #expect(throws: PrototypeStore.StoreError.invalidStudent(.nameTooLong)) {
+            try store.addStudent(
+                firstName: "A", lastName: "B", preferredName: tooLong, grade: "1", schoolID: school.id)
+        }
         #expect(throws: PrototypeStore.StoreError.unknownSchool) {
             try store.addStudent(firstName: "A", lastName: "B", grade: "1", schoolID: UUIDv7.make())
         }

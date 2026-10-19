@@ -141,6 +141,7 @@ public struct StudentFormView: View {
             case .firstNameMissing: problem = "Enter a first name."
             case .lastNameMissing: problem = "Enter a last name."
             case .gradeMissing: problem = "Choose a grade."
+            case .nameTooLong: problem = "Names can be up to \(PrototypeStore.maxNameLength) characters."
             }
         } catch {
             problem = "Could not save. Try again."

@@ -26,6 +26,7 @@ public final class PrototypeStore {
         case firstNameMissing
         case lastNameMissing
         case gradeMissing
+        case nameTooLong
     }
 
     private struct SavedState: Codable {
@@ -146,7 +147,7 @@ public final class PrototypeStore {
     }
 
     /// Who may add a student by hand or fix one on their list. Prototype default; the district
-    /// later chooses (security 3.3).
+    /// later chooses.
     public var canManageStudents: Bool {
         switch currentStaff?.role {
         case .spedDirector, .buildingCoordinator, .caseManager: true
@@ -280,6 +281,9 @@ public final class PrototypeStore {
         return changed
     }
 
+    /// Longest first, last or preferred name accepted.
+    public static let maxNameLength = 100
+
     private static func cleaned(
         firstName: String, lastName: String, preferredName: String?, grade: String
     ) throws -> (first: String, last: String, preferred: String?, grade: String) {
@@ -290,6 +294,9 @@ public final class PrototypeStore {
         guard !first.isEmpty else { throw StoreError.invalidStudent(.firstNameMissing) }
         guard !last.isEmpty else { throw StoreError.invalidStudent(.lastNameMissing) }
         guard !level.isEmpty else { throw StoreError.invalidStudent(.gradeMissing) }
+        guard [first, last, nick ?? ""].allSatisfy({ $0.count <= Self.maxNameLength }) else {
+            throw StoreError.invalidStudent(.nameTooLong)
+        }
         return (first, last, (nick?.isEmpty ?? true) ? nil : nick, level)
     }
 
