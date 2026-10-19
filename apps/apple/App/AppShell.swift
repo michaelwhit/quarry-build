@@ -1,4 +1,5 @@
 import DesignSystem
+import FeatureEvaluation
 import FeatureSession
 import Persistence
 import SwiftUI
@@ -33,7 +34,7 @@ enum AppTab: String, CaseIterable, Identifiable {
 
 /// Where a Home tile or number can send the teacher.
 enum AppDestination {
-    case today, caseload, caseloadSummary, libraries
+    case today, caseload, caseloadSummary, libraries, evaluation
 }
 
 /// Screens other parts of the app provide. Until a screen is wired in, its tab shows "Planned"
@@ -47,6 +48,7 @@ struct AppShell: View {
     @State private var selection: UUID?
     @State private var column: NavigationSplitViewColumn = .sidebar
     @State private var launched: LaunchedSession?
+    @State private var intake: EvidenceIntake?
     @Environment(PrototypeStore.self) private var store
     let screens: ShellScreens
 
@@ -64,6 +66,31 @@ struct AppShell: View {
                         onClose: { launched = nil })
                 }
             }
+            .sheet(
+                isPresented: Binding(get: { intake != nil }, set: { if !$0 { intake = nil } })
+            ) {
+                if let intake {
+                    NavigationStack {
+                        EvaluationIntakeView(intake: intake, done: { self.intake = nil })
+                    }
+                }
+            }
+    }
+
+    /// Every student and staff name, so the redaction preview can remove them from pasted text.
+    private func rosterNames() -> [String] {
+        var names: [String] = []
+        for student in store.allStudents {
+            names.append(contentsOf: [
+                student.firstName, student.lastName, "\(student.firstName) \(student.lastName)",
+                student.preferredName ?? "",
+            ])
+        }
+        for staff in store.demoStaff {
+            names.append(staff.displayName)
+            names.append(contentsOf: staff.displayName.split(separator: " ").map(String.init))
+        }
+        return names.filter { !$0.isEmpty }
     }
 
     @ViewBuilder
@@ -148,6 +175,7 @@ struct AppShell: View {
         switch destination {
         case .today: tab = .today
         case .libraries: tab = .libraries
+        case .evaluation: intake = EvidenceIntake(names: rosterNames())
         case .caseload:
             selection = nil
             column = .sidebar
