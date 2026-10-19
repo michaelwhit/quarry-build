@@ -14,10 +14,8 @@ export type AuthzSpec =
   /** Tenant administration. */
   | { kind: "tenant"; action: TenantAction }
   /**
-   * The handler authorizes each item itself (sync batches). The change feed and goals read use
-   * authorizeItem. syncPush does not yet: it checks role, visible-student scope and delegation at
-   * the recording time in SQL (modules/sync/push.ts), which is stricter than the Cedar AddDataPoint
-   * rule today but is not the Cedar authority. Tracked in packages/policies/README.md.
+   * The handler authorizes each item itself (sync batches), using authorizeItem or the equivalent
+   * checks in its own code.
    */
   | { kind: "per-item" };
 

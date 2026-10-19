@@ -44,7 +44,7 @@ describe("policies validate against the schema", () => {
   it("parses in strict mode", () => validatePolicies());
 });
 
-// Security design 3.3. Each block states the matrix row, then proves allow and deny cases.
+// Each block states the matrix row, then proves allow and deny cases.
 describe("SPED director", () => {
   it("reads every tier district-wide", () => {
     for (const tier of [1, 2, 3, 4, 5] as const)

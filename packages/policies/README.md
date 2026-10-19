@@ -10,12 +10,3 @@ Cedar authorization for the api. Role, relationship and section sensitivity (S1 
 The server resolves each caller's relationship to a student from `caseload_assignment` and passes it in; the client never supplies it. Reading of the matrix where it was ambiguous: general-ed teachers and paraprofessionals read S3 and add data only on goals delegated to them, and have no other write.
 
 Changing a policy is a security-relevant PR: it needs a second reviewer.
-
-## Known gap: sync push is not yet decided by Cedar (recorded 2026-10-18)
-
-`syncPush` is marked `per-item` in `endpoints.ts`, but `modules/sync/push.ts` enforces role,
-visible-student scope and delegation at the recording time in SQL instead of calling
-`app.authorizeItem` per mutation. The change feed (`/v0/sync/changes`) and the goals read do use
-Cedar. Moving push onto `authorizeItem` (so the policy files are the single authority and every
-accepted write is audited with its policy id) is not built yet; until then a change to the
-`AddDataPoint` rule needs the matching SQL edit.
