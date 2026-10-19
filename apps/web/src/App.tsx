@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { STATUS_LABEL, type GoalStatus } from "./data/derive.ts";
 import {
   dataTotals,
@@ -12,7 +12,9 @@ import { Chip } from "./ui/Chip.tsx";
 import { Home, More, PlannedScreen } from "./ui/Home.tsx";
 import { GoalPanel } from "./ui/GoalPanel.tsx";
 import { Graph, Sparkline } from "./ui/Graph.tsx";
-import { type Saved, TrackGoal, TrackPicker } from "./ui/Track.tsx";
+import { AddGoal, AddStudent } from "./ui/Forms.tsx";
+import { TrackGoal, TrackPicker } from "./ui/Track.tsx";
+import { getVersion, subscribe } from "./data/workspace.ts";
 
 function useRoute(): string {
   const [hash, setHash] = useState(() => window.location.hash);
@@ -33,10 +35,12 @@ const TABS = [
 ];
 
 function activeTab(hash: string): string {
-  if (hash.startsWith("#/student") || hash === "#/caseload") return "caseload";
+  if (hash.startsWith("#/student") || hash === "#/caseload" || hash === "#/add-student")
+    return "caseload";
   if (hash === "#/today") return "today";
   if (hash === "#/libraries") return "libraries";
   if (hash === "#/more") return "more";
+  // Track screens (#/track...) are reached from Home, so Home stays highlighted on purpose.
   return "home";
 }
 
@@ -53,6 +57,7 @@ function useTheme() {
 }
 
 function Caseload() {
+  const totals = dataTotals();
   const counts: Record<GoalStatus, number> = {
     met: 0,
     on_track: 0,
@@ -69,11 +74,11 @@ function Caseload() {
     <>
       <ul className="tiles" aria-label="Caseload summary">
         <li className="tile">
-          <div className="n">{dataTotals.students}</div>
+          <div className="n">{totals.students}</div>
           <div className="l">Students</div>
         </li>
         <li className="tile">
-          <div className="n">{dataTotals.goals}</div>
+          <div className="n">{totals.goals}</div>
           <div className="l">IEP goals</div>
         </li>
         {(["needs_attention", "on_track", "met"] as const).map((k) => (
@@ -84,6 +89,16 @@ function Caseload() {
         ))}
       </ul>
       <h2>Caseload (needs attention first)</h2>
+      <p>
+        <a className="btn" href="#/add-student">
+          Add a student
+        </a>
+      </p>
+      {students.length === 0 && (
+        <p className="empty">
+          No students yet. Add a made-up student, or load the sample students from the More tab.
+        </p>
+      )}
       <ul className="cards">
         {sorted.map((s) => {
           const first = s.goals[0];
@@ -124,6 +139,12 @@ function StudentPage({ id }: { id: string }) {
       <p style={{ color: "var(--text-muted)" }}>
         Grade {s.student.grade} · Case ID {s.student.local_student_id}
       </p>
+      <p>
+        <a className="btn" href={`#/student/${s.student.id}/add-goal`}>
+          Add a goal
+        </a>
+      </p>
+      {s.goals.length === 0 && <p className="empty">No goals yet.</p>}
       {s.goals.map(({ goal, plan, series, progress }) => (
         <section className="goal" key={goal.id} aria-label={`${goal.area} goal`}>
           <div className="row">
@@ -152,15 +173,19 @@ export function App() {
   const m = /^#\/student\/(.+)$/.exec(hash);
   const active = activeTab(hash);
   const t = /^#\/track\/([^/]+)\/([^/]+)$/.exec(hash);
-  const [saved, setSaved] = useState<Saved>({});
   const [noticeSeen, setNoticeSeen] = useState(false);
-  const onSave = (goalId: string, p: Saved[string][number]) =>
-    setSaved((x) => ({ ...x, [goalId]: [...(x[goalId] ?? []), p] }));
+  // Re-render on every practice-data change; the views are rebuilt in data/district.ts.
+  useSyncExternalStore(subscribe, getVersion);
+  const g = /^#\/student\/([^/]+)\/add-goal$/.exec(hash);
   const screen =
     t?.[1] && t[2] ? (
-      <TrackGoal studentId={t[1]} goalId={t[2]} saved={saved} onSave={onSave} />
+      <TrackGoal studentId={t[1]} goalId={t[2]} />
     ) : hash.startsWith("#/track") ? (
-      <TrackPicker saved={saved} />
+      <TrackPicker />
+    ) : hash === "#/add-student" ? (
+      <AddStudent />
+    ) : g?.[1] ? (
+      <AddGoal studentId={decodeURIComponent(g[1])} />
     ) : m?.[1] ? (
       <StudentPage id={decodeURIComponent(m[1])} />
     ) : hash === "#/caseload" ? (
@@ -176,7 +201,7 @@ export function App() {
         text="The goal and accommodation libraries are not on the web yet."
       />
     ) : hash === "#/more" ? (
-      <More saved={Object.values(saved).flat().length} onReset={() => setSaved({})} />
+      <More />
     ) : (
       <Home />
     );
@@ -190,9 +215,10 @@ export function App() {
           <div className="notice" role="dialog" aria-modal="true" aria-labelledby="notice-title">
             <h2 id="notice-title">Practice data, no real students</h2>
             <p>
-              Everything here is made up. Please do not type real student names or details. Nothing
-              you do is saved or sent anywhere, and it is gone when you close or reload the page.
+              Practice data stays in this browser on this device. It is never sent anywhere. Do not
+              type real student names or details.
             </p>
+            <p>You can remove it all with Clear practice data on the More tab.</p>
             <button type="button" autoFocus onClick={() => setNoticeSeen(true)}>
               I understand
             </button>
@@ -230,7 +256,9 @@ export function App() {
           </a>
         ))}
       </nav>
-      <footer>Fake data bundled with the app. Nothing is stored in this browser.</footer>
+      <footer>
+        Practice data only. What you add stays in this browser and is never sent anywhere.
+      </footer>
     </>
   );
 }

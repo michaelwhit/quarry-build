@@ -1,5 +1,6 @@
-// App shell only. Never caches API responses or anything about students: the fake data is
-// compiled into the JavaScript bundle for slice one, and real data will only come from /api.
+// App shell only. Never caches API responses or anything about students. The sample data is
+// compiled into the JavaScript bundle, and practice data the user enters lives in local storage
+// (see src/data/workspace.ts), not in this cache.
 const CACHE = "goalline-shell-v1";
 // Paths are relative to the service worker scope so the app works under a repository subpath.
 const ROOT = new URL("./", self.registration.scope).pathname;

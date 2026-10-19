@@ -1,11 +1,4 @@
-import raw from "@synthetic/fixtures/demo-district.json";
-import type {
-  DataPoint,
-  Goal,
-  MeasurementPlan,
-  Student,
-  SyntheticDistrict,
-} from "@synthetic/src/types.ts";
+import type { Goal, MeasurementPlan, Student } from "@synthetic/src/types.ts";
 import {
   type GoalProgress,
   type SeriesPoint,
@@ -13,11 +6,10 @@ import {
   seriesFor,
   worstStatus,
 } from "./derive.ts";
+import { type Workspace, clearAll, getWorkspace, sampleDistrict, subscribe } from "./workspace.ts";
 
-// Slice one: the synthetic district is bundled into the app. Nothing here is fetched, stored in
-// the browser, or cached by the service worker.
-const district = raw as unknown as SyntheticDistrict;
-if (district.synthetic !== true) throw new Error("Refusing to load a dataset not marked synthetic");
+// Views derived from the practice workspace. `students` is a live binding: it is rebuilt whenever
+// the workspace changes, and the app re-renders from the workspace store.
 
 export interface GoalView {
   goal: Goal;
@@ -35,41 +27,64 @@ export interface StudentView {
   lastDataAt: string | undefined;
 }
 
-const byGoal = new Map<string, DataPoint[]>();
-for (const p of district.data_points) byGoal.set(p.goal_id, [...(byGoal.get(p.goal_id) ?? []), p]);
-const planFor = new Map(district.measurement_plans.map((p) => [p.goal_id, p]));
+function build(ws: Workspace): StudentView[] {
+  const byGoal = new Map<string, Workspace["points"]>();
+  for (const p of ws.points) byGoal.set(p.goal_id, [...(byGoal.get(p.goal_id) ?? []), p]);
+  const planFor = new Map(ws.plans.map((p) => [p.goal_id, p]));
+  return ws.students
+    .map((student) => {
+      const iep = ws.ieps.find((i) => i.student_id === student.id);
+      const goals = ws.goals
+        .filter((g) => g.iep_id === iep?.id)
+        .sort((a, b) => a.sequence - b.sequence)
+        .flatMap((goal): GoalView[] => {
+          const plan = planFor.get(goal.id);
+          if (!iep || !plan) return [];
+          const series = seriesFor(byGoal.get(goal.id) ?? []);
+          return [
+            {
+              goal,
+              effectiveFrom: iep.effective_from,
+              effectiveTo: iep.effective_to,
+              plan,
+              series,
+              progress: progressFor(series, plan, iep.effective_from, iep.effective_to),
+            },
+          ];
+        });
+      const lastDataAt = goals
+        .flatMap((g) => g.series.map((s) => s.at))
+        .sort()
+        .at(-1);
+      return {
+        student,
+        goals,
+        status: worstStatus(goals.map((g) => g.progress.status)),
+        lastDataAt,
+      };
+    })
+    .sort((a, b) => a.student.last_name.localeCompare(b.student.last_name));
+}
 
-export const students: StudentView[] = district.students
-  .map((student) => {
-    const iep = district.ieps.find((i) => i.student_id === student.id);
-    const goals = district.goals
-      .filter((g) => g.iep_id === iep?.id)
-      .sort((a, b) => a.sequence - b.sequence)
-      .flatMap((goal): GoalView[] => {
-        const plan = planFor.get(goal.id);
-        if (!iep || !plan) return [];
-        const series = seriesFor(byGoal.get(goal.id) ?? []);
-        return [
-          {
-            goal,
-            effectiveFrom: iep.effective_from,
-            effectiveTo: iep.effective_to,
-            plan,
-            series,
-            progress: progressFor(series, plan, iep.effective_from, iep.effective_to),
-          },
-        ];
-      });
-    const lastDataAt = goals
-      .flatMap((g) => g.series.map((s) => s.at))
-      .sort()
-      .at(-1);
-    return { student, goals, status: worstStatus(goals.map((g) => g.progress.status)), lastDataAt };
-  })
-  .sort((a, b) => a.student.last_name.localeCompare(b.student.last_name));
+// Stored data is validated when read; if a view still cannot be built, start over rather than
+// leave the app blank with no way to reach Clear practice data.
+function safeBuild(): StudentView[] {
+  try {
+    return build(getWorkspace());
+  } catch {
+    clearAll();
+    return [];
+  }
+}
 
-export const districtName = district.tenant.name;
-export const staffName = district.staff.find((s) => s.role === "sped_director")?.display_name ?? "";
+export let students: StudentView[] = safeBuild();
+subscribe(() => {
+  students = safeBuild();
+});
+
+export const districtName = sampleDistrict.tenant.name;
+export const staffName =
+  sampleDistrict.staff.find((s) => s.role === "sped_director")?.display_name ?? "";
 
 export function studentById(id: string): StudentView | undefined {
   return students.find((s) => s.student.id === id);
@@ -79,11 +94,10 @@ export function displayName(s: Student): string {
   return `${s.preferred_name ?? s.first_name} ${s.last_name}`;
 }
 
-export const dataTotals = {
+export const dataTotals = () => ({
   students: students.length,
   goals: students.reduce((n, s) => n + s.goals.length, 0),
-  points: district.data_points.length,
-};
+});
 
 export function goalById(
   studentId: string,
