@@ -18,6 +18,8 @@ public final class PrototypeStore {
         case unknownPlan
         case unknownSchool
         case invalidStudent(StudentFieldError)
+        case unknownGoal
+        case invalidGoal(GoalFieldError)
         case saveFailed
     }
 
@@ -29,6 +31,19 @@ public final class PrototypeStore {
         case nameTooLong
     }
 
+    /// What was wrong with a goal the user typed in.
+    public enum GoalFieldError: Error, Equatable {
+        case statementMissing
+        case textTooLong
+        case targetInvalid
+        case trialsInvalid
+        case promptLevelsMissing
+        case stepsMissing
+        /// The way data is collected (the measure, trial count, prompt levels and steps) cannot
+        /// change once data has been recorded for the goal, apart from adding levels or steps.
+        case measurementLocked
+    }
+
     private struct SavedState: Codable {
         var deviceID: UUID
         var points: [DataPoint]
@@ -37,11 +52,19 @@ public final class PrototypeStore {
         var students: [Student]?
         var assignments: [CaseloadAssignment]?
         var studentEdits: [Student]?
+        var ieps: [IEP]?
+        var goals: [Goal]?
+        var plans: [MeasurementPlan]?
+        var goalEdits: [Goal]?
+        var planEdits: [MeasurementPlan]?
 
         enum CodingKeys: String, CodingKey {
             case points, approvals, students, assignments
             case deviceID = "device_id"
             case studentEdits = "student_edits"
+            case ieps, goals, plans
+            case goalEdits = "goal_edits"
+            case planEdits = "plan_edits"
         }
     }
 
@@ -55,6 +78,13 @@ public final class PrototypeStore {
     public private(set) var addedAssignments: [CaseloadAssignment]
     /// Changes to students already in the district or added by hand, keyed by student id.
     public private(set) var studentEdits: [UUID: Student]
+    /// Goals typed in by hand, with the plans for collecting their data and the plan years they
+    /// sit in. Edits are keyed by goal id and win over whatever they replace.
+    public private(set) var addedIEPs: [IEP]
+    public private(set) var addedGoals: [Goal]
+    public private(set) var addedPlans: [MeasurementPlan]
+    public private(set) var goalEdits: [UUID: Goal]
+    public private(set) var planEdits: [UUID: MeasurementPlan]
     @ObservationIgnored private let stateURL: URL?
     @ObservationIgnored private let calendarToday: @Sendable () -> LocalDate
 
@@ -75,6 +105,11 @@ public final class PrototypeStore {
         var students: [Student] = []
         var assignments: [CaseloadAssignment] = []
         var edits: [UUID: Student] = [:]
+        var ieps: [IEP] = []
+        var goals: [Goal] = []
+        var plans: [MeasurementPlan] = []
+        var goalEdits: [UUID: Goal] = [:]
+        var planEdits: [UUID: MeasurementPlan] = [:]
         if let stateURL, let data = try? Data(contentsOf: stateURL),
             let saved = try? JSONDecoder.coreModels.decode(SavedState.self, from: data)
         {
@@ -86,6 +121,13 @@ public final class PrototypeStore {
             assignments = saved.assignments ?? []
             edits = Dictionary(
                 (saved.studentEdits ?? []).map { ($0.id, $0) }, uniquingKeysWith: { _, newer in newer })
+            ieps = saved.ieps ?? []
+            goals = saved.goals ?? []
+            plans = saved.plans ?? []
+            goalEdits = Dictionary(
+                (saved.goalEdits ?? []).map { ($0.id, $0) }, uniquingKeysWith: { _, newer in newer })
+            planEdits = Dictionary(
+                (saved.planEdits ?? []).map { ($0.goalID, $0) }, uniquingKeysWith: { _, newer in newer })
         }
         self.deviceID = device
         self.addedPoints = points
@@ -93,6 +135,11 @@ public final class PrototypeStore {
         self.addedStudents = students
         self.addedAssignments = assignments
         self.studentEdits = edits
+        self.addedIEPs = ieps
+        self.addedGoals = goals
+        self.addedPlans = plans
+        self.goalEdits = goalEdits
+        self.planEdits = planEdits
     }
 
     public nonisolated static func systemToday() -> LocalDate {
@@ -155,6 +202,23 @@ public final class PrototypeStore {
         }
     }
 
+    public var allIEPs: [IEP] { dataset.ieps + addedIEPs }
+
+    /// Every goal, district and hand-typed, with edits applied.
+    public var allGoals: [Goal] {
+        (dataset.goals + addedGoals).map { goalEdits[$0.id] ?? $0 }
+    }
+
+    private var allPlans: [MeasurementPlan] { dataset.measurementPlans + addedPlans }
+
+    /// Who may write or fix a goal by hand. Prototype default; the district later chooses.
+    public var canManageGoals: Bool {
+        switch currentStaff?.role {
+        case .spedDirector, .caseManager: true
+        default: false
+        }
+    }
+
     public var canRecordData: Bool {
         switch currentStaff?.role {
         case .spedDirector, .buildingCoordinator, .caseManager, .relatedServiceProvider,
@@ -181,17 +245,17 @@ public final class PrototypeStore {
     }
 
     public func goals(for student: Student) -> [Goal] {
-        let iepIDs = Set(dataset.ieps.filter { $0.studentID == student.id }.map(\.id))
-        return dataset.goals.filter { iepIDs.contains($0.iepID) }.sorted { $0.sequence < $1.sequence }
+        let iepIDs = Set(allIEPs.filter { $0.studentID == student.id }.map(\.id))
+        return allGoals.filter { iepIDs.contains($0.iepID) }.sorted { $0.sequence < $1.sequence }
     }
 
     public func student(for goal: Goal) -> Student? {
-        guard let iep = dataset.ieps.first(where: { $0.id == goal.iepID }) else { return nil }
+        guard let iep = allIEPs.first(where: { $0.id == goal.iepID }) else { return nil }
         return allStudents.first { $0.id == iep.studentID }
     }
 
     public func plan(for goal: Goal) -> MeasurementPlan? {
-        dataset.measurementPlans.first { $0.goalID == goal.id }
+        planEdits[goal.id] ?? allPlans.first { $0.goalID == goal.id }
     }
 
     public func dataPoints(for goal: Goal) -> [DataPoint] {
@@ -281,6 +345,148 @@ public final class PrototypeStore {
         return changed
     }
 
+    /// Writes a new goal, and the plan for collecting its data, on a student in the signed-in
+    /// person's scope. The goal joins the student's latest plan year; a student with none gets a
+    /// draft one.
+    @discardableResult
+    public func addGoal(for student: Student, draft: GoalDraft) throws -> Goal {
+        guard let staff = currentStaff else { throw StoreError.notSignedIn }
+        guard canManageGoals, visibleStudents.contains(where: { $0.id == student.id }) else {
+            throw StoreError.notAllowed
+        }
+        let fields = try Self.validated(draft)
+        let beforeIEPs = addedIEPs
+        let iep: IEP
+        if let existing = Self.latest(allIEPs.filter { $0.studentID == student.id }) {
+            iep = existing
+        } else {
+            iep = IEP(
+                id: UUIDv7.make(), tenantID: staff.tenantID, studentID: student.id,
+                status: .draft, kind: .initial)
+            addedIEPs.append(iep)
+        }
+        let next = (allGoals.filter { $0.iepID == iep.id }.map(\.sequence).max() ?? 0) + 1
+        let goal = fields.goal(
+            id: UUIDv7.make(), tenantID: staff.tenantID, iepID: iep.id, sequence: next)
+        let plan = fields.plan(id: UUIDv7.make(), tenantID: staff.tenantID, goalID: goal.id)
+        addedGoals.append(goal)
+        addedPlans.append(plan)
+        do {
+            try write()
+        } catch {
+            addedIEPs = beforeIEPs
+            addedGoals.removeAll { $0.id == goal.id }
+            addedPlans.removeAll { $0.id == plan.id }
+            throw StoreError.saveFailed
+        }
+        return goal
+    }
+
+    /// Fixes the wording, baseline, target or data plan of a goal on a student in scope.
+    @discardableResult
+    public func updateGoal(id: UUID, draft: GoalDraft) throws -> Goal {
+        guard currentStaff != nil else { throw StoreError.notSignedIn }
+        guard canManageGoals else { throw StoreError.notAllowed }
+        guard let current = allGoals.first(where: { $0.id == id }) else {
+            throw StoreError.unknownGoal
+        }
+        guard let owner = student(for: current),
+            visibleStudents.contains(where: { $0.id == owner.id })
+        else { throw StoreError.notAllowed }
+        let fields = try Self.validated(draft)
+        let oldPlan = plan(for: current)
+        // Recorded points depend on the plan's shape, so once there are any, the measure, the
+        // trial count and the existing prompt levels and steps stay as they are. Levels and
+        // steps may still be added at the end.
+        if let oldPlan, !dataPoints(for: current).isEmpty {
+            let keepsLevels = fields.promptHierarchy.starts(with: oldPlan.promptHierarchy)
+            let keepsSteps = fields.taskSteps.starts(with: oldPlan.taskSteps)
+            guard oldPlan.type == fields.type, oldPlan.trialsPerSession == fields.trialsPerSession,
+                keepsLevels, keepsSteps
+            else { throw StoreError.invalidGoal(.measurementLocked) }
+        }
+        let goal = fields.goal(
+            id: current.id, tenantID: current.tenantID, iepID: current.iepID,
+            sequence: current.sequence)
+        let plan = fields.plan(
+            id: oldPlan?.id ?? UUIDv7.make(), tenantID: current.tenantID, goalID: current.id,
+            objectiveID: oldPlan?.objectiveID)
+        let before = (goalEdits, planEdits)
+        goalEdits[id] = goal
+        planEdits[id] = plan
+        do {
+            try write()
+        } catch {
+            (goalEdits, planEdits) = before
+            throw StoreError.saveFailed
+        }
+        return goal
+    }
+
+    private static func latest(_ ieps: [IEP]) -> IEP? {
+        ieps.max { a, b in
+            switch (a.effectiveFrom, b.effectiveFrom) {
+            case let (x?, y?): x < y
+            case (nil, _?): true
+            default: false
+            }
+        }
+    }
+
+    /// Longest statement, and longest condition, behavior, baseline, target, criteria or unit.
+    public static let maxStatementLength = 1000
+    public static let maxPartLength = 500
+
+    private static func validated(_ draft: GoalDraft) throws -> GoalDraft {
+        var d = draft
+        func trimmed(_ text: String) -> String { text.trimmingCharacters(in: .whitespacesAndNewlines) }
+        func lines(_ items: [String]) -> [String] { items.map(trimmed).filter { !$0.isEmpty } }
+        d.statement = trimmed(d.statement)
+        d.condition = trimmed(d.condition)
+        d.behavior = trimmed(d.behavior)
+        d.baseline = trimmed(d.baseline)
+        d.target = trimmed(d.target)
+        d.criteria = trimmed(d.criteria)
+        d.unit = trimmed(d.unit)
+        d.frequency = trimmed(d.frequency)
+        d.promptHierarchy = lines(d.promptHierarchy)
+        d.taskSteps = lines(d.taskSteps)
+        guard !d.statement.isEmpty else { throw StoreError.invalidGoal(.statementMissing) }
+        guard d.statement.count <= maxStatementLength,
+            [d.condition, d.behavior, d.baseline, d.target, d.criteria, d.unit, d.frequency]
+                .allSatisfy({ $0.count <= maxPartLength }),
+            (d.promptHierarchy + d.taskSteps).allSatisfy({ $0.count <= maxPartLength })
+        else { throw StoreError.invalidGoal(.textTooLong) }
+        if let value = d.targetValue {
+            guard value.isFinite, value >= 0, value <= 1_000_000,
+                d.type != .percentCorrect || value <= 100
+            else {
+                throw StoreError.invalidGoal(.targetInvalid)
+            }
+        }
+        switch d.type {
+        case .trials:
+            guard let trials = d.trialsPerSession, (1...100).contains(trials) else {
+                throw StoreError.invalidGoal(.trialsInvalid)
+            }
+            if let value = d.targetValue, value > Double(trials) {
+                throw StoreError.invalidGoal(.targetInvalid)
+            }
+        case .promptLevel:
+            guard d.promptHierarchy.count >= 2 else {
+                throw StoreError.invalidGoal(.promptLevelsMissing)
+            }
+        case .taskAnalysis:
+            guard !d.taskSteps.isEmpty else { throw StoreError.invalidGoal(.stepsMissing) }
+        default:
+            break
+        }
+        if d.type != .trials { d.trialsPerSession = nil }
+        if d.type != .promptLevel { d.promptHierarchy = [] }
+        if d.type != .taskAnalysis { d.taskSteps = [] }
+        return d
+    }
+
     /// Longest first, last or preferred name accepted.
     public static let maxNameLength = 100
 
@@ -339,7 +545,7 @@ public final class PrototypeStore {
         var seen = Set(addedPoints.map(\.id))
         var fresh: [DataPoint] = []
         for point in points where !seen.contains(point.id) {
-            guard let goal = dataset.goals.first(where: { $0.id == point.goalID }),
+            guard let goal = allGoals.first(where: { $0.id == point.goalID }),
                 let owner = student(for: goal), visible.contains(owner.id)
             else { throw StoreError.notAllowed }
             // The recorder must be the signed-in person, in the goal's own tenant.
@@ -400,6 +606,11 @@ public final class PrototypeStore {
         addedStudents = []
         addedAssignments = []
         studentEdits = [:]
+        addedIEPs = []
+        addedGoals = []
+        addedPlans = []
+        goalEdits = [:]
+        planEdits = [:]
         save()
     }
 
@@ -418,7 +629,10 @@ public final class PrototypeStore {
             deviceID: deviceID, points: addedPoints,
             approvals: approvals.values.sorted { $0.approvedAt < $1.approvedAt },
             students: addedStudents, assignments: addedAssignments,
-            studentEdits: studentEdits.values.sorted { $0.id.uuidString < $1.id.uuidString })
+            studentEdits: studentEdits.values.sorted { $0.id.uuidString < $1.id.uuidString },
+            ieps: addedIEPs, goals: addedGoals, plans: addedPlans,
+            goalEdits: goalEdits.values.sorted { $0.id.uuidString < $1.id.uuidString },
+            planEdits: planEdits.values.sorted { $0.goalID.uuidString < $1.goalID.uuidString })
         try FileManager.default.createDirectory(
             at: stateURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         let data = try JSONEncoder.coreModels.encode(state)
