@@ -8,3 +8,4 @@ TypeScript API, shared libraries, a web app and a SwiftUI app, kept with hosted 
 
 Security issues: see `SECURITY.md`.
 Builds run on hosted CI.
+Pull requests get an automated code review.
