@@ -56,8 +56,33 @@ struct AppShell: View {
         self.screens = screens
     }
 
+    /// The places this role may open: a role never sees a tab it cannot use.
+    private var visibleTabs: [AppTab] {
+        let role = store.roleView
+        return AppTab.allCases.filter { item in
+            switch item {
+            case .home: role.homeStyle == .numbersAndTiles && (role.showsToday || role.showsCaseload)
+            case .today: role.showsToday
+            case .caseload: role.showsCaseload
+            case .libraries: role.showsLibraries
+            case .more: true
+            }
+        }
+    }
+
+    private func title(of item: AppTab) -> String {
+        item == .caseload ? store.roleView.caseloadTitle : item.title
+    }
+
+    /// Moves to the first place this role has when the current one is not theirs.
+    private func settleTab() {
+        if !visibleTabs.contains(tab) { tab = visibleTabs.first ?? .more }
+    }
+
     var body: some View {
         shell
+            .onAppear(perform: settleTab)
+            .onChange(of: visibleTabs) { settleTab() }
             .environment(\.startSession, StartSessionAction { goals in start(goals) })
             .sheet(item: $launched) { launch in
                 if let context = store.commitContext, let drafts = store.draftStore {
@@ -98,10 +123,10 @@ struct AppShell: View {
         #if os(macOS)
             NavigationSplitView {
                 List(
-                    AppTab.allCases,
+                    visibleTabs,
                     selection: Binding<AppTab?>(get: { tab }, set: { tab = $0 ?? tab })
                 ) { item in
-                    Label(item.title, systemImage: item.systemImage)
+                    Label(title(of: item), systemImage: item.systemImage)
                         .tag(item)
                         .accessibilityIdentifier(AccessibilityID.tab(item.rawValue))
                 }
@@ -112,9 +137,9 @@ struct AppShell: View {
             .themedScreen()
         #else
             TabView(selection: $tab) {
-                ForEach(AppTab.allCases) { item in
+                ForEach(visibleTabs) { item in
                     content(for: item)
-                        .tabItem { Label(item.title, systemImage: item.systemImage) }
+                        .tabItem { Label(title(of: item), systemImage: item.systemImage) }
                         .tag(item)
                 }
             }

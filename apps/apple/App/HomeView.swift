@@ -22,38 +22,73 @@ struct HomeView: View {
     let todayAvailable: Bool
     let open: (AppDestination) -> Void
 
-    private var tiles: [HomeTile] {
-        [
-            HomeTile(
-                title: "Today", subtitle: "Start a session", systemImage: "checklist",
-                destination: todayAvailable ? .today : nil),
-            HomeTile(
-                title: "Track progress", subtitle: "Pick a student and goal",
-                systemImage: "scope", destination: .caseload),
-            HomeTile(
-                title: "Caseload", subtitle: "Your students", systemImage: "person.2",
-                destination: .caseload),
-            HomeTile(
-                title: "Goal library", subtitle: "Find and add goals",
-                systemImage: "books.vertical",
-                destination: screens.libraries == nil ? nil : .libraries),
-            HomeTile(
-                title: "Accommodations",
-                subtitle: "Find supports, set where, how often, how long",
-                systemImage: "hand.raised",
-                destination: screens.libraries == nil ? nil : .libraries),
-            HomeTile(
-                title: "Draft from evaluation",
-                subtitle: "Goals and accommodations from test results",
-                systemImage: "doc.text.magnifyingglass",
-                destination: store.canUseAI ? .evaluation : nil),
-            HomeTile(
-                title: "Present levels", subtitle: "Draft the present-levels section",
-                systemImage: "text.alignleft", destination: nil),
-            HomeTile(
-                title: "Goal graphs", subtitle: "See progress over time",
-                systemImage: "chart.line.uptrend.xyaxis", destination: .caseloadSummary),
+    /// Every tile the product has; `tiles` keeps the ones this role may use. A tile the role may
+    /// not use is left out, not greyed. A tile for a feature not built yet says "Planned".
+    private var allTiles: [(tile: HomeTile, allowed: Bool)] {
+        let role = store.roleView
+        return [
+            (
+                HomeTile(
+                    title: "Today", subtitle: "Start a session", systemImage: "checklist",
+                    destination: todayAvailable ? .today : nil), role.showsToday
+            ),
+            (
+                HomeTile(
+                    title: "Track progress", subtitle: "Pick a student and goal",
+                    systemImage: "scope", destination: .caseload), role.showsCaseload
+            ),
+            (
+                HomeTile(
+                    title: role.caseloadTitle,
+                    subtitle: role.caseloadTitle == "Caseload" ? "Your students" : "Students you serve",
+                    systemImage: "person.2", destination: .caseload), role.showsCaseload
+            ),
+            (
+                HomeTile(
+                    title: "Goal library", subtitle: "Find and add goals",
+                    systemImage: "books.vertical",
+                    destination: screens.libraries == nil ? nil : .libraries), role.showsLibraries
+            ),
+            (
+                HomeTile(
+                    title: "Accommodations",
+                    subtitle: "Find supports, set where, how often, how long",
+                    systemImage: "hand.raised",
+                    destination: screens.libraries == nil ? nil : .libraries), role.showsLibraries
+            ),
+            (
+                HomeTile(
+                    title: "Draft from evaluation",
+                    subtitle: "Goals and accommodations from test results",
+                    systemImage: "doc.text.magnifyingglass", destination: .evaluation),
+                role.canUseAI
+            ),
+            (
+                HomeTile(
+                    title: "Present levels", subtitle: "Draft the present-levels section",
+                    systemImage: "text.alignleft", destination: nil), role.canDraft
+            ),
+            (
+                HomeTile(
+                    title: "Goal graphs", subtitle: "See progress over time",
+                    systemImage: "chart.line.uptrend.xyaxis", destination: .caseloadSummary),
+                role.showsGraphs
+            ),
+            (
+                HomeTile(
+                    title: "Staff and roles", subtitle: "Assign roles and caseloads",
+                    systemImage: "person.badge.key", destination: nil), role.canManageStaff
+            ),
+            (
+                HomeTile(
+                    title: "Access review", subtitle: "See who can open what",
+                    systemImage: "checklist.checked", destination: nil), role.canReviewAccess
+            ),
         ]
+    }
+
+    private var tiles: [HomeTile] {
+        allTiles.filter(\.allowed).map(\.tile)
     }
 
     var body: some View {

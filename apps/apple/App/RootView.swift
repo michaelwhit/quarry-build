@@ -10,6 +10,8 @@ struct RootView: View {
         Group {
             if store.currentStaff == nil {
                 SignInView()
+            } else if !store.roleView.runsOnThisDevice {
+                PhoneOnlyView()
             } else {
                 AppShell()
             }
@@ -19,6 +21,23 @@ struct RootView: View {
             // Signing out still returns to the picker (this runs once, when the window appears).
             .task { await DemoSignIn.openAsDirector(store) }
         #endif
+    }
+}
+
+/// Shown on a Mac to a role that works from an iPhone only.
+struct PhoneOnlyView: View {
+    @Environment(PrototypeStore.self) private var store
+
+    var body: some View {
+        ContentUnavailableView {
+            Label("Open this on your iPhone", systemImage: "iphone")
+        } description: {
+            Text("Your role uses the iPhone app. Sign in there.")
+        } actions: {
+            Button("Sign out") { store.signOut() }
+                .accessibilityIdentifier(AccessibilityID.signOut)
+        }
+        .themedScreen()
     }
 }
 
