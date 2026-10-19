@@ -43,9 +43,10 @@ jobs:
             Read the README first for project rules. No style nits, no speculation.
             For each problem, leave an inline comment on the exact line with: severity
             (high, medium, low), what is wrong and the fix.
-            This repository is public. Do not describe vulnerabilities, attack paths or
-            security weaknesses. If you suspect a security concern, write only the words
-            "needs private review" and nothing more about it.
+            Comment only on correctness, tests, readability and style. Never describe security
+            weaknesses, missing protections, unfinished or planned security work, or how the
+            system could be attacked, in any comment, summary or check output. If you suspect a
+            security problem, write only: "Needs private review: <file>" and nothing else about it.
             Then post one summary comment with `gh pr comment`: findings ranked by severity,
             and the first line exactly "Claude review: BLOCK" if any high finding exists,
             otherwise "Claude review: PASS". Never print secret values.
