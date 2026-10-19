@@ -1,0 +1,8 @@
+node_modules
+dist
+generated
+pnpm-lock.yaml
+apps/apple
+infra
+packages/synthetic-data/fixtures
+*.md

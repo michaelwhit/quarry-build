@@ -1,0 +1,37 @@
+// Authorization schema for the IEP assistant (security design 3.1 to 3.3, architecture 5.3).
+// Role x relationship x section sensitivity. The server resolves the relationship from
+// caseload_assignment (never from the client) and passes it in the request context.
+
+entity Staff = {
+  role: String,
+  tenant: String,
+  active: Bool,
+  // Tenant AI setting for this person's role (security 3.3: the director grants it per role).
+  aiEnabled: Bool,
+};
+entity Student = { tenant: String };
+entity Tenant = { tenant: String };
+
+type StudentContext = {
+  // Section sensitivity tier, 1 (S1 directory-lite) to 5 (S5 highly sensitive).
+  tier: Long,
+  // "district" | "building" | "caseload" | "service" | "class_roster" | "delegated" | "none"
+  relationship: String,
+  // The goal being touched is delegated to this person.
+  delegated: Bool,
+  // The section belongs to this provider's own service or discipline.
+  ownService: Bool,
+  // This person authored the note being edited.
+  authored: Bool,
+};
+
+type TargetContext = { self: Bool };
+
+action ReadSection, WriteSection, AddDataPoint, Export, UseAi, DelegateGoal
+  appliesTo { principal: Staff, resource: Student, context: StudentContext };
+
+action ManageCaseload, ViewAuditReport, ConfigureTenant
+  appliesTo { principal: Staff, resource: Tenant, context: {} };
+
+action ChangeRole
+  appliesTo { principal: Staff, resource: Staff, context: TargetContext };

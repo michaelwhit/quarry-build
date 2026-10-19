@@ -1,0 +1,461 @@
+{
+  "spec": "libraries-and-monitoring-spec.md section 2.4 (mastery criteria); decisions MA-1 to MA-4 in rule-decisions-2026-10-18.md",
+  "rule": "A session passes when its value meets threshold under the comparator (>= or <=, boundary inclusive). 'consecutive' with window n needs the latest n sessions to all pass. 'best_of' with window n of m needs at least n passes among the latest m sessions, and m sessions must exist (MA-1). Fewer sessions than the window length means not mastered. prompt_ceiling (MA-2): a trial counts as correct only if it was correct at a prompt level at or below the ceiling (order: independent, gestural, verbal, model, partial_physical, full_physical); every trial stays in the denominator. across (MA-3): the passing sessions in the window must cover at least `across.count` different values of `across.kind` (setting, adult or material). maintenance (MA-4): re-probes are due 14 and 28 days after the mastery date; a day that is not a school day moves to the next school day.",
+  "cases": [
+    {
+      "name": "3 of 3 consecutive at 80, latest three pass",
+      "criterion": {
+        "threshold": 80,
+        "comparator": ">=",
+        "window_kind": "consecutive",
+        "window": {
+          "n": 3
+        }
+      },
+      "sessions": [70, 85, 80, 90, 95],
+      "mastered": true
+    },
+    {
+      "name": "a miss in the latest three",
+      "criterion": {
+        "threshold": 80,
+        "comparator": ">=",
+        "window_kind": "consecutive",
+        "window": {
+          "n": 3
+        }
+      },
+      "sessions": [85, 90, 70],
+      "mastered": false
+    },
+    {
+      "name": "boundary value counts",
+      "criterion": {
+        "threshold": 80,
+        "comparator": ">=",
+        "window_kind": "consecutive",
+        "window": {
+          "n": 3
+        }
+      },
+      "sessions": [80, 80, 80],
+      "mastered": true
+    },
+    {
+      "name": "just under the threshold",
+      "criterion": {
+        "threshold": 80,
+        "comparator": ">=",
+        "window_kind": "consecutive",
+        "window": {
+          "n": 3
+        }
+      },
+      "sessions": [80, 80, 79.9],
+      "mastered": false
+    },
+    {
+      "name": "earlier passes do not count if the latest fails",
+      "criterion": {
+        "threshold": 80,
+        "comparator": ">=",
+        "window_kind": "consecutive",
+        "window": {
+          "n": 3
+        }
+      },
+      "sessions": [90, 90, 90, 60],
+      "mastered": false
+    },
+    {
+      "name": "fewer sessions than the window",
+      "criterion": {
+        "threshold": 80,
+        "comparator": ">=",
+        "window_kind": "consecutive",
+        "window": {
+          "n": 3
+        }
+      },
+      "sessions": [90, 90],
+      "mastered": false
+    },
+    {
+      "name": "no sessions",
+      "criterion": {
+        "threshold": 80,
+        "comparator": ">=",
+        "window_kind": "consecutive",
+        "window": {
+          "n": 3
+        }
+      },
+      "sessions": [],
+      "mastered": false
+    },
+    {
+      "name": "90 percent sight-word criterion, one at 89",
+      "criterion": {
+        "threshold": 90,
+        "comparator": ">=",
+        "window_kind": "consecutive",
+        "window": {
+          "n": 3
+        }
+      },
+      "sessions": [95, 89, 92],
+      "mastered": false
+    },
+    {
+      "name": "4 of 5 at or below 2 incidents, four pass",
+      "criterion": {
+        "threshold": 2,
+        "comparator": "<=",
+        "window_kind": "best_of",
+        "window": {
+          "n": 4,
+          "m": 5
+        }
+      },
+      "sessions": [3, 2, 1, 2, 0],
+      "mastered": true
+    },
+    {
+      "name": "4 of 5 at or below 2 incidents, only three pass",
+      "criterion": {
+        "threshold": 2,
+        "comparator": "<=",
+        "window_kind": "best_of",
+        "window": {
+          "n": 4,
+          "m": 5
+        }
+      },
+      "sessions": [3, 3, 2, 2, 1],
+      "mastered": false
+    },
+    {
+      "name": "best_of uses only the latest m sessions",
+      "criterion": {
+        "threshold": 2,
+        "comparator": "<=",
+        "window_kind": "best_of",
+        "window": {
+          "n": 4,
+          "m": 5
+        }
+      },
+      "sessions": [0, 0, 0, 0, 5, 5, 5, 1, 1],
+      "mastered": false
+    },
+    {
+      "name": "best_of boundary: exactly n passes",
+      "criterion": {
+        "threshold": 15,
+        "comparator": ">=",
+        "window_kind": "best_of",
+        "window": {
+          "n": 4,
+          "m": 5
+        }
+      },
+      "sessions": [15, 14, 15, 15, 15],
+      "mastered": true
+    },
+    {
+      "name": "duration on task 4 of 5 at 20 minutes",
+      "criterion": {
+        "threshold": 20,
+        "comparator": ">=",
+        "window_kind": "best_of",
+        "window": {
+          "n": 4,
+          "m": 5
+        }
+      },
+      "sessions": [25, 10, 20, 30, 22],
+      "mastered": true
+    },
+    {
+      "name": "CBM words correct per minute at 90, rising",
+      "criterion": {
+        "threshold": 90,
+        "comparator": ">=",
+        "window_kind": "consecutive",
+        "window": {
+          "n": 3
+        }
+      },
+      "sessions": [70, 88, 91, 93, 90],
+      "mastered": true
+    },
+    {
+      "name": "MA-1: 4 of 5 with only 4 sessions, all passing, is not mastered",
+      "criterion": {
+        "threshold": 80,
+        "comparator": ">=",
+        "window_kind": "best_of",
+        "window": {
+          "n": 4,
+          "m": 5
+        }
+      },
+      "sessions": [90, 90, 90, 90],
+      "mastered": false
+    },
+    {
+      "name": "MA-1: 4 of 5 once 5 sessions exist",
+      "criterion": {
+        "threshold": 80,
+        "comparator": ">=",
+        "window_kind": "best_of",
+        "window": {
+          "n": 4,
+          "m": 5
+        }
+      },
+      "sessions": [90, 90, 90, 90, 70],
+      "mastered": true
+    },
+    {
+      "name": "MA-3: 3 passing sessions in one setting, across 2 settings, is not mastered",
+      "criterion": {
+        "threshold": 80,
+        "comparator": ">=",
+        "window_kind": "consecutive",
+        "window": {
+          "n": 3
+        },
+        "across": {
+          "kind": "setting",
+          "count": 2
+        }
+      },
+      "sessions": [
+        {
+          "value": 90,
+          "setting": "resource room"
+        },
+        {
+          "value": 90,
+          "setting": "resource room"
+        },
+        {
+          "value": 90,
+          "setting": "resource room"
+        }
+      ],
+      "mastered": false
+    },
+    {
+      "name": "MA-3: passing sessions in two settings meet across 2",
+      "criterion": {
+        "threshold": 80,
+        "comparator": ">=",
+        "window_kind": "consecutive",
+        "window": {
+          "n": 3
+        },
+        "across": {
+          "kind": "setting",
+          "count": 2
+        }
+      },
+      "sessions": [
+        {
+          "value": 90,
+          "setting": "resource room"
+        },
+        {
+          "value": 85,
+          "setting": "general ed"
+        },
+        {
+          "value": 90,
+          "setting": "resource room"
+        }
+      ],
+      "mastered": true
+    },
+    {
+      "name": "MA-3: a failing session in another setting does not count toward across",
+      "criterion": {
+        "threshold": 80,
+        "comparator": ">=",
+        "window_kind": "best_of",
+        "window": {
+          "n": 4,
+          "m": 5
+        },
+        "across": {
+          "kind": "setting",
+          "count": 2
+        }
+      },
+      "sessions": [
+        {
+          "value": 90,
+          "setting": "a"
+        },
+        {
+          "value": 90,
+          "setting": "a"
+        },
+        {
+          "value": 90,
+          "setting": "a"
+        },
+        {
+          "value": 90,
+          "setting": "a"
+        },
+        {
+          "value": 50,
+          "setting": "b"
+        }
+      ],
+      "mastered": false
+    },
+    {
+      "name": "MA-3: best_of passes spread over two adults",
+      "criterion": {
+        "threshold": 80,
+        "comparator": ">=",
+        "window_kind": "best_of",
+        "window": {
+          "n": 4,
+          "m": 5
+        },
+        "across": {
+          "kind": "adult",
+          "count": 2
+        }
+      },
+      "sessions": [
+        {
+          "value": 90,
+          "setting": "Ms. A"
+        },
+        {
+          "value": 90,
+          "setting": "Ms. A"
+        },
+        {
+          "value": 90,
+          "setting": "Mr. B"
+        },
+        {
+          "value": 90,
+          "setting": "Ms. A"
+        },
+        {
+          "value": 50,
+          "setting": "Ms. A"
+        }
+      ],
+      "mastered": true
+    }
+  ],
+  "open_questions": [],
+  "prompt_ceiling_cases": [
+    {
+      "name": "MA-2: 8 correct but 3 at a verbal prompt is 5 of 10, below 80",
+      "ceiling": "gestural",
+      "trials": [
+        ["independent", true],
+        ["independent", true],
+        ["independent", true],
+        ["gestural", true],
+        ["gestural", true],
+        ["verbal", true],
+        ["verbal", true],
+        ["verbal", true],
+        ["independent", false],
+        ["independent", false]
+      ],
+      "value": 50
+    },
+    {
+      "name": "all correct trials at or below the ceiling",
+      "ceiling": "gestural",
+      "trials": [
+        ["independent", true],
+        ["independent", true],
+        ["independent", true],
+        ["independent", true],
+        ["independent", true],
+        ["independent", true],
+        ["independent", true],
+        ["gestural", true],
+        ["independent", false],
+        ["independent", false]
+      ],
+      "value": 80
+    },
+    {
+      "name": "a higher ceiling counts verbal prompts",
+      "ceiling": "verbal",
+      "trials": [
+        ["independent", true],
+        ["independent", true],
+        ["independent", true],
+        ["gestural", true],
+        ["gestural", true],
+        ["verbal", true],
+        ["verbal", true],
+        ["verbal", true],
+        ["independent", false],
+        ["independent", false]
+      ],
+      "value": 80
+    },
+    {
+      "name": "an incorrect trial never counts, whatever its prompt",
+      "ceiling": "gestural",
+      "trials": [
+        ["independent", false],
+        ["independent", false],
+        ["independent", false],
+        ["independent", false],
+        ["independent", false],
+        ["independent", false],
+        ["independent", false],
+        ["independent", false],
+        ["independent", false],
+        ["independent", false]
+      ],
+      "value": 0
+    },
+    {
+      "name": "no trials is zero, not a division error",
+      "ceiling": "gestural",
+      "trials": [],
+      "value": 0
+    }
+  ],
+  "maintenance_cases": [
+    {
+      "name": "both dates fall on school days",
+      "mastery": "2026-10-02",
+      "due": ["2026-10-16", "2026-10-30"]
+    },
+    {
+      "name": "14 days later is a school holiday, so the next school day",
+      "mastery": "2026-09-28",
+      "due": ["2026-10-13", "2026-10-26"]
+    },
+    {
+      "name": "mastery recorded on a Saturday, both dates land on Saturdays",
+      "mastery": "2026-10-10",
+      "due": ["2026-10-26", "2026-11-09"]
+    },
+    {
+      "name": "28 days later is Thanksgiving, then a weekend",
+      "mastery": "2026-10-29",
+      "due": ["2026-11-12", "2026-11-30"]
+    }
+  ],
+  "maintenance_calendar": {
+    "no_school": ["2026-10-12", "2026-11-26", "2026-11-27"]
+  }
+}

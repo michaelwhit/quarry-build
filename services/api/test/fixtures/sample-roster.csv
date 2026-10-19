@@ -1,0 +1,5 @@
+Student_Number,State_ID,First_Name,Last_Name,DOB,Grade_Level,School_Name
+SYN-1001,SYN-S-1001,Ada,Quill,03/14/2016,2,Synthetic Elementary
+SYN-1002,SYN-S-1002,Ben,Marsh,11/02/2015,3,Synthetic Elementary
+SYN-1003,,"Cy ""CJ""",Okoye,7/9/2014,4,Synthetic Elementary
+SYN-1004,SYN-S-1004,Dee,Vance,01/30/2017,K,Synthetic Elementary
