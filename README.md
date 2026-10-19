@@ -7,3 +7,4 @@ TypeScript API, shared libraries, a web app and a SwiftUI app, kept with hosted 
 - Run `pnpm install`, then `pnpm lint`, `pnpm typecheck` and `pnpm test`.
 
 Security issues: see `SECURITY.md`.
+Builds run on hosted CI.
