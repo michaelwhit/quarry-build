@@ -88,6 +88,16 @@ public enum AccessibilityID {
     /// A place in the sidebar (Mac). On iPhone the tab bar buttons are found by their labels.
     public static func tab(_ name: String) -> String { "tab-\(name)" }
     public static let homeNumbers = "home-numbers"
+    public static let addStudent = "add-student"
+    public static let editStudent = "edit-student"
+    public static let studentFirstName = "student-first-name"
+    public static let studentLastName = "student-last-name"
+    public static let studentPreferredName = "student-preferred-name"
+    public static let studentGrade = "student-grade"
+    public static let studentSchool = "student-school"
+    public static let studentSave = "student-save"
+    public static let studentCancel = "student-cancel"
+    public static let studentFormProblem = "student-form-problem"
     public static func homeTile(_ title: String) -> String { "home-tile-" + slug(title) }
     private static func slug(_ title: String) -> String {
         title.lowercased().split(whereSeparator: { !$0.isLetter && !$0.isNumber }).joined(separator: "-")

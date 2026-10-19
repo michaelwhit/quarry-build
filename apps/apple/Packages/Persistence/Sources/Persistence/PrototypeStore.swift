@@ -16,17 +16,32 @@ public final class PrototypeStore {
         case notAllowed
         case invalidDataPoint(DataPointValidationError)
         case unknownPlan
+        case unknownSchool
+        case invalidStudent(StudentFieldError)
         case saveFailed
+    }
+
+    /// What was wrong with a student the user typed in.
+    public enum StudentFieldError: Error, Equatable {
+        case firstNameMissing
+        case lastNameMissing
+        case gradeMissing
+        case nameTooLong
     }
 
     private struct SavedState: Codable {
         var deviceID: UUID
         var points: [DataPoint]
         var approvals: [ProgressApproval]
+        // Added after the first release; older files simply lack them.
+        var students: [Student]?
+        var assignments: [CaseloadAssignment]?
+        var studentEdits: [Student]?
 
         enum CodingKeys: String, CodingKey {
-            case points, approvals
+            case points, approvals, students, assignments
             case deviceID = "device_id"
+            case studentEdits = "student_edits"
         }
     }
 
@@ -35,6 +50,11 @@ public final class PrototypeStore {
     public private(set) var currentStaff: Staff?
     public private(set) var addedPoints: [DataPoint]
     public private(set) var approvals: [UUID: ProgressApproval]
+    /// Students typed in by hand, and the caseload links that put them on a person's list.
+    public private(set) var addedStudents: [Student]
+    public private(set) var addedAssignments: [CaseloadAssignment]
+    /// Changes to students already in the district or added by hand, keyed by student id.
+    public private(set) var studentEdits: [UUID: Student]
     @ObservationIgnored private let stateURL: URL?
     @ObservationIgnored private let calendarToday: @Sendable () -> LocalDate
 
@@ -52,6 +72,9 @@ public final class PrototypeStore {
         var device = UUIDv7.make()
         var points: [DataPoint] = []
         var approvals: [UUID: ProgressApproval] = [:]
+        var students: [Student] = []
+        var assignments: [CaseloadAssignment] = []
+        var edits: [UUID: Student] = [:]
         if let stateURL, let data = try? Data(contentsOf: stateURL),
             let saved = try? JSONDecoder.coreModels.decode(SavedState.self, from: data)
         {
@@ -59,10 +82,17 @@ public final class PrototypeStore {
             points = saved.points
             approvals = Dictionary(
                 saved.approvals.map { ($0.goalID, $0) }, uniquingKeysWith: { _, newer in newer })
+            students = saved.students ?? []
+            assignments = saved.assignments ?? []
+            edits = Dictionary(
+                (saved.studentEdits ?? []).map { ($0.id, $0) }, uniquingKeysWith: { _, newer in newer })
         }
         self.deviceID = device
         self.addedPoints = points
         self.approvals = approvals
+        self.addedStudents = students
+        self.addedAssignments = assignments
+        self.studentEdits = edits
     }
 
     public nonisolated static func systemToday() -> LocalDate {
@@ -93,7 +123,7 @@ public final class PrototypeStore {
     /// coordinator, otherwise only active caseload, service or roster assignments (security 3.1).
     public var visibleStudents: [Student] {
         guard let staff = currentStaff else { return [] }
-        let all = dataset.students
+        let all = allStudents
         let scoped: [Student]
         switch staff.role {
         case .spedDirector, .buildingCoordinator:
@@ -103,12 +133,26 @@ public final class PrototypeStore {
         default:
             let today = calendarToday()
             let ids = Set(
-                dataset.caseloadAssignments
+                (dataset.caseloadAssignments + addedAssignments)
                     .filter { $0.staffID == staff.id && $0.isActive(on: today) }
                     .map(\.studentID))
             scoped = all.filter { ids.contains($0.id) }
         }
         return scoped.sorted { ($0.lastName, $0.firstName) < ($1.lastName, $1.firstName) }
+    }
+
+    /// Everyone in the district plus anyone added by hand, with edits applied.
+    public var allStudents: [Student] {
+        (dataset.students + addedStudents).map { studentEdits[$0.id] ?? $0 }
+    }
+
+    /// Who may add a student by hand or fix one on their list. Prototype default; the district
+    /// later chooses.
+    public var canManageStudents: Bool {
+        switch currentStaff?.role {
+        case .spedDirector, .buildingCoordinator, .caseManager: true
+        default: false
+        }
     }
 
     public var canRecordData: Bool {
@@ -143,7 +187,7 @@ public final class PrototypeStore {
 
     public func student(for goal: Goal) -> Student? {
         guard let iep = dataset.ieps.first(where: { $0.id == goal.iepID }) else { return nil }
-        return dataset.students.first { $0.id == iep.studentID }
+        return allStudents.first { $0.id == iep.studentID }
     }
 
     public func plan(for goal: Goal) -> MeasurementPlan? {
@@ -170,6 +214,91 @@ public final class PrototypeStore {
     }
 
     // MARK: Changing records
+
+    /// Adds a student by hand and puts them on the signed-in person's caseload.
+    @discardableResult
+    public func addStudent(
+        firstName: String, lastName: String, preferredName: String? = nil, grade: String,
+        schoolID: UUID
+    ) throws -> Student {
+        guard let staff = currentStaff else { throw StoreError.notSignedIn }
+        guard canManageStudents else { throw StoreError.notAllowed }
+        guard dataset.schools.contains(where: { $0.id == schoolID }) else {
+            throw StoreError.unknownSchool
+        }
+        let fields = try Self.cleaned(
+            firstName: firstName, lastName: lastName, preferredName: preferredName, grade: grade)
+        let student = Student(
+            id: UUIDv7.make(), tenantID: staff.tenantID, schoolID: schoolID,
+            firstName: fields.first, lastName: fields.last, preferredName: fields.preferred,
+            grade: fields.grade)
+        let link = CaseloadAssignment(
+            id: UUIDv7.make(), tenantID: staff.tenantID, staffID: staff.id,
+            studentID: student.id, relationship: .caseload, grantedBy: staff.id,
+            startDate: calendarToday())
+        let before = (addedStudents, addedAssignments)
+        addedStudents.append(student)
+        addedAssignments.append(link)
+        do {
+            try write()
+        } catch {
+            (addedStudents, addedAssignments) = before
+            throw StoreError.saveFailed
+        }
+        return student
+    }
+
+    /// Fixes the name, grade or school of a student on the signed-in person's list.
+    @discardableResult
+    public func updateStudent(
+        id: UUID, firstName: String, lastName: String, preferredName: String? = nil,
+        grade: String, schoolID: UUID
+    ) throws -> Student {
+        guard currentStaff != nil else { throw StoreError.notSignedIn }
+        guard canManageStudents else { throw StoreError.notAllowed }
+        guard let current = visibleStudents.first(where: { $0.id == id }) else {
+            throw StoreError.notAllowed
+        }
+        guard dataset.schools.contains(where: { $0.id == schoolID }) else {
+            throw StoreError.unknownSchool
+        }
+        let fields = try Self.cleaned(
+            firstName: firstName, lastName: lastName, preferredName: preferredName, grade: grade)
+        var changed = current
+        changed.firstName = fields.first
+        changed.lastName = fields.last
+        changed.preferredName = fields.preferred
+        changed.grade = fields.grade
+        changed.schoolID = schoolID
+        let before = studentEdits
+        studentEdits[id] = changed
+        do {
+            try write()
+        } catch {
+            studentEdits = before
+            throw StoreError.saveFailed
+        }
+        return changed
+    }
+
+    /// Longest first, last or preferred name accepted.
+    public static let maxNameLength = 100
+
+    private static func cleaned(
+        firstName: String, lastName: String, preferredName: String?, grade: String
+    ) throws -> (first: String, last: String, preferred: String?, grade: String) {
+        let first = firstName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let last = lastName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let nick = preferredName?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let level = grade.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !first.isEmpty else { throw StoreError.invalidStudent(.firstNameMissing) }
+        guard !last.isEmpty else { throw StoreError.invalidStudent(.lastNameMissing) }
+        guard !level.isEmpty else { throw StoreError.invalidStudent(.gradeMissing) }
+        guard [first, last, nick ?? ""].allSatisfy({ $0.count <= Self.maxNameLength }) else {
+            throw StoreError.invalidStudent(.nameTooLong)
+        }
+        return (first, last, (nick?.isEmpty ?? true) ? nil : nick, level)
+    }
 
     /// Records one observation made by the signed-in person after checking it against the plan.
     @discardableResult
@@ -268,6 +397,9 @@ public final class PrototypeStore {
     public func resetLocalData() {
         addedPoints = []
         approvals = [:]
+        addedStudents = []
+        addedAssignments = []
+        studentEdits = [:]
         save()
     }
 
@@ -284,7 +416,9 @@ public final class PrototypeStore {
         guard let stateURL else { return }
         let state = SavedState(
             deviceID: deviceID, points: addedPoints,
-            approvals: approvals.values.sorted { $0.approvedAt < $1.approvedAt })
+            approvals: approvals.values.sorted { $0.approvedAt < $1.approvedAt },
+            students: addedStudents, assignments: addedAssignments,
+            studentEdits: studentEdits.values.sorted { $0.id.uuidString < $1.id.uuidString })
         try FileManager.default.createDirectory(
             at: stateURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         let data = try JSONEncoder.coreModels.encode(state)
