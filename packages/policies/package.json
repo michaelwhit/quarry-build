@@ -1,0 +1,17 @@
+{
+  "name": "@iep/policies",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Cedar authorization policies and the engine wrapper (Track 1).",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@cedar-policy/cedar-wasm": "4.13.0"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

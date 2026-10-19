@@ -1,0 +1,16 @@
+{
+  "name": "@iep/synthetic-data",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Seeded fake State district: staff, students, IEPs, goals and data points.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "node src/cli.ts",
+    "check": "node src/cli.ts --check",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  }
+}

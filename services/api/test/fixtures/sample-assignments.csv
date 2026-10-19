@@ -1,0 +1,4 @@
+staff_email,student_id,relationship
+casey@import.example.test,SYN-1001,caseload
+casey@import.example.test,SYN-1002,caseload
+casey@import.example.test,SYN-1003,service

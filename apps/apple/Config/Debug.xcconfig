@@ -1,0 +1,5 @@
+// Local development: synthetic data, local server, demo identity allowed.
+IEP_BUILD_CONFIGURATION = debug
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) DEBUG DEMO_IDENTITY
+IEP_API_BASE_URL = http:/$()/localhost:8080
+SWIFT_OPTIMIZATION_LEVEL = -Onone

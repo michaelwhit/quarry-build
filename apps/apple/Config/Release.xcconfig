@@ -1,0 +1,5 @@
+// Release: no demo identity. A CI check (scripts/check-release-flags.sh) fails the build if the
+// DEMO_IDENTITY condition ever appears here or in the compiled release binary.
+IEP_BUILD_CONFIGURATION = release
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited)
+IEP_API_BASE_URL = https:/$()/api.invalid

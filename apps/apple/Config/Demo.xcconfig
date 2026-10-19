@@ -1,0 +1,4 @@
+// TestFlight demo builds: synthetic data on the device, demo identity allowed, "TEST DATA" shown.
+IEP_BUILD_CONFIGURATION = demo
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) DEMO_IDENTITY
+IEP_API_BASE_URL = http:/$()/localhost:8080

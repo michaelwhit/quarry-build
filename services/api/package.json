@@ -1,0 +1,25 @@
+{
+  "name": "@iep/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The api service (Fastify). Track 2 owns the skeleton; auth, audit, reports and ai modules belong to Tracks 1, 1, 5 and 4.",
+  "scripts": {
+    "start": "node src/server.ts",
+    "dev": "node --watch src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@iep/db": "workspace:*",
+    "fastify": "^5.12.7",
+    "pg": "^8.23.1",
+    "fastify-plugin": "^6.0.1",
+    "@iep/policies": "workspace:*"
+  },
+  "devDependencies": {
+    "@iep/openapi": "workspace:*",
+    "@types/pg": "^8.23.1",
+    "yaml": "^2.9.1"
+  }
+}

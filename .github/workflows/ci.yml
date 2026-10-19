@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  node:
+    name: Lint, typecheck, test (TypeScript)
+    runs-on: ubuntu-24.04
+    env:
+      DATABASE_URL: postgres://iep:ci-only-not-a-secret@127.0.0.1:54329/iep
+      IEP_DATA_CLASS: synthetic
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      # A throwaway Postgres 16 on 127.0.0.1:54329 (the Ubuntu image ships it under /usr/lib/postgresql).
+      - name: Start Postgres 16
+        run: tools/ci/pg-ephemeral.sh start
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - name: OpenAPI lint and drift check
+        run: |
+          pnpm openapi:lint
+          pnpm openapi:check
+      - name: Synthetic fixture is current
+        run: pnpm synthetic:check
+      - name: No real-looking identifiers in tracked files
+        run: pnpm fixtures:scan
+      - name: Tool tests
+        run: pnpm test:tools
+      - name: Stop Postgres
+        if: always()
+        run: tools/ci/pg-ephemeral.sh stop
+
+  web:
+    name: Web app (build, test, CSP)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @iep/web typecheck
+      - run: pnpm --filter @iep/web test
+      - run: pnpm --filter @iep/web build
+      - name: Content-security-policy check (no inline script, strict policy)
+        run: pnpm --filter @iep/web check:csp
+      # Dependency audit and Semgrep for apps/web run in security.yml (workspace-wide).
+
+  apple:
+    name: Build and test (macOS)
+    # GitHub-hosted Apple silicon runner (free for public repositories).
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 2
+      # The job always runs, so this required check always reports; its slow steps run only when a
+      # pull request touches something the Apple build reads. Pushes to main always build everything,
+      # so "main is green at <sha>" still means the whole app was built at that exact commit.
+      - name: Does this pull request touch the Apple build?
+        id: scope
+        run: tools/ci/apple-scope.sh "$GITHUB_EVENT_NAME" | tee -a "$GITHUB_OUTPUT"
+      - name: Install XcodeGen
+        if: steps.scope.outputs.apple == 'true'
+        run: |
+          export PATH="/opt/homebrew/bin:$PATH"
+          command -v xcodegen >/dev/null || brew install xcodegen
+          echo "/opt/homebrew/bin" >> "$GITHUB_PATH"
+      - name: Test every Swift package
+        if: steps.scope.outputs.apple == 'true'
+        run: |
+          set -e
+          for dir in apps/apple/Packages/*/; do
+            [ -d "$dir/Tests" ] || continue
+            echo "::group::$dir"
+            (cd "$dir" && swift test)
+            echo "::endgroup::"
+          done
+      - name: Generate the Xcode project
+        if: steps.scope.outputs.apple == 'true'
+        working-directory: apps/apple
+        run: xcodegen generate
+      - name: Build macOS app (unsigned)
+        if: steps.scope.outputs.apple == 'true'
+        working-directory: apps/apple
+        run: |
+          xcodebuild build -project IEPAssistant.xcodeproj -scheme IEPAssistant-macOS \
+            -configuration Debug -destination 'platform=macOS' \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Build iOS app (unsigned, simulator)
+        if: steps.scope.outputs.apple == 'true'
+        working-directory: apps/apple
+        run: |
+          xcodebuild build -project IEPAssistant.xcodeproj -scheme IEPAssistant-iOS \
+            -configuration Debug -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Release build excludes the demo identity
+        if: steps.scope.outputs.apple == 'true'
+        working-directory: apps/apple
+        run: |
+          xcodebuild build -project IEPAssistant.xcodeproj -scheme IEPAssistant-macOS \
+            -configuration Release -destination 'platform=macOS' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO
+          ./scripts/check-release-flags.sh build
