@@ -666,3 +666,42 @@ h2.page-title {
   margin: 0 0 16px;
   line-height: 1.5;
 }
+
+.form {
+  display: grid;
+  gap: 12px;
+  max-width: 32rem;
+}
+.form label {
+  display: grid;
+  gap: 4px;
+}
+.form label span {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+.form input,
+.form select,
+.form textarea {
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+.form-warn {
+  padding: 8px 12px;
+  border: 1px solid var(--warn);
+  border-radius: 8px;
+  color: var(--warn);
+}
+.form-error {
+  color: var(--bad);
+}
+.empty {
+  color: var(--text-muted);
+}
+.empty-start {
+  margin: 12px 0;
+}

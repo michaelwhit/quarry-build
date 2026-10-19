@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import { progressFor, seriesFor, worstStatus } from "../src/data/derive.ts";
 import { trendLine } from "../src/ui/Graph.tsx";
 import { dataTotals, goalCounts, students } from "../src/data/district.ts";
+import { loadSample } from "../src/data/workspace.ts";
+
+loadSample();
 
 const plan = { target_value: 10 };
 const mk = (vals: number[]) =>
@@ -45,8 +48,8 @@ describe("worstStatus", () => {
 
 describe("fake district", () => {
   it("is the 12 fake students with goals and data", () => {
-    expect(dataTotals.students).toBe(12);
-    expect(dataTotals.goals).toBeGreaterThan(20);
+    expect(dataTotals().students).toBe(12);
+    expect(dataTotals().goals).toBeGreaterThan(20);
     expect(students.every((s) => s.goals.every((g) => g.series.length > 0))).toBe(true);
   });
 });
@@ -65,7 +68,7 @@ describe("trendLine", () => {
 describe("goalCounts", () => {
   it("splits every goal into on track or needs a look", () => {
     const c = goalCounts();
-    expect(c.goals).toBe(dataTotals.goals);
+    expect(c.goals).toBe(dataTotals().goals);
     expect(c.onTrack + c.needsLook).toBe(c.goals);
     expect(c.met).toBeLessThanOrEqual(c.onTrack);
   });

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { type SeriesPoint, goalLabel, progressFor } from "../data/derive.ts";
+import { goalLabel } from "../data/derive.ts";
 import { displayName, goalById, students } from "../data/district.ts";
 import {
   type SessionState,
@@ -8,14 +8,12 @@ import {
   inputKind,
   sessionValue,
 } from "../data/session.ts";
+import { addPoint } from "../data/workspace.ts";
 import { Chip } from "./Chip.tsx";
 import { GoalPanel } from "./GoalPanel.tsx";
 import { Graph } from "./Graph.tsx";
 
-/** Sessions saved this visit. Held in memory only: closing the app forgets them (fake data). */
-export type Saved = Record<string, (SeriesPoint & { note: string })[]>;
-
-export function TrackPicker({ saved }: { saved: Saved }) {
+export function TrackPicker() {
   const [studentId, setStudentId] = useState<string | null>(null);
   const s = students.find((x) => x.student.id === studentId);
   return (
@@ -34,14 +32,19 @@ export function TrackPicker({ saved }: { saved: Saved }) {
                 <a className="pick-btn" href={`#/track/${s.student.id}/${g.goal.id}`}>
                   <strong style={{ textTransform: "capitalize" }}>{goalLabel(g.goal)}</strong>
                   <span>{g.goal.statement}</span>
-                  <span className="meta">
-                    {g.series.length + (saved[g.goal.id]?.length ?? 0)} data points
-                  </span>
+                  <span className="meta">{g.series.length} data points</span>
                 </a>
               </li>
             ))}
           </ul>
+          <a className="btn" href={`#/student/${s.student.id}/add-goal`}>
+            Add a goal
+          </a>
         </>
+      ) : students.length === 0 ? (
+        <p>
+          No students yet. <a href="#/add-student">Add a student</a> first.
+        </p>
       ) : (
         <ul className="pick">
           {students.map((x) => (
@@ -64,17 +67,7 @@ function fmtTime(sec: number) {
   return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
 }
 
-export function TrackGoal({
-  studentId,
-  goalId,
-  saved,
-  onSave,
-}: {
-  studentId: string;
-  goalId: string;
-  saved: Saved;
-  onSave: (goalId: string, p: SeriesPoint & { note: string }) => void;
-}) {
+export function TrackGoal({ studentId, goalId }: { studentId: string; goalId: string }) {
   const hit = goalById(studentId, goalId);
   const plan = hit?.g.plan;
   const [s, setS] = useState<SessionState | null>(() => (plan ? emptySession(plan) : null));
@@ -113,15 +106,14 @@ export function TrackGoal({
     setS(prev);
   };
 
-  const extra = saved[goalId] ?? [];
-  const series = [...g.series, ...extra].sort((a, b) => a.at.localeCompare(b.at));
-  const progress = progressFor(series, plan, g.effectiveFrom, g.effectiveTo);
+  const series = g.series;
+  const progress = g.progress;
   const value = sessionValue(plan, s);
   const unit = plan.unit ?? plan.type.replaceAll("_", " ");
 
   const save = () => {
     if (value === null) return;
-    onSave(goalId, { at: new Date().toISOString(), value, note });
+    addPoint(goalId, value, note);
     setS(emptySession(plan));
     setHistory([]);
     setNote("");
@@ -297,7 +289,8 @@ export function TrackGoal({
         />
       </section>
       <p style={{ color: "var(--text-muted)", fontSize: ".8rem" }}>
-        Practice mode: sessions you save here are fake data kept only while this page is open.
+        Practice mode: made-up data only. Sessions you save stay in this browser; clear them on the
+        More tab.
       </p>
     </>
   );

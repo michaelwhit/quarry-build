@@ -1,12 +1,16 @@
 # GoalLine web
 
 Installable web app (PWA) for Windows (Edge or Chrome "Install app") and phones ("Add to Home
-Screen"). **Fake data only.**
+Screen"). **Practice data only**: made-up students, never real ones.
 
 - Vite, React, TypeScript. Two runtime dependencies (react, react-dom); graphs are plain SVG.
-- Slice one reads the bundled synthetic district (`packages/synthetic-data`), nothing is fetched,
-  nothing is stored in the browser, and the service worker caches the app shell only.
-- Tokens (Midnight, derived light) live in `src/tokens.css`; values are provisional.
+- The sample students come from the bundled synthetic district (`packages/synthetic-data`). The
+  app starts empty; made-up students, goals and data entered by the user are kept in this
+  browser's local storage (key `goalline-practice-v1`, validated when read) and are never sent
+  anywhere. The More tab has "Clear practice data". `STORAGE_KIND` in `src/data/workspace.ts`
+  switches between local and session storage. Nothing is fetched, and the service worker caches
+  the app shell only.
+- Design tokens (dark, with a light variant) live in `src/tokens.css`.
 - No inline scripts or styles. `scripts/csp.mjs` is the one policy; `scripts/serve.mjs` sends it
   with the other security headers and `pnpm --filter @iep/web check:csp` gates the build on it.
 
