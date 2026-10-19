@@ -18,21 +18,7 @@ public struct DelegationSheet: View {
         self.model = model
         self.preselected = preselected
         _chosen = State(initialValue: preselected)
-        _endDate = State(initialValue: Self.date(model.schoolYearEnd))
-    }
-
-    private static func date(_ day: LocalDate) -> Date {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "UTC")!
-        return calendar.date(from: DateComponents(year: day.year, month: day.month, day: day.day)) ?? Date()
-    }
-
-    private func localDate(_ date: Date) -> LocalDate? {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "UTC")!
-        let parts = calendar.dateComponents([.year, .month, .day], from: date)
-        guard let y = parts.year, let m = parts.month, let d = parts.day else { return nil }
-        return LocalDate(year: y, month: m, day: d)
+        _endDate = State(initialValue: DayConversion.date(model.schoolYearEnd))
     }
 
     private var paras: [StaffPerson] {
@@ -71,7 +57,7 @@ public struct DelegationSheet: View {
                 Section {
                     DatePicker(
                         "Ends", selection: $endDate,
-                        in: ...Self.date(model.schoolYearEnd), displayedComponents: .date)
+                        in: ...DayConversion.date(model.schoolYearEnd), displayedComponents: .date)
                 } footer: {
                     Text("Ends no later than the end of the school year.")
                 }
@@ -80,6 +66,7 @@ public struct DelegationSheet: View {
                 }
             }
             .themedScreen()
+            .onAppear { model.message = nil }
             .navigationTitle(StaffRolesText.delegateTitle)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -92,7 +79,7 @@ public struct DelegationSheet: View {
     }
 
     private func save() {
-        guard let paraID, let end = localDate(endDate) else { return }
+        guard let paraID, let end = DayConversion.day(endDate) else { return }
         if model.delegate(goals: Array(chosen), to: paraID, endDate: end, note: note) { dismiss() }
     }
 }

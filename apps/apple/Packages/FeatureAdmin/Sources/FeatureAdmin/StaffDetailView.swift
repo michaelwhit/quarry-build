@@ -66,6 +66,7 @@ public struct StaffDetailView: View {
             }
         }
         .navigationTitle(person.name)
+        .onAppear { model.message = nil }
         .confirmationDialog(
             "Change role",
             isPresented: Binding(get: { pendingRole != nil }, set: { if !$0 { pendingRole = nil } }),

@@ -263,16 +263,18 @@ public final class StaffAdminModel {
             let own = Set(self.ownGoals().map(\.id))
             guard goalIDs.allSatisfy(own.contains) else { throw StaffAdminError.notAllowed }
             let existing = self.activeDelegations(for: delegateID).map(\.goalID)
-            let fresh = goalIDs.filter { !existing.contains($0) }
+            // Each goal once, in the order chosen, skipping ones they already have.
+            var seen = Set<UUID>()
+            let fresh = goalIDs.filter { !existing.contains($0) && seen.insert($0).inserted }
             guard !fresh.isEmpty else { throw StaffAdminError.invalid("They already have these goals.") }
-            for goalID in fresh {
-                try self.backend.apply(
-                    .addDelegation(
-                        Delegation(
-                            id: self.makeID(), goalID: goalID, delegateID: delegateID,
-                            teacherID: self.actorID, endDate: endDate,
-                            scoringNote: note.trimmingCharacters(in: .whitespacesAndNewlines))))
+            let note = note.trimmingCharacters(in: .whitespacesAndNewlines)
+            let made = fresh.map {
+                Delegation(
+                    id: self.makeID(), goalID: $0, delegateID: delegateID, teacherID: self.actorID,
+                    endDate: endDate, scoringNote: note)
             }
+            // One save for all of them, so a failure leaves nothing half done.
+            try self.backend.apply(.addDelegations(made))
         }
     }
 
@@ -340,6 +342,7 @@ public final class StaffAdminModel {
             guard var invitation = self.snapshot.invitations.first(where: { $0.id == id }) else {
                 throw StaffAdminError.notFound
             }
+            guard !invitation.isRemoved else { throw StaffAdminError.notFound }
             if invitation.invitedByID == self.actorID {
                 invitation.removedByInviter = true
             } else if self.isDirector {

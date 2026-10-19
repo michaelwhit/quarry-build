@@ -281,4 +281,27 @@ struct StaffAdminTests {
                 == "Change Sam Rivera from Para to SPED teacher? They will see full student records for their caseload."
         )
     }
+
+    @Test("a repeated goal is delegated once, and a failed save delegates none of them")
+    func delegationBatch() {
+        let (teacher, store) = f.model(as: f.garcia)
+        store.failNext = true
+        #expect(!teacher.delegate(goals: [Fixture.annGoalID, Fixture.benGoalID], to: f.sam.id, endDate: f.date(2027, 5, 1), note: ""))
+        #expect(teacher.activeDelegations(for: f.sam.id).isEmpty)
+        #expect(teacher.message == "Couldn't save. Nothing changed.")
+        #expect(teacher.delegate(goals: [Fixture.annGoalID, Fixture.annGoalID, Fixture.benGoalID], to: f.sam.id, endDate: f.date(2027, 5, 1), note: ""))
+        #expect(teacher.activeDelegations(for: f.sam.id).count == 2)
+    }
+
+    @Test("an invitation already removed cannot be removed again, so the notice stays true")
+    func removeTwice() {
+        let (teacher, store) = f.model(as: f.garcia)
+        teacher.invite(providerID: f.pat.id, studentID: f.ann.id, note: "", endDate: f.date(2027, 5, 1))
+        let id = teacher.snapshot.invitations[0].id
+        #expect(teacher.removeInvitation(id))
+        let (director, _) = f.model(as: f.director, backend: store)
+        #expect(!director.removeInvitation(id))
+        teacher.refresh()
+        #expect(teacher.inviterNotice(teacher.snapshot.invitations[0]) == nil)
+    }
 }

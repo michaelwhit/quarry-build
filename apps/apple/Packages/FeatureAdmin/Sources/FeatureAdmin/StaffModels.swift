@@ -140,7 +140,8 @@ public enum StaffChange: Equatable, Sendable {
     case setAIDrafting(person: UUID, on: Bool)
     case addStudent(person: UUID, student: UUID)
     case removeStudent(person: UUID, student: UUID)
-    case addDelegation(Delegation)
+    /// Several delegations saved together: all of them or none.
+    case addDelegations([Delegation])
     case updateDelegation(Delegation)
     case addInvitation(Invitation)
     case updateInvitation(Invitation)
@@ -223,8 +224,8 @@ public final class InMemoryStaffAdmin: StaffAdminBackend {
             next.caseloads[person] = list
         case .removeStudent(let person, let student):
             next.caseloads[person] = (next.caseloads[person] ?? []).filter { $0 != student }
-        case .addDelegation(let delegation):
-            next.delegations.append(delegation)
+        case .addDelegations(let delegations):
+            next.delegations.append(contentsOf: delegations)
         case .updateDelegation(let delegation):
             guard let index = next.delegations.firstIndex(where: { $0.id == delegation.id }) else {
                 throw StaffAdminError.notFound

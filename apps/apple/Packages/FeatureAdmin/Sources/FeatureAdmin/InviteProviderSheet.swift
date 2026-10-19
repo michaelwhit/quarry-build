@@ -14,12 +14,7 @@ public struct InviteProviderSheet: View {
     public init(model: StaffAdminModel, studentID: UUID) {
         self.model = model
         self.studentID = studentID
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "UTC")!
-        let end = model.schoolYearEnd
-        _endDate = State(
-            initialValue: calendar.date(from: DateComponents(year: end.year, month: end.month, day: end.day))
-                ?? Date())
+        _endDate = State(initialValue: DayConversion.date(model.schoolYearEnd))
     }
 
     private var providers: [StaffPerson] {
@@ -52,6 +47,7 @@ public struct InviteProviderSheet: View {
                 }
             }
             .themedScreen()
+            .onAppear { model.message = nil }
             .navigationTitle(StaffRolesText.inviteTitle)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -64,12 +60,7 @@ public struct InviteProviderSheet: View {
 
     private func send() {
         guard let providerID else { return }
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "UTC")!
-        let parts = calendar.dateComponents([.year, .month, .day], from: endDate)
-        guard let y = parts.year, let m = parts.month, let d = parts.day,
-            let end = LocalDate(year: y, month: m, day: d)
-        else { return }
+        guard let end = DayConversion.day(endDate) else { return }
         if model.invite(providerID: providerID, studentID: studentID, note: note, endDate: end) { dismiss() }
     }
 }
