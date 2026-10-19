@@ -11,7 +11,7 @@ if grep -E 'SWIFT_ACTIVE_COMPILATION_CONDITIONS.*DEMO_IDENTITY' Config/Release.x
 fi
 
 # The release api address must be https, and no config may switch off App Transport Security or
-# open a listening socket (security review S-6). Debug and Demo may use http://localhost only.
+# open a listening socket. Debug and Demo may use http://localhost only.
 if grep -i -E 'IEP_API_BASE_URL *[:=] *["]?http:' Config/Release.xcconfig; then
   echo "Release.xcconfig uses a plain http api address" >&2
   exit 1

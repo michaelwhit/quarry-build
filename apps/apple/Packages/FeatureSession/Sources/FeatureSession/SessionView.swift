@@ -3,7 +3,7 @@ import DesignSystem
 import SwiftUI
 
 /// The one-hand capture screen: header and readout at the top, controls in the bottom 40%.
-/// Large targets, a tick on every tap, undo always visible, no confirmation dialogs (spec 10.2).
+/// Large targets, a tick on every tap, undo always visible, no confirmation dialogs.
 public struct SessionView: View {
     let model: SessionModel
     @Binding var hideNames: Bool
@@ -64,7 +64,7 @@ public struct SessionView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .task {
-            // Ends a forgotten session after the idle limit, keeping everything (spec 10.3).
+            // Ends a forgotten session after the idle limit, keeping everything.
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(30))
                 model.endIfIdle()

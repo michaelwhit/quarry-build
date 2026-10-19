@@ -1,7 +1,7 @@
 import { createCipheriv, createDecipheriv, createHmac, hkdfSync, randomBytes } from "node:crypto";
 
 /**
- * Field encryption and blind indexes for student identifiers (architecture section 5.2).
+ * Field encryption and blind indexes for student identifiers.
  *
  * The database only ever sees ciphertext (*_enc) and HMAC blind indexes (*_bidx). Sprint two has
  * no Cloud KMS, so the master key comes from IEP_FIELD_KEY (a local stand-in); the per-tenant

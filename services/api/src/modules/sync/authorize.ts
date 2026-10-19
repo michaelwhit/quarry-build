@@ -4,7 +4,7 @@ import { HttpProblem } from "../../session.ts";
 
 type Tier = 1 | 2 | 3 | 4 | 5;
 
-/** Fields a reader below S4 gets for a goal: assigned goals, text only (security design 3.2). */
+/** Fields a reader below S4 gets for a goal: assigned goals, text only. */
 const GOAL_TEXT_ONLY = ["iep_id", "student_id", "area", "statement", "sequence"];
 
 /**

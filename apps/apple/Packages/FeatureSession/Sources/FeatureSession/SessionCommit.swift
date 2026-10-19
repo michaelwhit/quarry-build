@@ -2,7 +2,7 @@ import CoreModels
 import Foundation
 
 /// A goal that got no data, with the reason. The graph shows a labeled gap; storing it needs the
-/// `no_data_reason` column that Track 2 adds in T2-7, so for now it only reaches the summary.
+/// `no_data_reason` column the server adds later, so for now it only reaches the summary.
 public struct NoDataGap: Hashable, Sendable {
     public var goalID: UUID
     public var studentID: UUID
@@ -31,8 +31,8 @@ public struct CommitContext: Sendable {
 
 extension SessionDraft {
     /// Turns the recorded entries into append-only data points, one per student and goal
-    /// (spec 10.3). Prompt-level goals make one point per trial until `trials jsonb` exists
-    /// (T2-7), so no tap is lost. Call once; the result is kept in `committedPoints`.
+    ///. Prompt-level goals make one point per trial until `trials jsonb` exists
+    ///, so no tap is lost. Call once; the result is kept in `committedPoints`.
     public func commit(
         context: CommitContext, plans: [UUID: MeasurementPlan], at now: Date
     ) -> CommitResult {

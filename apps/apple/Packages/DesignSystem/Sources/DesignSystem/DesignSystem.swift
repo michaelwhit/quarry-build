@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Type, color, spacing and accessible components shared by every screen. Track 3 grows this;
+/// Type, color, spacing and accessible components shared by every screen. This grows over time;
 /// the foundation ships only the "TEST DATA" watermark that every screen must show while the
 /// app holds synthetic data (CONTRIBUTING.md rule 1).
 public enum DesignSystemModule {

@@ -1,5 +1,5 @@
 // swift-tools-version:6.0
-// Data entry and progress graphs. Owned by Track 3.
+// Data entry and progress graphs.
 import PackageDescription
 
 let package = Package(

@@ -4,7 +4,7 @@ import Foundation
 /// A draft progress entry for one goal, written with a placeholder instead of the student's name.
 ///
 /// The real AI gateway removes identifiers before any model call and puts them back afterwards
-/// (security design section 7). The mock follows the same shape so the screens are built for it:
+///. The mock follows the same shape so the screens are built for it:
 /// the draft carries `studentToken`, and `reidentified(as:)` restores the name for display only.
 public struct ProgressDraft: Equatable, Sendable {
     public static let studentToken = "{{STUDENT}}"

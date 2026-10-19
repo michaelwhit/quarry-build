@@ -18,13 +18,12 @@ const load = <T>(name: string): T =>
   JSON.parse(readFileSync(new URL(`../vectors/${name}.json`, import.meta.url), "utf8")) as T;
 
 /**
- * The vectors in packages/synthetic-data/vectors are the shared answer key for the rules in the
- * libraries and monitoring spec and the decisions in product/rule-decisions-2026-10-18.md. The
+ * The vectors in packages/synthetic-data/vectors are the shared answer key for the rules. The
  * Swift package that implements the rules loads the same files, and so does the server lint for
  * blocked frequencies. Here a separate TypeScript reading must agree with every vector, so a wrong
  * vector is caught before it misleads the other tests.
  */
-describe("blocked frequency vectors (spec 7.2, BF-1, BF-2)", () => {
+describe("blocked frequency vectors", () => {
   const v = load<{ cases: { name: string; text: string; blocked: boolean }[] }>(
     "blocked-frequencies",
   );
@@ -33,7 +32,7 @@ describe("blocked frequency vectors (spec 7.2, BF-1, BF-2)", () => {
   });
 });
 
-describe("mastery vectors (spec 2.4, MA-1 to MA-4)", () => {
+describe("mastery vectors", () => {
   const v = load<{
     cases: { name: string; criterion: Criterion; sessions: Session[]; mastered: boolean }[];
     prompt_ceiling_cases: {
@@ -63,7 +62,7 @@ describe("mastery vectors (spec 2.4, MA-1 to MA-4)", () => {
   });
 });
 
-describe("decision rule vectors (spec 2.5, DR-1 to DR-6)", () => {
+describe("decision rule vectors", () => {
   const v = load<{
     aim_line: {
       name: string;

@@ -1,5 +1,5 @@
 // swift-tools-version:6.0
-// Reads the signed starter library bundle (T2-10). Foundation only, so it builds on Linux; signature
+// Reads the signed starter library bundle. Foundation only, so it builds on Linux; signature
 // checking needs CryptoKit and is compiled on Apple platforms.
 import PackageDescription
 

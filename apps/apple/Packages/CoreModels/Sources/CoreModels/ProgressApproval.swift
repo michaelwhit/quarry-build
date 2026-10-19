@@ -1,7 +1,7 @@
 import Foundation
 
 /// A teacher's approved answer to the SRS progress question for one goal: Sufficient Yes/No plus
-/// a comment. AI never writes one of these; only a teacher action does (security design 7.5).
+/// a comment. AI never writes one of these; only a teacher action does.
 public struct ProgressApproval: Identifiable, Hashable, Codable, Sendable {
     public var id: UUID
     public var goalID: UUID

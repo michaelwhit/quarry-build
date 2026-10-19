@@ -1,4 +1,4 @@
--- Change-feed ordering fix (Track 2).
+-- Change-feed ordering fix.
 --
 -- nextval() hands out server_seq values in call order, but transactions commit in any order. A
 -- device that pulled "everything after seq 100" could miss a row whose seq 99 committed after

@@ -68,7 +68,7 @@ class FixedWindowLimiter {
 }
 
 /**
- * HTTP hardening for every response (security design sections 2 and 4.4, review S-1).
+ * HTTP hardening for every response.
  *
  * - Responses carry student data, so no shared cache or device cache may keep them: no-store.
  * - Fixed-window rate limit per client address (before auth) and per signed-in staff member

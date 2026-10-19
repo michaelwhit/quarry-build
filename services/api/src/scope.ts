@@ -7,8 +7,7 @@ import type { Session } from "./session.ts";
 export const SCHOOL_TODAY = "(now() AT TIME ZONE 'America/Chicago')::date";
 
 /**
- * Which students a caller may see. Interim rule until Track 1's Cedar policies land (security
- * design section 3): directors and building coordinators see the whole tenant, caseload roles see
+ * Which students a caller may see. Interim rule until the Cedar policies land: directors and building coordinators see the whole tenant, caseload roles see
  * students with an active assignment, IT admins and vendor support see no student data.
  *
  * Includes soft-deleted students so sync can send their tombstones; readers add their own

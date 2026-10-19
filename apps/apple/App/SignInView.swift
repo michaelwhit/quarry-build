@@ -3,7 +3,7 @@ import DesignSystem
 import Persistence
 import SwiftUI
 
-/// Sign-in. Real builds will use the district's Google account (Track 1). Until then the demo
+/// Sign-in. Real builds will use the district's Google account. Until then the demo
 /// builds offer a picker of fake staff, compiled in only when DEMO_IDENTITY is set. A release
 /// build has no way in, and CI fails if the demo identity ever ships (CONTRIBUTING.md).
 struct SignInView: View {

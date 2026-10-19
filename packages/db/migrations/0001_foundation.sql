@@ -1,4 +1,4 @@
--- Schema v0 (sprint two foundation). Shared contract owned by Track 2.
+-- Schema v0 (sprint two foundation).
 -- Source: architecture.md sections 5.1 to 5.3 and security-design.md sections 3 and 6.
 --
 -- Conventions for every table that follows:
@@ -9,7 +9,7 @@
 --   * mutable tables carry created_*/updated_*, row_version, deleted_at (sync tombstone) and
 --     server_seq (change-feed cursor, assigned by trigger).
 --   * direct student identifiers are stored only as ciphertext (*_enc) with HMAC blind indexes
---     (*_bidx) for lookup. Track 2 owns the envelope encryption; the database never sees
+--     (*_bidx) for lookup. The envelope encryption is done in the service; the database never sees
 --     plaintext names or ids.
 
 -- Roles -----------------------------------------------------------------------------------------
@@ -139,7 +139,7 @@ CREATE TABLE caseload_assignment (
   row_version   bigint NOT NULL DEFAULT 1,
   deleted_at    timestamptz,
   server_seq    bigint NOT NULL DEFAULT 0,
-  -- A user can never add themselves (security design section 3.1).
+  -- A user can never add themselves.
   CONSTRAINT caseload_not_self_granted CHECK (granted_by <> staff_id),
   CONSTRAINT caseload_dates CHECK (end_date IS NULL OR end_date >= start_date)
 );
@@ -264,7 +264,7 @@ CREATE TABLE measurement_plan (
   server_seq    bigint NOT NULL DEFAULT 0
 );
 
--- Append-only: corrections are new rows with corrects_id (architecture section 6.3).
+-- Append-only: corrections are new rows with corrects_id.
 CREATE TABLE data_point (
   id                 uuid PRIMARY KEY,
   tenant_id          uuid NOT NULL REFERENCES tenant (id),
@@ -289,7 +289,7 @@ CREATE TABLE data_point (
 );
 CREATE INDEX data_point_by_goal ON data_point (tenant_id, goal_id, observed_at);
 
--- State additions needed in sprint two (architecture section 5.2a) ------------------------------
+-- State additions needed in sprint two ------------------------------
 CREATE TABLE district_calendar (
   id                uuid PRIMARY KEY,
   tenant_id         uuid NOT NULL REFERENCES tenant (id),
@@ -318,8 +318,8 @@ CREATE TABLE reporting_period (
   UNIQUE (school_id, srs_report_date)
 );
 
--- Audit (security design section 6) ----------------------------------------------------------------
--- Append-only and hash-chained. Track 1 owns the writer that computes prev_hash and hash.
+-- Audit ----------------------------------------------------------------
+-- Append-only and hash-chained. The audit writer computes prev_hash and hash.
 CREATE TABLE audit_event (
   seq          bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   tenant_id    uuid NOT NULL REFERENCES tenant (id),

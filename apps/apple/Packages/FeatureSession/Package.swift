@@ -1,6 +1,5 @@
 // swift-tools-version:6.0
-// Data-collection sessions and the Today tab. Second screens worker (Track 3b); the paths are
-// Track 3's under .github/ownership.yml. Session logic is Foundation-only and unit tested.
+// Data-collection sessions and the Today tab. Session logic is Foundation-only and unit tested.
 import PackageDescription
 
 let package = Package(

@@ -3,7 +3,7 @@ import StarterLibrary
 import SwiftUI
 
 /// Read-only preview of a library accommodation or modification. The builder that sets where, how
-/// often and how long is a later row (T3-20), so the suggested values show as text only.
+/// often and how long is a later row, so the suggested values show as text only.
 struct AccommodationPreviewView: View {
     let item: AccommodationTemplate
 

@@ -18,7 +18,7 @@ export interface Config {
 /**
  * Reads configuration from the environment. Sprint two has no real-data environment, so the
  * server refuses to start unless it is explicitly marked as holding synthetic data only
- * (security design section 4.6, Stage A).
+ *.
  */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   if (env.IEP_DATA_CLASS !== "synthetic") {

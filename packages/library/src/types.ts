@@ -1,5 +1,5 @@
 /**
- * Starter library content model (spec libraries-and-monitoring-spec.md sections 2, 3, 7, 11).
+ * Starter library content model.
  * Library items hold no student data. Starter-tier rows have no tenant and are read-only.
  */
 
@@ -141,7 +141,7 @@ export interface GoalTemplate {
   objective_ladder: string[];
   /**
    * Replacement-behavior wording ("instead of ...") must be tied to the student's FBA and BIP;
-   * the attach flow asks the teacher to confirm both exist (spec section 2.1, Behavior).
+   * the attach flow asks the teacher to confirm both exist.
    */
   requires_fba_bip?: boolean;
   baseline_guidance?: string;
@@ -173,7 +173,7 @@ export interface AccommodationTemplate {
   };
   /**
    * Replacement-behavior wording ("instead of ...") must be tied to the student's FBA and BIP;
-   * the attach flow asks the teacher to confirm both exist (spec section 2.1, Behavior).
+   * the attach flow asks the teacher to confirm both exist.
    */
   requires_fba_bip?: boolean;
   modification_warning?: string;

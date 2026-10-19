@@ -1,5 +1,5 @@
 // swift-tools-version:6.0
-// Caseload list and student view. Owned by Track 3.
+// Caseload list and student view.
 import PackageDescription
 
 let package = Package(

@@ -3,7 +3,7 @@ import DesignSystem
 import SwiftUI
 
 /// The iPhone home tab: who to take data on today, pinned goals, and a privacy toggle. The job on
-/// the phone is capture, so this leads with start buttons, not graphs (spec 10.3).
+/// the phone is capture, so this leads with start buttons, not graphs.
 public struct TodayView: View {
     let cards: [TodayCard]
     let pinned: [SessionGoal]

@@ -1,5 +1,5 @@
 // swift-tools-version:6.0
-// AI drafting screens and the mock drafter. Owned by Track 4.
+// AI drafting screens and the mock drafter.
 import PackageDescription
 
 let package = Package(

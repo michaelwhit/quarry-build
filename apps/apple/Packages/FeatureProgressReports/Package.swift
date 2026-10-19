@@ -1,5 +1,5 @@
 // swift-tools-version:6.0
-// Progress reports and SRS paste kit screens (sprint three). Owned by Track 5.
+// Progress reports and SRS paste kit screens (sprint three).
 import PackageDescription
 
 let package = Package(

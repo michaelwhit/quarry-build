@@ -5,7 +5,7 @@ import Observation
 /// The prototype's whole data layer: the synthetic district held in memory, plus what the person
 /// using the app adds (data points and approved progress entries), saved to one JSON file.
 ///
-/// This is a stand-in for the encrypted GRDB store and the sync engine that Track 2 builds. Views
+/// This is a stand-in for the encrypted GRDB store and the sync engine that comes later. Views
 /// depend on this API, so swapping the implementation later does not change the screens. It holds
 /// fake students only; there is no network and no real sign-in.
 @MainActor
@@ -74,7 +74,7 @@ public final class PrototypeStore {
 
     // MARK: Demo sign-in
 
-    /// Staff who can be chosen in a demo build. Real Google sign-in replaces this (Track 1).
+    /// Staff who can be chosen in a demo build. Real Google sign-in replaces this.
     public var demoStaff: [Staff] {
         dataset.staff.sorted { ($0.role.title, $0.displayName) < ($1.role.title, $1.displayName) }
     }

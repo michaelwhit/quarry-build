@@ -1,6 +1,6 @@
 import Foundation
 
-/// Library content model (spec libraries-and-monitoring-spec.md sections 2, 3, 7). No student data.
+/// Library content model. No student data.
 /// Decoded with `.convertFromSnakeCase`, so property names are the camel-case form of the wire names.
 
 public struct TaxonomyNode: Codable, Sendable, Hashable, Identifiable {

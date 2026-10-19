@@ -15,7 +15,7 @@ import {
 } from "./derive.ts";
 
 // Slice one: the synthetic district is bundled into the app. Nothing here is fetched, stored in
-// the browser, or cached by the service worker. Real data will come from the API (T7-4).
+// the browser, or cached by the service worker. Real data will come from the API.
 const district = raw as unknown as SyntheticDistrict;
 if (district.synthetic !== true) throw new Error("Refusing to load a dataset not marked synthetic");
 

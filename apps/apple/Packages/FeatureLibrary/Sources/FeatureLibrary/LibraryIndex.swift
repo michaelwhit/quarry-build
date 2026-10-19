@@ -2,7 +2,7 @@ import Foundation
 import StarterLibrary
 
 /// Filter chips for the goal browser. Within one group the chips are OR; across groups they are AND
-/// (PM decision, screens-2 hire round). Empty group means no filter on that group.
+/// (product decision). Empty group means no filter on that group.
 public struct GoalFilters: Equatable, Sendable {
     public var areas: Set<String> = []
     public var gradeBands: Set<String> = []
@@ -215,7 +215,7 @@ public struct LibraryIndex: Sendable {
     // MARK: Search internals
 
     /// Teacher words that the bundle's own wording does not use. Each group is one meaning: typing
-    /// any word in the group also finds the others (spec 6.1). Curators can extend taxonomy synonyms
+    /// any word in the group also finds the others. Curators can extend taxonomy synonyms
     /// in the bundle; this list covers everyday teacher and therapist shorthand.
     static let synonymGroups: [[String]] = [
         ["phonics", "decoding", "sounding out"],

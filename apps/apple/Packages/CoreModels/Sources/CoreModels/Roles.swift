@@ -1,4 +1,4 @@
-/// Staff roles from security design section 3.3.
+/// Staff roles.
 public enum StaffRole: String, Codable, Sendable, CaseIterable {
     case spedDirector = "sped_director"
     case buildingCoordinator = "building_coordinator"
@@ -10,7 +10,7 @@ public enum StaffRole: String, Codable, Sendable, CaseIterable {
     case vendorSupport = "vendor_support"
 }
 
-/// Record sensitivity tiers from security design section 3.2.
+/// Record sensitivity tiers.
 ///
 /// S5 never syncs to a device; S4 is cached only for recently opened students.
 public enum SensitivityTier: Int, Codable, Sendable, Comparable, CaseIterable {

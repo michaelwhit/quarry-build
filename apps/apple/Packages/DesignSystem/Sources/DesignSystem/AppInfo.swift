@@ -2,5 +2,5 @@
 /// string and `APP_DISPLAY_NAME` in `apps/apple/project.yml` together.
 public enum AppInfo {
     public static let name = "Demo App"
-    public static let districtShortName = "FCPS"
+    public static let districtShortName = "Demo District"
 }

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Postgres migrations with row-level security. Shared contract owned by Track 2.",
+  "description": "Postgres migrations with row-level security.",
   "exports": {
     ".": "./src/index.ts"
   },

@@ -1,7 +1,7 @@
 import Foundation
 
 /// One observation for a goal. Append-only: a correction is a new data point whose
-/// `correctsID` names the one it replaces, so sync never has to merge edits (architecture 6.3).
+/// `correctsID` names the one it replaces, so sync never has to merge edits.
 public struct DataPoint: Identifiable, Hashable, Codable, Sendable {
     /// The longest note a data point may carry, matching the database check.
     public static let maxNoteLength = 2000

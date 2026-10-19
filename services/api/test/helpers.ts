@@ -11,7 +11,7 @@ import type { Session } from "../src/session.ts";
 
 export const databaseUrl = process.env.DATABASE_URL;
 
-// Stand-in for the real session verifier (T1-3): the test names the session in a header. It
+// Stand-in for the real session verifier: the test names the session in a header. It
 // exists only in test code and is passed to buildApp explicitly, so a running server never has it.
 const testSessions: AuthDeps["sessions"] = {
   async verify(req) {

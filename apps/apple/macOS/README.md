@@ -1,1 +1,1 @@
-Mac-only windows, menus and settings (Track 3). Empty in the foundation.
+Mac-only windows, menus and settings. Empty in the foundation.

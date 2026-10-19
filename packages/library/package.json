@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Signed starter bundle for the goal and accommodation libraries (T2-10). Holds no student data.",
+  "description": "Signed starter bundle for the goal and accommodation libraries. Holds no student data.",
   "exports": {
     ".": "./src/index.ts"
   },

@@ -1,5 +1,5 @@
 /**
- * An independent TypeScript reading of the Demo App progress rules (spec sections 2.4, 2.5 and 7.2).
+ * An independent TypeScript reading of the Demo App progress rules.
  * It exists to check that the shared test vectors agree with the spec text. The Swift package that
  * ships these rules must pass the same vectors; this file is not product code.
  */

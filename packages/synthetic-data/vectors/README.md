@@ -1,4 +1,4 @@
-# Shared test vectors (T6-7)
+# Shared test vectors
 
 Answer keys for the rules in `the project docs`, written once so the Swift app, the server and the tests all check against the same cases.
 
@@ -13,12 +13,12 @@ The spec was silent in 12 places. The project manager decided them in `the proje
 ## Who uses them
 
 - `test/vectors.test.ts` runs every vector against `test/reference-rules.ts`, a separate TypeScript reading of the spec and the decisions. That keeps a wrong vector from misleading the Swift tests. It runs in the normal TypeScript CI job.
-- The Swift package that holds the decision-rule and mastery math (one copy for both app targets) loads these files in its own tests (`Bundle.module` resource, or a path relative to the package). It must pass every case and may not carry a second copy of the rules. Its author owns that wiring; Track 6 reviews it.
-- The library lint on the server (T2-9) and the bundle validator in `packages/library` (PR #15) use `blocked-frequencies.json` for the accommodation frequency rule. Running these vectors found that PR #15's first regex missed `as  needed` with two spaces or a line break. The other lint rules (vague verbs, criterion matches method, readability, no student data) get their own vectors when T2-9 starts.
+- The Swift package that holds the decision-rule and mastery math (one copy for both app targets) loads these files in its own tests (`Bundle.module` resource, or a path relative to the package). It must pass every case and may not carry a second copy of the rules. Its author owns that wiring.
+- The library lint on the server and the bundle validator in `packages/library` use `blocked-frequencies.json` for the accommodation frequency rule. Running these vectors found that the first regex missed `as  needed` with two spaces or a line break. Vectors for the other lint rules (vague verbs, criterion matches method, readability, no student data) are still to add.
 
-## Still to write for T6-7 (needs code that does not exist yet)
+## Tests to add
 
-- **Draft durability.** A session draft survives app kill, reboot and low battery (spec 10.8). Plan: a Persistence test that writes a draft, drops the store object without ending the session, reopens the database file, and finds the draft and every tap with its `observed_at`; the same against a copy of the file taken mid-write. The kill and reboot cases run as an XCUITest on a Mac once T6-5 is unblocked.
-- **Clock drift.** `observed_at` is the device time per tap; the server flags `client_created_at` more than 5 minutes ahead (already enforced in push) and, once Track 2 adds it, a lower bound for backdating.
-- **Auto-end.** A session left open for 20 minutes ends itself and keeps its data (spec 10.3).
+- **Draft durability.** A session draft survives app kill, reboot and low battery. Plan: a Persistence test that writes a draft, drops the store object without ending the session, reopens the database file, and finds the draft and every tap with its `observed_at`; the same against a copy of the file taken mid-write. The kill and reboot cases run as an XCUITest on a Mac.
+- **Clock drift.** `observed_at` is the device time per tap; the server flags `client_created_at` more than 5 minutes ahead. A test for a lower bound on backdating is to add.
+- **Auto-end.** A session left open for 20 minutes ends itself and keeps its data.
 - **Undo.** One tap undoes the last tap, including across a draft resume.

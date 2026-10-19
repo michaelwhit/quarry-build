@@ -4,7 +4,7 @@ info:
   version: 0.1.0
   summary: Contract between the Apple apps and the TypeScript api service.
   description: |
-    Version 0, written in the sprint two foundation. Shared contract owned by Track 2:
+    Version 0, written in the sprint two foundation. Shared contract:
     changes go in their own small PR approved by every consuming track (see CONTRIBUTING.md).
 
     Rules that hold for every endpoint:
@@ -30,11 +30,11 @@ tags:
   - name: students
     description: Caseload-scoped student records.
   - name: sync
-    description: Outbox push and change-feed pull (architecture section 6.3).
+    description: Outbox push and change-feed pull.
   - name: imports
-    description: Director CSV loads of students and caseload assignments (architecture section 9.4).
+    description: Director CSV loads of students and caseload assignments.
   - name: calendar
-    description: SRS progress-report dates and instructional days per school (architecture section 5.2a).
+    description: SRS progress-report dates and instructional days per school.
 paths:
   /healthz:
     get:
@@ -309,7 +309,7 @@ components:
       scheme: bearer
       description: >-
         Short-lived access token from the sign-in flow, sent with a DPoP proof header signed by
-        the device's Secure Enclave key (security design section 2.3). Track 1 owns the details.
+        the device's Secure Enclave key. The details are left to the auth module.
   parameters:
     StudentId:
       name: studentId
@@ -371,7 +371,7 @@ components:
           type: string
     StaffRole:
       type: string
-      description: Roles from security design section 3.3.
+      description: Roles.
       enum:
         - sped_director
         - building_coordinator
