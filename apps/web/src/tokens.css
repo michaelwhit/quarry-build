@@ -1,0 +1,69 @@
+/* Design tokens: Midnight (dark, primary) and its derived light variant.
+   Values copied from the native Theme.swift (DesignSystem) so web and apps match. Change values here only; no component hard-codes a color. */
+:root {
+  color-scheme: dark;
+  --bg: #000000;
+  --surface: #1c1c1e;
+  --surface-2: #2c2c2e;
+  --border: #2c2c2e;
+  --text: #e8edf7;
+  --text-muted: #9fb0cc;
+  --accent: #7ee0c3;
+  --primary: #5b8cff;
+  --on-primary: #0e1420;
+  --target: #ffb454;
+  --chart-target: #7ee0c3;
+  --chart-data: #5b8cff;
+  --chart-trend: #ffb454;
+  --ok: #4fd1a1;
+  --warn: #ffb454;
+  --test-bg: #ffb454;
+  --bad: #ff7b7b;
+  --focus: #93c5fd;
+  --radius: 14px;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f3f6fb;
+  --surface: #ffffff;
+  --surface-2: #eaeff8;
+  --border: #d7dfec;
+  --text: #0e1420;
+  --text-muted: #4a5b78;
+  --accent: #0f7a62;
+  --primary: #2f5fd9;
+  --on-primary: #ffffff;
+  --target: #8a4705;
+  --chart-target: #0f7a62;
+  --chart-data: #2f5fd9;
+  --chart-trend: #8a4705;
+  --ok: #17694a;
+  --warn: #8a4705;
+  --test-bg: #fcebd3;
+  --bad: #b3372f;
+  --focus: #1d4ed8;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: #f3f6fb;
+    --surface: #ffffff;
+    --surface-2: #eaeff8;
+    --border: #d7dfec;
+    --text: #0e1420;
+    --text-muted: #4a5b78;
+    --accent: #0f7a62;
+    --primary: #2f5fd9;
+    --on-primary: #ffffff;
+    --target: #8a4705;
+    --chart-target: #0f7a62;
+    --chart-data: #2f5fd9;
+    --chart-trend: #8a4705;
+    --ok: #17694a;
+    --warn: #8a4705;
+    --test-bg: #fcebd3;
+    --bad: #b3372f;
+    --focus: #1d4ed8;
+  }
+}

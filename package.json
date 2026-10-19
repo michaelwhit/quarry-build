@@ -1,0 +1,35 @@
+{
+  "name": "quarry-build",
+  "private": true,
+  "type": "module",
+  "description": "IEP assistant monorepo: Apple apps, TypeScript services and shared contracts. Synthetic data only.",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "pnpm -r --if-present test",
+    "openapi:lint": "pnpm --filter @iep/openapi lint",
+    "openapi:generate": "pnpm --filter @iep/openapi generate",
+    "openapi:check": "pnpm --filter @iep/openapi check",
+    "db:migrate": "pnpm --filter @iep/db migrate",
+    "synthetic:generate": "pnpm --filter @iep/synthetic-data generate",
+    "synthetic:check": "pnpm --filter @iep/synthetic-data check",
+    "fixtures:scan": "node tools/scan-fixtures.mjs"
+    "test:tools": "node --test tools/ci/apple-scope.test.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.20.5",
+    "eslint": "^10.13.0",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10",
+    "typescript": "~6.0.0",
+    "typescript-eslint": "^8.71.2",
+    "vitest": "^5.0.5",
+    "yaml": "^2.9.1"
+  }
+}

@@ -1,0 +1,358 @@
+{
+  "spec": "libraries-and-monitoring-spec.md section 2.5 (progress decision rules); decisions DR-1 to DR-6 in rule-decisions-2026-10-18.md",
+  "rule": "Aim line (DR-3): runs in a straight line by calendar date from the baseline (median of the first 3 points, at the date of the third point) to the target at the goal end date; with fewer than 3 points no aim line is drawn. Four-point rule (DR-1, DR-2): needs at least 6 points and looks at the latest 4, direction-aware. For a >= goal, 4 points all strictly below the aim line give change_instruction and 4 all strictly above give raise_goal. For a <= goal the sides swap: 4 strictly above give change_instruction, 4 strictly below give lower_target. A point on the line breaks the run. Trend (DR-4): ordinary least squares over the latest 8 points by calendar day, compared with the aim slope: within 10 percent of the aim slope is on_track, below is behind, above is ahead (for a <= goal both slopes are read in the favourable direction, so a steeper fall is ahead and a flat line against a falling aim line is behind). If the aim slope is zero, or fewer than 8 points exist, there is no trend status. Stale (DR-5, DR-6): 10 or more school days with no data, counted after the last data date, or after the goal start date (or the day it was attached) when there is no data yet, up to and including today.",
+  "note": "The 10 percent tolerance, using the latest 4 points, and the baseline date are choices made by Track 6 where the spec is silent. They are listed in open_questions. Change them with the spec, not silently.",
+  "aim_line": [
+    {
+      "name": "baseline is the median of the first three",
+      "points": [
+        ["2026-09-01", 20],
+        ["2026-09-08", 40],
+        ["2026-09-15", 30]
+      ],
+      "end": "2026-12-14",
+      "target": 80,
+      "baseline": 30,
+      "at": {
+        "2026-09-15": 30,
+        "2026-12-14": 80,
+        "2026-10-30": 55
+      }
+    },
+    {
+      "name": "later points do not move the baseline",
+      "points": [
+        ["2026-09-01", 50],
+        ["2026-09-08", 50],
+        ["2026-09-15", 50],
+        ["2026-09-22", 90]
+      ],
+      "end": "2026-12-15",
+      "target": 90,
+      "baseline": 50,
+      "at": {
+        "2026-09-15": 50,
+        "2026-12-15": 90
+      }
+    },
+    {
+      "name": "DR-3: fewer than 3 points draws no aim line",
+      "points": [
+        ["2026-09-01", 20],
+        ["2026-09-08", 40]
+      ],
+      "end": "2026-12-14",
+      "target": 80,
+      "baseline": null,
+      "at": {}
+    }
+  ],
+  "four_point": [
+    {
+      "name": "fewer than 6 points gives no advice",
+      "aim": "flat50",
+      "points": [10, 10, 10, 10, 10],
+      "advice": "none",
+      "direction": ">="
+    },
+    {
+      "name": "latest four below the aim line",
+      "aim": "flat50",
+      "points": [60, 60, 40, 40, 40, 40],
+      "advice": "change_instruction",
+      "direction": ">="
+    },
+    {
+      "name": "latest four above the aim line",
+      "aim": "flat50",
+      "points": [40, 40, 60, 60, 60, 60],
+      "advice": "raise_goal",
+      "direction": ">="
+    },
+    {
+      "name": "three below is not enough",
+      "aim": "flat50",
+      "points": [60, 60, 60, 40, 40, 40],
+      "advice": "none",
+      "direction": ">="
+    },
+    {
+      "name": "a point on the line breaks the run",
+      "aim": "flat50",
+      "points": [40, 40, 40, 50, 40, 40],
+      "advice": "none",
+      "direction": ">="
+    },
+    {
+      "name": "mixed",
+      "aim": "flat50",
+      "points": [40, 60, 40, 60, 40, 60],
+      "advice": "none",
+      "direction": ">="
+    },
+    {
+      "name": "exactly 6 points is enough",
+      "aim": "flat50",
+      "points": [50, 50, 30, 30, 30, 30],
+      "advice": "change_instruction",
+      "direction": ">="
+    },
+    {
+      "name": "earlier runs do not count",
+      "aim": "flat50",
+      "points": [30, 30, 30, 30, 60, 40],
+      "advice": "none",
+      "direction": ">="
+    },
+    {
+      "name": "DR-1: <= goal, latest four above the aim line is unfavourable",
+      "aim": "flat50",
+      "direction": "<=",
+      "points": [40, 40, 60, 60, 60, 60],
+      "advice": "change_instruction"
+    },
+    {
+      "name": "DR-1: <= goal, latest four below the aim line is favourable",
+      "aim": "flat50",
+      "direction": "<=",
+      "points": [60, 60, 40, 40, 40, 40],
+      "advice": "lower_target"
+    },
+    {
+      "name": "DR-1: <= goal, three above is not enough",
+      "aim": "flat50",
+      "direction": "<=",
+      "points": [40, 40, 40, 60, 60, 60],
+      "advice": "none"
+    },
+    {
+      "name": "DR-1: <= goal, a point on the line breaks the run",
+      "aim": "flat50",
+      "direction": "<=",
+      "points": [60, 60, 60, 50, 60, 60],
+      "advice": "none"
+    },
+    {
+      "name": "DR-1: <= goal, fewer than 6 points gives no advice",
+      "aim": "flat50",
+      "direction": "<=",
+      "points": [60, 60, 60, 60, 60],
+      "advice": "none"
+    }
+  ],
+  "trend": [
+    {
+      "name": "flat data against a rising aim line is behind",
+      "aim_slope_per_day": 0.5,
+      "points": [
+        ["2026-09-01", 40],
+        ["2026-09-02", 40],
+        ["2026-09-03", 40],
+        ["2026-09-04", 40],
+        ["2026-09-05", 40],
+        ["2026-09-06", 40],
+        ["2026-09-07", 40],
+        ["2026-09-08", 40]
+      ],
+      "status": "behind",
+      "direction": ">="
+    },
+    {
+      "name": "same slope as the aim line is on track",
+      "aim_slope_per_day": 1,
+      "points": [
+        ["2026-09-01", 10],
+        ["2026-09-02", 11],
+        ["2026-09-03", 12],
+        ["2026-09-04", 13],
+        ["2026-09-05", 14],
+        ["2026-09-06", 15],
+        ["2026-09-07", 16],
+        ["2026-09-08", 17]
+      ],
+      "status": "on_track",
+      "direction": ">="
+    },
+    {
+      "name": "steeper than the aim line is ahead",
+      "aim_slope_per_day": 1,
+      "points": [
+        ["2026-09-01", 10],
+        ["2026-09-02", 13],
+        ["2026-09-03", 16],
+        ["2026-09-04", 19],
+        ["2026-09-05", 22],
+        ["2026-09-06", 25],
+        ["2026-09-07", 28],
+        ["2026-09-08", 31]
+      ],
+      "status": "ahead",
+      "direction": ">="
+    },
+    {
+      "name": "fewer than 8 points shows no trend",
+      "aim_slope_per_day": 1,
+      "points": [
+        ["2026-09-01", 10],
+        ["2026-09-02", 11],
+        ["2026-09-03", 12]
+      ],
+      "status": "none",
+      "direction": ">="
+    },
+    {
+      "name": "DR-4: zero aim slope shows no status, flat data",
+      "aim_slope_per_day": 0,
+      "points": [
+        ["2026-09-01", 40],
+        ["2026-09-02", 40],
+        ["2026-09-03", 40],
+        ["2026-09-04", 40],
+        ["2026-09-05", 40],
+        ["2026-09-06", 40],
+        ["2026-09-07", 40],
+        ["2026-09-08", 40]
+      ],
+      "status": "none",
+      "direction": ">="
+    },
+    {
+      "name": "DR-4: zero aim slope shows no status, rising data",
+      "aim_slope_per_day": 0,
+      "points": [
+        ["2026-09-01", 10],
+        ["2026-09-02", 11],
+        ["2026-09-03", 12],
+        ["2026-09-04", 13],
+        ["2026-09-05", 14],
+        ["2026-09-06", 15],
+        ["2026-09-07", 16],
+        ["2026-09-08", 17]
+      ],
+      "status": "none",
+      "direction": ">="
+    },
+    {
+      "name": "DR-4: <= goal falling faster than the aim line is ahead",
+      "aim_slope_per_day": -1,
+      "points": [
+        ["2026-09-01", 31],
+        ["2026-09-02", 28],
+        ["2026-09-03", 25],
+        ["2026-09-04", 22],
+        ["2026-09-05", 19],
+        ["2026-09-06", 16],
+        ["2026-09-07", 13],
+        ["2026-09-08", 10]
+      ],
+      "status": "ahead",
+      "direction": "<="
+    },
+    {
+      "name": "DR-4: <= goal staying flat against a falling aim line is behind",
+      "aim_slope_per_day": -1,
+      "points": [
+        ["2026-09-01", 20],
+        ["2026-09-02", 20],
+        ["2026-09-03", 20],
+        ["2026-09-04", 20],
+        ["2026-09-05", 20],
+        ["2026-09-06", 20],
+        ["2026-09-07", 20],
+        ["2026-09-08", 20]
+      ],
+      "status": "behind",
+      "direction": "<="
+    }
+  ],
+  "stale": {
+    "calendar": {
+      "no_school": ["2026-10-12", "2026-11-26", "2026-11-27"],
+      "weekends_are_not_school_days": true
+    },
+    "cases": [
+      {
+        "name": "data today",
+        "last_data": "2026-10-16",
+        "as_of": "2026-10-16",
+        "stale": false,
+        "goal_start": null,
+        "attached_on": null
+      },
+      {
+        "name": "9 school days since the last data",
+        "last_data": "2026-10-01",
+        "as_of": "2026-10-15",
+        "stale": false,
+        "goal_start": null,
+        "attached_on": null
+      },
+      {
+        "name": "10 school days since the last data, no holiday in between",
+        "last_data": "2026-10-14",
+        "as_of": "2026-10-28",
+        "stale": true,
+        "note": "boundary: see open_questions",
+        "goal_start": null,
+        "attached_on": null
+      },
+      {
+        "name": "a school holiday does not count toward the 10 (would be 10 if Oct 12 counted)",
+        "last_data": "2026-10-02",
+        "as_of": "2026-10-16",
+        "stale": false,
+        "goal_start": null,
+        "attached_on": null
+      },
+      {
+        "name": "weeks of no data",
+        "last_data": "2026-09-01",
+        "as_of": "2026-10-16",
+        "stale": true,
+        "goal_start": null,
+        "attached_on": null
+      },
+      {
+        "name": "DR-6: no data, goal started weeks ago",
+        "last_data": null,
+        "goal_start": "2026-09-01",
+        "attached_on": null,
+        "as_of": "2026-10-16",
+        "stale": true
+      },
+      {
+        "name": "DR-6: no data, goal started two days ago is not stale on day one",
+        "last_data": null,
+        "goal_start": "2026-10-14",
+        "attached_on": null,
+        "as_of": "2026-10-16",
+        "stale": false
+      },
+      {
+        "name": "DR-6: no data and no start date counts from the day it was attached",
+        "last_data": null,
+        "goal_start": null,
+        "attached_on": "2026-09-01",
+        "as_of": "2026-10-16",
+        "stale": true
+      },
+      {
+        "name": "DR-6: no data and no start date, attached today",
+        "last_data": null,
+        "goal_start": null,
+        "attached_on": "2026-10-16",
+        "as_of": "2026-10-16",
+        "stale": false
+      },
+      {
+        "name": "DR-6: data after the goal start wins over the start date",
+        "last_data": "2026-10-15",
+        "goal_start": "2026-09-01",
+        "attached_on": null,
+        "as_of": "2026-10-16",
+        "stale": false
+      }
+    ]
+  },
+  "open_questions": []
+}

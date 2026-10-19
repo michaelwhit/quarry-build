@@ -1,0 +1,21 @@
+{
+  "name": "@iep/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Postgres migrations with row-level security. Shared contract owned by Track 2.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "migrate": "node src/cli.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1"
+  }
+}

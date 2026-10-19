@@ -1,0 +1,152 @@
+{
+  "spec": "libraries-and-monitoring-spec.md section 7.2 (blocked frequencies); decisions BF-1 and BF-2 in rule-decisions-2026-10-18.md",
+  "rule": "A frequency statement is blocked when its whole typed text contains any of: as needed, as necessary, when appropriate, PRN, if needed, per teacher discretion. Case-insensitive. Hyphens, underscores and runs of whitespace (including line breaks) count as one space before matching. PRN matches as a whole word only.",
+  "cases": [
+    {
+      "name": "plain as needed",
+      "text": "as needed",
+      "blocked": true
+    },
+    {
+      "name": "upper case",
+      "text": "AS NEEDED",
+      "blocked": true
+    },
+    {
+      "name": "inside a longer sentence",
+      "text": "Check in with the student daily and as needed",
+      "blocked": true
+    },
+    {
+      "name": "extra spaces",
+      "text": "as   needed",
+      "blocked": true
+    },
+    {
+      "name": "newline between words",
+      "text": "as\nneeded",
+      "blocked": true
+    },
+    {
+      "name": "as necessary",
+      "text": "Breaks as necessary",
+      "blocked": true
+    },
+    {
+      "name": "when appropriate",
+      "text": "when appropriate",
+      "blocked": true
+    },
+    {
+      "name": "PRN lower case",
+      "text": "prn",
+      "blocked": true
+    },
+    {
+      "name": "PRN with a full stop",
+      "text": "PRN.",
+      "blocked": true
+    },
+    {
+      "name": "PRN in a sentence",
+      "text": "Sensory break PRN during writing",
+      "blocked": true
+    },
+    {
+      "name": "if needed",
+      "text": "Provide a scribe if needed",
+      "blocked": true
+    },
+    {
+      "name": "per teacher discretion",
+      "text": "Per Teacher Discretion",
+      "blocked": true
+    },
+    {
+      "name": "daily",
+      "text": "daily",
+      "blocked": false
+    },
+    {
+      "name": "every assignment",
+      "text": "for every written assignment longer than 3 sentences",
+      "blocked": false
+    },
+    {
+      "name": "all tests",
+      "text": "for all tests and quizzes",
+      "blocked": false
+    },
+    {
+      "name": "observable trigger",
+      "text": "when the student puts head down or says \"I need a break\"",
+      "blocked": false
+    },
+    {
+      "name": "transitions",
+      "text": "at each transition between activities",
+      "blocked": false
+    },
+    {
+      "name": "empty text is not blocked here (a missing part is a different error)",
+      "text": "",
+      "blocked": false
+    },
+    {
+      "name": "prn inside another word",
+      "text": "improvement of the pronoun prnx drill",
+      "blocked": false
+    },
+    {
+      "name": "needed alone",
+      "text": "daily; extra time is needed on tests",
+      "blocked": false
+    },
+    {
+      "name": "as in another word",
+      "text": "alas needed practice is logged",
+      "blocked": false
+    },
+    {
+      "name": "hyphenated",
+      "text": "as-needed",
+      "blocked": true
+    },
+    {
+      "name": "hyphenated, capitals",
+      "text": "As-Needed",
+      "blocked": true
+    },
+    {
+      "name": "PRN with as needed",
+      "text": "PRN-as needed",
+      "blocked": true
+    },
+    {
+      "name": "underscore",
+      "text": "as_needed",
+      "blocked": true
+    },
+    {
+      "name": "hyphenated if-needed",
+      "text": "Provide a scribe if-needed",
+      "blocked": true
+    },
+    {
+      "name": "inside a quoted observable sign",
+      "text": "when the student says \"I need help as needed\"",
+      "blocked": true
+    },
+    {
+      "name": "tab between words",
+      "text": "as\tneeded",
+      "blocked": true
+    },
+    {
+      "name": "a hyphenated word that is not a blocked phrase",
+      "text": "one-to-one support at every transition",
+      "blocked": false
+    }
+  ],
+  "open_questions": []
+}

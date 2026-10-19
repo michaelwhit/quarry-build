@@ -1,0 +1,711 @@
+openapi: 3.1.0
+info:
+  title: IEP Assistant API
+  version: 0.1.0
+  summary: Contract between the Apple apps and the TypeScript api service.
+  description: |
+    Version 0, written in the sprint two foundation. Shared contract owned by Track 2:
+    changes go in their own small PR approved by every consuming track (see CONTRIBUTING.md).
+
+    Rules that hold for every endpoint:
+    - Deny by default. Every operation requires a session (bearer token bound to the device by a
+      DPoP proof) and passes the authorization middleware (role x relationship x sensitivity tier).
+    - The tenant comes from the session, never from the request.
+    - No student data in URLs or query strings. Paths carry opaque UUIDs only.
+    - Every read or write of a student record writes an audit event; if that write fails, the
+      request fails.
+  license:
+    name: Proprietary
+    identifier: LicenseRef-Proprietary
+servers:
+  - url: http://localhost:8080
+    description: Local server (Docker Compose), synthetic data only
+security:
+  - session: []
+tags:
+  - name: health
+    description: Liveness for load balancers and CI.
+  - name: session
+    description: The signed-in staff member.
+  - name: students
+    description: Caseload-scoped student records.
+  - name: sync
+    description: Outbox push and change-feed pull (architecture section 6.3).
+  - name: imports
+    description: Director CSV loads of students and caseload assignments (architecture section 9.4).
+  - name: calendar
+    description: SRS progress-report dates and instructional days per school (architecture section 5.2a).
+paths:
+  /healthz:
+    get:
+      tags: [health]
+      operationId: getHealth
+      summary: Liveness check
+      security: []
+      responses:
+        "200":
+          description: The service is running.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+  /v0/me:
+    get:
+      tags: [session]
+      operationId: getMe
+      summary: The signed-in staff member and role
+      responses:
+        "200":
+          description: Current staff member.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Staff"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v0/students:
+    get:
+      tags: [students]
+      operationId: listStudents
+      summary: Students in the caller's relationship scope
+      description: Returns S1 fields only. Higher tiers come from the per-student endpoints.
+      responses:
+        "200":
+          description: Caseload-scoped students.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [students]
+                properties:
+                  students:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StudentSummary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v0/students/{studentId}/goals:
+    get:
+      tags: [students]
+      operationId: listStudentGoals
+      summary: Goals and measurement plans for one student's current IEP
+      parameters:
+        - $ref: "#/components/parameters/StudentId"
+      responses:
+        "200":
+          description: Goals with their measurement plans.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [goals]
+                properties:
+                  goals:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Goal"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v0/sync/push:
+    post:
+      tags: [sync]
+      operationId: syncPush
+      summary: Apply outbox mutations from a device
+      description: Idempotent per mutation (idempotency_key is the outbox entry id).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyncPushRequest"
+      responses:
+        "200":
+          description: One result per mutation, in request order.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncPushResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v0/sync/changes:
+    get:
+      tags: [sync]
+      operationId: syncChanges
+      summary: Changed rows and tombstones since a cursor
+      parameters:
+        - name: since
+          in: query
+          required: true
+          description: The last server_seq the device applied (0 for a first sync).
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 500
+      responses:
+        "200":
+          description: A page of changes.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncChangesResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v0/imports/students:
+    post:
+      tags: [imports]
+      operationId: importStudents
+      summary: Preview or load a student roster CSV
+      description: |
+        Director and building coordinator only. With commit false nothing is written and the
+        report lists row-level problems. With commit true the file loads all-or-nothing; if any
+        row has a problem nothing is written and the response is 422 with the same report.
+        Students are matched on local student id. Active students missing from the file are
+        counted, never removed. The CSV text is not stored or logged.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportRequest"
+      responses:
+        "200":
+          description: The preview, or the committed load.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportReport"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          description: A commit was refused because the file has problems. Nothing was written.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportReport"
+  /v0/imports/caseloads:
+    post:
+      tags: [imports]
+      operationId: importCaseloads
+      summary: Preview or load a caseload assignment CSV
+      description: |
+        Columns: staff email, local student id, optional relationship (default caseload). The
+        uploader is the grantor of every row and cannot assign themselves. Same preview and
+        all-or-nothing rules as the student import.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportRequest"
+      responses:
+        "200":
+          description: The preview, or the committed load.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportReport"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          description: A commit was refused because the file has problems. Nothing was written.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportReport"
+  /v0/schools/{schoolId}/reporting-periods:
+    post:
+      tags: [calendar]
+      operationId: addReportingPeriods
+      summary: Add the SRS progress-report dates for a school year
+      description: Director and building coordinator only. Adds dates; existing dates are kept.
+      parameters:
+        - name: schoolId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SchoolYearDates"
+      responses:
+        "200":
+          description: How many dates were added and how many already existed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AddedDates"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v0/schools/{schoolId}/calendar:
+    post:
+      tags: [calendar]
+      operationId: addInstructionalDays
+      summary: Add instructional days for a school year
+      description: Director and building coordinator only. Adds days; existing days are kept.
+      parameters:
+        - name: schoolId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SchoolYearDates"
+      responses:
+        "200":
+          description: How many days were added and how many already existed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AddedDates"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+components:
+  securitySchemes:
+    session:
+      type: http
+      scheme: bearer
+      description: >-
+        Short-lived access token from the sign-in flow, sent with a DPoP proof header signed by
+        the device's Secure Enclave key (security design section 2.3). Track 1 owns the details.
+  parameters:
+    StudentId:
+      name: studentId
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Id"
+  responses:
+    BadRequest:
+      description: The request failed validation.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    Unauthorized:
+      description: No valid session.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    Forbidden:
+      description: The session is valid but the policy denies this action.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    NotFound:
+      description: Not found, or outside the caller's scope (indistinguishable on purpose).
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  schemas:
+    Id:
+      type: string
+      format: uuid
+      description: UUIDv7, generated on the client so records can be created offline.
+    Health:
+      type: object
+      required: [status, version]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        version:
+          type: string
+    Problem:
+      type: object
+      description: RFC 9457 problem details. Never contains student data.
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+    StaffRole:
+      type: string
+      description: Roles from security design section 3.3.
+      enum:
+        - sped_director
+        - building_coordinator
+        - case_manager
+        - related_service_provider
+        - gen_ed_teacher
+        - paraprofessional
+        - district_it_admin
+        - vendor_support
+    ImportRequest:
+      type: object
+      required: [csv, commit]
+      properties:
+        csv:
+          type: string
+          description: The file's text. Up to 5000 rows, 40 columns, 200 characters per cell.
+        commit:
+          type: boolean
+        mapping:
+          type: object
+          description: >-
+            Optional override of which column feeds which field, for example
+            {"local_student_id": "Student_Number"}. Unlisted fields use the default header names.
+          additionalProperties:
+            type: string
+        date_format:
+          type: string
+          enum: [iso, mdy]
+          default: iso
+          description: How dates of birth are written (YYYY-MM-DD, or M/D/YYYY).
+    ImportRowError:
+      type: object
+      description: Row 0 means a missing column. Never contains the cell's text.
+      required: [row, field, code]
+      properties:
+        row:
+          type: integer
+          minimum: 0
+        field:
+          type: string
+        code:
+          type: string
+    ImportReport:
+      type: object
+      required: [committed, rows, creates, updates, unchanged, errors]
+      properties:
+        committed:
+          type: boolean
+        rows:
+          type: integer
+        creates:
+          type: integer
+        updates:
+          type: integer
+        unchanged:
+          type: integer
+        missing_from_file:
+          type: integer
+          description: Active students absent from the file (student import only). Flagged, not removed.
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportRowError"
+    SchoolYearDates:
+      type: object
+      required: [school_year, dates]
+      properties:
+        school_year:
+          type: string
+          pattern: "^20[0-9]{2}-[0-9]{2}$"
+          description: For example 2026-27, running 1 August to 31 July.
+        dates:
+          type: array
+          maxItems: 400
+          items:
+            type: string
+            format: date
+    AddedDates:
+      type: object
+      required: [added, existing]
+      properties:
+        added:
+          type: integer
+        existing:
+          type: integer
+    Staff:
+      type: object
+      required: [id, display_name, email, role]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        display_name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          $ref: "#/components/schemas/StaffRole"
+    StudentSummary:
+      type: object
+      description: S1 directory-lite fields.
+      required: [id, display_name, grade, school_id]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        display_name:
+          type: string
+          description: Preferred name if set, otherwise first name and last initial.
+        grade:
+          type: string
+          description: K, 1 to 12, or a district code such as PK or ADULT.
+        school_id:
+          $ref: "#/components/schemas/Id"
+    GoalArea:
+      type: string
+      enum:
+        - reading
+        - written_expression
+        - math
+        - communication
+        - social_emotional
+        - behavior
+        - adaptive
+        - motor
+        - transition
+        - other
+    MeasurementType:
+      type: string
+      enum:
+        - percent_correct
+        - trials
+        - frequency
+        - rate
+        - duration
+        - latency
+        - rubric
+        - prompt_level
+        - task_analysis
+        - yes_no
+    MeasurementPlan:
+      type: object
+      required: [id, goal_id, type]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        goal_id:
+          $ref: "#/components/schemas/Id"
+        objective_id:
+          $ref: "#/components/schemas/Id"
+        type:
+          $ref: "#/components/schemas/MeasurementType"
+        unit:
+          type: string
+        target_value:
+          type: number
+        trials_per_session:
+          type: integer
+          minimum: 1
+        prompt_hierarchy:
+          type: array
+          items:
+            type: string
+        task_steps:
+          type: array
+          items:
+            type: string
+        frequency:
+          type: string
+          description: How often data is collected, for example "2x weekly".
+    Goal:
+      type: object
+      required: [id, iep_id, area, statement, sequence, measurement_plans]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        iep_id:
+          $ref: "#/components/schemas/Id"
+        area:
+          $ref: "#/components/schemas/GoalArea"
+        statement:
+          type: string
+        condition:
+          type: string
+        behavior:
+          type: string
+        baseline:
+          type: string
+        target:
+          type: string
+        criteria:
+          type: string
+        evaluation_method:
+          type: string
+        schedule:
+          type: string
+        standard_refs:
+          type: array
+          items:
+            type: string
+        srs_goal_order:
+          type: integer
+          minimum: 1
+          description: Position of the goal on the SRS progress report, for matching goals.
+        is_transition_related:
+          type: boolean
+        sequence:
+          type: integer
+          minimum: 0
+        measurement_plans:
+          type: array
+          items:
+            $ref: "#/components/schemas/MeasurementPlan"
+    DataPoint:
+      type: object
+      description: Append-only. A correction is a new row with corrects_id set.
+      required: [id, goal_id, plan_id, observed_at, collector_id, device_id, client_created_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        goal_id:
+          $ref: "#/components/schemas/Id"
+        objective_id:
+          $ref: "#/components/schemas/Id"
+        plan_id:
+          $ref: "#/components/schemas/Id"
+        observed_at:
+          type: string
+          format: date-time
+        value_num:
+          type: number
+        correct:
+          type: integer
+          minimum: 0
+        total:
+          type: integer
+          minimum: 0
+        prompt_level:
+          type: string
+        step_results:
+          type: array
+          items:
+            type: boolean
+        setting:
+          type: string
+        note:
+          type: string
+          maxLength: 2000
+        collector_id:
+          $ref: "#/components/schemas/Id"
+        device_id:
+          $ref: "#/components/schemas/Id"
+        client_created_at:
+          type: string
+          format: date-time
+        corrects_id:
+          $ref: "#/components/schemas/Id"
+    SyncEntity:
+      type: string
+      enum: [data_point]
+      description: Entities a device may push in v0. Grows with each contract PR.
+    SyncMutation:
+      type: object
+      required: [idempotency_key, entity, op, payload]
+      properties:
+        idempotency_key:
+          $ref: "#/components/schemas/Id"
+        entity:
+          $ref: "#/components/schemas/SyncEntity"
+        op:
+          type: string
+          enum: [insert]
+        base_row_version:
+          type: integer
+          format: int64
+        payload:
+          $ref: "#/components/schemas/DataPoint"
+    SyncPushRequest:
+      type: object
+      required: [device_id, mutations]
+      properties:
+        device_id:
+          $ref: "#/components/schemas/Id"
+        mutations:
+          type: array
+          maxItems: 500
+          items:
+            $ref: "#/components/schemas/SyncMutation"
+    SyncMutationResult:
+      type: object
+      required: [idempotency_key, status]
+      properties:
+        idempotency_key:
+          $ref: "#/components/schemas/Id"
+        status:
+          type: string
+          enum: [applied, conflict, rejected]
+        reason:
+          type: string
+          description: Machine-readable reason when rejected. Never contains student data.
+    SyncPushResponse:
+      type: object
+      required: [results]
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/SyncMutationResult"
+    SyncChange:
+      type: object
+      required: [entity, id, server_seq, deleted]
+      properties:
+        entity:
+          type: string
+        id:
+          $ref: "#/components/schemas/Id"
+        server_seq:
+          type: integer
+          format: int64
+        deleted:
+          type: boolean
+          description: True for a tombstone; the device removes the row.
+        row:
+          type: object
+          additionalProperties: true
+    SyncChangesResponse:
+      type: object
+      required: [changes, cursor, has_more]
+      properties:
+        changes:
+          type: array
+          items:
+            $ref: "#/components/schemas/SyncChange"
+        cursor:
+          type: integer
+          format: int64
+        has_more:
+          type: boolean

@@ -1,0 +1,8 @@
+extends:
+  - recommended
+rules:
+  security-defined: error
+  # The local server is a localhost URL by design; the cloud URL is added when it exists.
+  no-server-example.com: off
+  # /healthz is a liveness probe and has no client error to report.
+  operation-4xx-response: warn
