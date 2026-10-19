@@ -20,7 +20,7 @@ interface Change {
   row?: Record<string, unknown>;
 }
 
-// Security design section 3.3: gen-ed teachers and paraprofessionals read goal-level data only for
+// Gen-ed teachers and paraprofessionals read goal-level data only for
 // goals delegated to them. Students (S1) and IEP shells (S2) follow their roster.
 describe.skipIf(!databaseUrl)("role scope on goal data", () => {
   let owner: pg.Client;
