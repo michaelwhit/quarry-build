@@ -46,7 +46,7 @@ public struct StudentDetailView<GoalDestination: View>: View {
         }
         .accessibilityIdentifier(AccessibilityID.goalList)
         .themedList()
-        .navigationTitle(student.displayName)
+        .navigationTitle(store.displayName(for: student))
         .toolbar {
             if store.canManageStudents {
                 ToolbarItem {

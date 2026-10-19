@@ -86,7 +86,7 @@ public struct DashboardView: View {
             } label: {
                 HStack(spacing: Spacing.medium) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(row.student.displayName).font(.headline).foregroundStyle(Theme.ink)
+                        Text(store.displayName(for: row.student)).font(.headline).foregroundStyle(Theme.ink)
                         Text(row.goal.area.title).font(.subheadline).foregroundStyle(Theme.muted)
                         HStack(spacing: 6) {
                             if let latest = row.progress.latest {

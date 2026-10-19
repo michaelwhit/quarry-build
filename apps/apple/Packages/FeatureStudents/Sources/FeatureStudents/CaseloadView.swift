@@ -33,7 +33,7 @@ public struct CaseloadView: View {
         .scrollContentBackground(.hidden)
         .background(Theme.background)
         .accessibilityIdentifier(AccessibilityID.caseloadList)
-        .navigationTitle("Caseload")
+        .navigationTitle(store.roleView.caseloadTitle)
         .toolbar {
             if store.canManageStudents {
                 ToolbarItem {
@@ -71,7 +71,7 @@ struct StudentRow: View {
         let goals = store.goals(for: student)
         let approved = goals.filter { store.approval(for: $0) != nil }.count
         VStack(alignment: .leading, spacing: 4) {
-            Text(student.displayName).font(.headline)
+            Text(store.displayName(for: student)).font(.headline)
             HStack(spacing: 8) {
                 Text("Grade \(student.grade)")
                 if let school = store.school(for: student) {

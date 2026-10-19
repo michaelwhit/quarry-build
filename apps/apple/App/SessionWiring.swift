@@ -7,9 +7,10 @@ import SwiftUI
 extension PrototypeStore {
     /// The goals of one student that a session could cover, with the data already on file.
     func sessionGoals(for student: Student) -> [SessionGoal] {
-        goals(for: student).compactMap { goal in
+        let shown = displayStudent(student)
+        return goals(for: student).compactMap { goal in
             plan(for: goal).map {
-                SessionGoal(student: student, goal: goal, plan: $0, history: dataPoints(for: goal))
+                SessionGoal(student: shown, goal: goal, plan: $0, history: dataPoints(for: goal))
             }
         }
     }
