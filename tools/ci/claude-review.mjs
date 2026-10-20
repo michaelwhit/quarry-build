@@ -106,7 +106,17 @@ async function withRetry(label, fn) {
     if (res.status !== 429 && res.status < 500) break;
     await new Promise((r) => setTimeout(r, 2000 * attempt));
   }
-  throw new Error(`${label} failed with status ${last.status}`);
+  throw new Error(`${label} failed with status ${last.status}${await detail(last)}`);
+}
+
+// The API's error type and message (never the request) to tell a bad request from a billing or limit problem.
+async function detail(res) {
+  try {
+    const e = (await res.json())?.error;
+    return e ? ` (${clean(e.type, 60)}: ${clean(e.message, 200)})` : "";
+  } catch {
+    return "";
+  }
 }
 
 async function main(env) {
