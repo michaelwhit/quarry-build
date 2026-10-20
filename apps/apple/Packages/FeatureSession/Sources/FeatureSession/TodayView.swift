@@ -121,12 +121,21 @@ public struct TodayView: View {
     }
 }
 
+/// How the Today tab lays out the goals it is given.
+public enum TodayLayout: Sendable {
+    /// Students with their goals, pinned goals and a privacy toggle.
+    case caseload
+    /// One short list of goals and a Start button, for a role that sees first names only.
+    case goalsToday
+}
+
 /// Today tab plus the session it starts, and the resume-after-crash check. The app supplies the
 /// goals and where finished data points go; this owns everything between.
 public struct TodayTab: View {
     let goals: [SessionGoal]
     let context: CommitContext
     let store: any SessionDraftStoring
+    let layout: TodayLayout
     let deliver: @MainActor ([DataPoint]) throws -> Void
 
     @State private var session: SessionModel?
@@ -139,11 +148,13 @@ public struct TodayTab: View {
 
     public init(
         goals: [SessionGoal], context: CommitContext, store: any SessionDraftStoring,
+        layout: TodayLayout = .caseload,
         deliver: @escaping @MainActor ([DataPoint]) throws -> Void
     ) {
         self.goals = goals
         self.context = context
         self.store = store
+        self.layout = layout
         self.deliver = deliver
     }
 
@@ -159,12 +170,20 @@ public struct TodayTab: View {
                 }
             } else {
                 NavigationStack {
-                    TodayView(
-                        cards: TodayPlanner.cards(goals: goals, now: Date()),
-                        pinned: TodayPlanner.pinned(goals: goals, pinnedIDs: pinnedIDs),
-                        pinnedIDs: pinnedIDs, hideNames: $hideNames,
-                        resumeAvailable: resumable != nil,
-                        onStart: start, onResume: resume, onTogglePin: togglePin)
+                    switch layout {
+                    case .caseload:
+                        TodayView(
+                            cards: TodayPlanner.cards(goals: goals, now: Date()),
+                            pinned: TodayPlanner.pinned(goals: goals, pinnedIDs: pinnedIDs),
+                            pinnedIDs: pinnedIDs, hideNames: $hideNames,
+                            resumeAvailable: resumable != nil,
+                            onStart: start, onResume: resume, onTogglePin: togglePin)
+                    case .goalsToday:
+                        ParaTodayView(
+                            cards: ParaGoalCard.cards(from: goals),
+                            resumeAvailable: resumable != nil,
+                            onStart: { start(goals) }, onResume: resume)
+                    }
                 }
             }
         }

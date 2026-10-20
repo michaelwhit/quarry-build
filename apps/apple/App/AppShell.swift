@@ -169,6 +169,7 @@ struct AppShell: View {
             NavigationStack {
                 TodayTab(
                     goals: store.allSessionGoals(), context: context, store: drafts,
+                    layout: store.roleView.homeStyle == .goalsToday ? .goalsToday : .caseload,
                     deliver: { try store.deliver($0) })
             }
             .id(context.collectorID)
