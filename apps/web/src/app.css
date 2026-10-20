@@ -705,3 +705,50 @@ h2.page-title {
 .empty-start {
   margin: 12px 0;
 }
+
+.danger,
+.danger-ghost {
+  padding: 10px 14px;
+  border: 1px solid var(--bad);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--bad);
+  font: inherit;
+}
+.danger {
+  background: var(--bad);
+  color: #000;
+}
+.danger-ghost {
+  margin-top: 16px;
+}
+
+.file-btn {
+  position: relative;
+  cursor: pointer;
+}
+.file-btn input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.history {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.history li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+}
+.history .danger-ghost {
+  margin-top: 0;
+}

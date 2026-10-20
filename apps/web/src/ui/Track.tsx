@@ -8,7 +8,8 @@ import {
   inputKind,
   sessionValue,
 } from "../data/session.ts";
-import { addPoint } from "../data/workspace.ts";
+import { addPoint, deletePoint, getWorkspace } from "../data/workspace.ts";
+import { DeleteButton } from "./Forms.tsx";
 import { Chip } from "./Chip.tsx";
 import { GoalPanel } from "./GoalPanel.tsx";
 import { Graph } from "./Graph.tsx";
@@ -288,10 +289,48 @@ export function TrackGoal({ studentId, goalId }: { studentId: string; goalId: st
           unit={unit}
         />
       </section>
+      <History goalId={goalId} unit={unit} />
       <p style={{ color: "var(--text-muted)", fontSize: ".8rem" }}>
         Practice mode: made-up data only. Sessions you save stay in this browser; clear them on the
         More tab.
       </p>
     </>
+  );
+}
+
+const when = (iso: string) =>
+  new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+
+/** Every saved session for the goal, newest first, each removable if it was a mistake. */
+function History({ goalId, unit }: { goalId: string; unit: string }) {
+  const rows = getWorkspace()
+    .points.filter((p) => p.goal_id === goalId)
+    .sort((a, b) => b.observed_at.localeCompare(a.observed_at));
+  return (
+    <section className="goal" aria-label="History">
+      <h3>History</h3>
+      {rows.length === 0 ? (
+        <p className="empty">No sessions saved yet.</p>
+      ) : (
+        <ul className="history">
+          {rows.map((p) => (
+            <li key={p.id}>
+              <div>
+                <strong>
+                  {p.value_num ?? p.correct ?? "–"} {unit}
+                </strong>
+                <span className="meta"> · {when(p.observed_at)}</span>
+                {p.note && <div className="meta">{p.note}</div>}
+              </div>
+              <DeleteButton
+                label="Remove"
+                ask="Yes, remove this session"
+                onDelete={() => deletePoint(p.id)}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }

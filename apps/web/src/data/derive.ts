@@ -75,3 +75,26 @@ export function worstStatus(statuses: GoalStatus[]): GoalStatus {
 export function goalLabel(goal: Goal): string {
   return goal.area.replaceAll("_", " ");
 }
+
+export interface Due {
+  period: "day" | "week" | "month";
+  required: number;
+  done: number;
+  due: boolean;
+}
+
+/**
+ * How many sessions the goal's schedule asks for in the current day, week (Monday start) or month,
+ * and how many are already saved in that window.
+ */
+export function dueFor(frequency: string, series: SeriesPoint[], now: Date = new Date()): Due {
+  const f = frequency.trim().toLowerCase();
+  const times = /^(\d+)x weekly$/.exec(f);
+  const period: Due["period"] = f === "daily" ? "day" : f === "monthly" ? "month" : "week";
+  const required = times?.[1] ? Math.max(1, Number(times[1])) : 1;
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (period === "week") start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+  if (period === "month") start.setDate(1);
+  const done = series.filter((p) => Date.parse(p.at) >= start.getTime()).length;
+  return { period, required, done, due: done < required };
+}

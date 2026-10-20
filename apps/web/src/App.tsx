@@ -9,7 +9,7 @@ import {
   students,
 } from "./data/district.ts";
 import { Chip } from "./ui/Chip.tsx";
-import { Home, More, PlannedScreen } from "./ui/Home.tsx";
+import { Home, More, PlannedScreen, Today } from "./ui/Home.tsx";
 import { GoalPanel } from "./ui/GoalPanel.tsx";
 import { Graph, Sparkline } from "./ui/Graph.tsx";
 import { AddGoal, AddStudent } from "./ui/Forms.tsx";
@@ -142,6 +142,9 @@ function StudentPage({ id }: { id: string }) {
       <p>
         <a className="btn" href={`#/student/${s.student.id}/add-goal`}>
           Add a goal
+        </a>{" "}
+        <a className="btn" href={`#/student/${s.student.id}/edit`}>
+          Edit student
         </a>
       </p>
       {s.goals.length === 0 && <p className="empty">No goals yet.</p>}
@@ -154,6 +157,9 @@ function StudentPage({ id }: { id: string }) {
           <GoalPanel goal={goal} plan={plan} />
           <a className="btn" href={`#/track/${s.student.id}/${goal.id}`}>
             Track this goal
+          </a>{" "}
+          <a className="btn" href={`#/student/${s.student.id}/goal/${goal.id}/edit`}>
+            Edit goal
           </a>
           <Graph
             series={series}
@@ -177,6 +183,8 @@ export function App() {
   // Re-render on every practice-data change; the views are rebuilt in data/district.ts.
   useSyncExternalStore(subscribe, getVersion);
   const g = /^#\/student\/([^/]+)\/add-goal$/.exec(hash);
+  const es = /^#\/student\/([^/]+)\/edit$/.exec(hash);
+  const eg = /^#\/student\/([^/]+)\/goal\/([^/]+)\/edit$/.exec(hash);
   const screen =
     t?.[1] && t[2] ? (
       <TrackGoal studentId={t[1]} goalId={t[2]} />
@@ -184,6 +192,10 @@ export function App() {
       <TrackPicker />
     ) : hash === "#/add-student" ? (
       <AddStudent />
+    ) : es?.[1] ? (
+      <AddStudent editId={decodeURIComponent(es[1])} />
+    ) : eg?.[1] && eg[2] ? (
+      <AddGoal studentId={decodeURIComponent(eg[1])} editGoalId={decodeURIComponent(eg[2])} />
     ) : g?.[1] ? (
       <AddGoal studentId={decodeURIComponent(g[1])} />
     ) : m?.[1] ? (
@@ -191,10 +203,7 @@ export function App() {
     ) : hash === "#/caseload" ? (
       <Caseload />
     ) : hash === "#/today" ? (
-      <PlannedScreen
-        title="Today"
-        text="Today's sessions are not on the web yet. Use Track progress to record data for a goal."
-      />
+      <Today />
     ) : hash === "#/libraries" ? (
       <PlannedScreen
         title="Libraries"
