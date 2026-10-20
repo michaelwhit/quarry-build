@@ -1,4 +1,5 @@
 import CoreModels
+import FeatureAcknowledgment
 import Foundation
 import Observation
 import Persistence
@@ -10,6 +11,8 @@ import Persistence
 final class AppModel {
     private(set) var store: PrototypeStore?
     private(set) var loadError: String?
+    /// Who has agreed to the confidentiality page, kept beside the rest of the prototype's state.
+    private(set) var acknowledgments: (any AcknowledgmentStoring)?
 
     init() {
         do {
@@ -27,6 +30,11 @@ final class AppModel {
                 .appendingPathComponent("IEPAssistantPrototype", isDirectory: true)
                 .appendingPathComponent("state.json")
             store = PrototypeStore(dataset: dataset, stateURL: stateURL)
+            acknowledgments = FileAcknowledgmentStore(
+                url:
+                    support
+                    .appendingPathComponent("IEPAssistantPrototype", isDirectory: true)
+                    .appendingPathComponent("acknowledgments.json"))
         } catch {
             loadError = "The demo district could not be loaded: \(error)"
         }

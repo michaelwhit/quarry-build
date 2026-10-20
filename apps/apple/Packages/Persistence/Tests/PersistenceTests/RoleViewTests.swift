@@ -163,6 +163,14 @@ struct RoleViewTests {
         }
     }
 
+    @Test("only the paraprofessional agrees to the confidentiality page first")
+    func acknowledgment() {
+        for role in StaffRole.allCases {
+            #expect(RoleView(role: role).needsAcknowledgment == (role == .paraprofessional))
+        }
+        #expect(!RoleView.signedOut.needsAcknowledgment)
+    }
+
     @Test("the defaults follow the role provider's table")
     func providerTable() {
         let coordinator = RoleView(role: .buildingCoordinator)

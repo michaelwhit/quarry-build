@@ -129,6 +129,8 @@ public struct RoleView: Equatable, Sendable {
     public var canSeeEvaluations: Bool
     /// True when this role works from an iPhone only.
     public var iPhoneOnly: Bool
+    /// True when the role reads and agrees to the confidentiality page before seeing any student.
+    public var needsAcknowledgment: Bool
     /// True until the director signs off on the defaults; screens mark such roles "proposed".
     public var isProposedDefault: Bool
 
@@ -174,6 +176,7 @@ public struct RoleView: Equatable, Sendable {
         canSeeFullIEP = c.canSeeFullIEP
         canSeeEvaluations = c.canSeeEvaluations
         iPhoneOnly = c.iPhoneOnly
+        needsAcknowledgment = c.role == .paraprofessional
         isProposedDefault = c.isProposedDefault
     }
 
