@@ -114,6 +114,10 @@ public enum AccessibilityID {
     public static let resetConfirm = "reset-demo-data-confirm"
     public static let signOut = "sign-out"
     public static let startSession = "start-session"
+    public static let historyRemove = "history-remove"
+    public static let historyRemoveConfirm = "history-remove-confirm"
+    public static let savePracticeFile = "save-practice-file"
+    public static let loadPracticeFile = "load-practice-file"
     public static let showToday = "show-today"
     public static let signInList = "sign-in-list"
     public static func signInRow(_ id: UUID) -> String { "sign-in-row-\(id.uuidString)" }
