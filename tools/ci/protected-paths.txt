@@ -20,3 +20,6 @@
 (^|/)package\.json$
 (^|/)pnpm-lock\.yaml$
 Package\.resolved$
+^apps/web/src/App\.tsx$
+^apps/web/src/data/(roles|district|workspace)\.ts$
+^apps/web/src/ui/SignIn\.tsx$
