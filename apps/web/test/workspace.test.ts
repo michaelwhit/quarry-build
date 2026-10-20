@@ -235,6 +235,27 @@ describe("export and import", () => {
   });
 });
 
+describe("import modes", () => {
+  it("adds only new students and leaves existing ones alone, or replaces everything", () => {
+    const a = addStudent({ firstName: "Pat", lastName: "Example", grade: "3" });
+    addPoint(addGoal(a, goal), 4, "note");
+    const text = exportText();
+    clearAll();
+    addStudent({ firstName: "Sam", lastName: "Sample", grade: "4" });
+    expect(importText(text, "add")).toEqual({ ok: true, message: "Added 1 student." });
+    expect(getWorkspace().students).toHaveLength(2);
+    expect(getWorkspace().points).toHaveLength(1);
+    expect(importText(text, "add").message).toBe(
+      "Added 0 students; 1 already here and left as they are.",
+    );
+    expect(getWorkspace().students).toHaveLength(2);
+    expect(getWorkspace().points).toHaveLength(1);
+    expect(importText(text, "replace").ok).toBe(true);
+    expect(getWorkspace().students).toHaveLength(1);
+    expect(importText("not json", "add").ok).toBe(false);
+  });
+});
+
 describe("history", () => {
   it("removes one saved session", () => {
     const sid = addStudent({ firstName: "Pat", lastName: "Example", grade: "3" });
