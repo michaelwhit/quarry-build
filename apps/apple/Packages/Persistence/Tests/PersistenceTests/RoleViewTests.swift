@@ -105,6 +105,57 @@ struct RoleViewTests {
         #expect(shown.displayName == (student.preferredName ?? student.firstName))
     }
 
+    @Test("goal text for a first-name-only role has no last name or student id")
+    func goalText() throws {
+        let store = try makeStore()
+        let director = try #require(store.dataset.staff.first { $0.role == .spedDirector })
+        store.signIn(as: director)
+        var student = try #require(store.visibleStudents.first)
+        student.localStudentID = "L-1234"
+        let goal = Goal(
+            id: UUID(), tenantID: student.tenantID, iepID: UUID(), area: .reading,
+            statement: "\(student.firstName) \(student.lastName) will read 40 words.",
+            condition: "With \(student.lastName.uppercased())'s picture cards",
+            baseline: "Id \(student.localStudentID ?? "") started at 20", sequence: 1)
+        #expect(store.displayGoal(goal, for: student) == goal)
+
+        let para = try #require(store.dataset.staff.first { $0.role == .paraprofessional })
+        store.signIn(as: para)
+        let shown = store.displayGoal(goal, for: student)
+        let first = student.preferredName ?? student.firstName
+        #expect(shown.id == goal.id && shown.area == goal.area && shown.sequence == goal.sequence)
+        #expect(shown.statement == "\(first) will read 40 words.")
+        #expect(shown.condition == "With \(first)'s picture cards")
+        #expect(shown.baseline == "Id [ID] started at 20")
+        #expect(shown.behavior == nil && shown.target == nil && shown.criteria == nil)
+    }
+
+    @Test("a preferred name with the last name, and parts of a compound surname, are scrubbed")
+    func preferredAndCompound() {
+        var student = Student(
+            id: UUID(), tenantID: UUID(), schoolID: UUID(), firstName: "Margaret",
+            lastName: "Smith-Jones", preferredName: "Maggie", grade: "3")
+        #expect(
+            PrototypeStore.scrubbed(
+                "Maggie Smith-Jones and Jones's friend Smith work with Margaret.",
+                of: student, shownAs: "Maggie")
+                == "Maggie and Maggie's friend Maggie work with Margaret.")
+        student.lastName = "Van Der Berg"
+        #expect(
+            PrototypeStore.scrubbed("Berg reads with Maggie Van Der Berg.", of: student, shownAs: "Maggie")
+                == "Maggie reads with Maggie.")
+    }
+
+    @Test("a last name inside another word is left alone")
+    func wholeWordsOnly() {
+        let student = Student(
+            id: UUID(), tenantID: UUID(), schoolID: UUID(), firstName: "Sam", lastName: "Max",
+            grade: "3")
+        #expect(
+            PrototypeStore.scrubbed("Max uses a maximum of 3 cards.", of: student, shownAs: "Sam")
+                == "Sam uses a maximum of 3 cards.")
+    }
+
     @Test("only the paraprofessional is held to the iPhone")
     func phoneOnly() {
         for role in StaffRole.allCases {
