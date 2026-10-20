@@ -256,6 +256,30 @@ describe("import modes", () => {
   });
 });
 
+describe("import add keeps ids unique", () => {
+  it("skips records whose own id is already here or repeated in the file", () => {
+    const a = addStudent({ firstName: "Pat", lastName: "Example", grade: "3" });
+    addPoint(addGoal(a, goal), 4, "note");
+    const ws = JSON.parse(exportText());
+    const twin = { ...ws.goals[0], id: "new-goal", iep_id: "new-iep" };
+    const crafted = {
+      ...ws,
+      students: [{ ...ws.students[0], id: "new-student" }],
+      ieps: [{ ...ws.ieps[0], id: "new-iep", student_id: "new-student" }],
+      // One goal reuses an id already here, one is new but listed twice.
+      goals: [{ ...ws.goals[0], iep_id: "new-iep" }, twin, twin],
+      plans: [...ws.plans, { ...ws.plans[0], goal_id: "new-goal" }],
+      points: [...ws.points, { ...ws.points[0], id: "new-point", goal_id: "new-goal" }],
+    };
+    expect(importText(JSON.stringify(crafted), "add").ok).toBe(true);
+    const out = getWorkspace();
+    expect(out.students).toHaveLength(2);
+    expect(out.goals.map((g) => g.id).sort()).toEqual([ws.goals[0].id, "new-goal"].sort());
+    expect(out.plans).toHaveLength(2);
+    expect(out.points.map((p) => p.id).sort()).toEqual([ws.points[0].id, "new-point"].sort());
+  });
+});
+
 describe("history", () => {
   it("removes one saved session", () => {
     const sid = addStudent({ firstName: "Pat", lastName: "Example", grade: "3" });
