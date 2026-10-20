@@ -12,7 +12,7 @@ import { Chip } from "./ui/Chip.tsx";
 import { Home, More, PlannedScreen, Today } from "./ui/Home.tsx";
 import { GoalPanel } from "./ui/GoalPanel.tsx";
 import { Graph, Sparkline } from "./ui/Graph.tsx";
-import { AddGoal, AddStudent } from "./ui/Forms.tsx";
+import { AddGoal, AddStudent, ImportStudents } from "./ui/Forms.tsx";
 import { TrackGoal, TrackPicker } from "./ui/Track.tsx";
 import { getVersion, subscribe } from "./data/workspace.ts";
 
@@ -35,7 +35,12 @@ const TABS = [
 ];
 
 function activeTab(hash: string): string {
-  if (hash.startsWith("#/student") || hash === "#/caseload" || hash === "#/add-student")
+  if (
+    hash.startsWith("#/student") ||
+    hash === "#/caseload" ||
+    hash === "#/add-student" ||
+    hash === "#/import-students"
+  )
     return "caseload";
   if (hash === "#/today") return "today";
   if (hash === "#/libraries") return "libraries";
@@ -92,6 +97,9 @@ function Caseload() {
       <p>
         <a className="btn" href="#/add-student">
           Add a student
+        </a>{" "}
+        <a className="btn" href="#/import-students">
+          Import from file
         </a>
       </p>
       {students.length === 0 && (
@@ -192,6 +200,8 @@ export function App() {
       <TrackPicker />
     ) : hash === "#/add-student" ? (
       <AddStudent />
+    ) : hash === "#/import-students" ? (
+      <ImportStudents />
     ) : es?.[1] ? (
       <AddStudent editId={decodeURIComponent(es[1])} />
     ) : eg?.[1] && eg[2] ? (

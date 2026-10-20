@@ -178,18 +178,18 @@ const id = () => crypto.randomUUID();
 const TENANT = "practice";
 const day = (d: Date) => d.toISOString().slice(0, 10);
 
-export function addStudent(input: {
+export interface StudentInput {
   firstName: string;
   lastName: string;
   preferredName?: string;
   grade: string;
-}): string {
+}
+
+function buildStudent(input: StudentInput, n: number, now: Date): { student: Student; iep: Iep } {
   const first = input.firstName.trim().slice(0, 40);
   const last = input.lastName.trim().slice(0, 40);
   if (!first || !last) throw new Error("First and last name are required");
   const sid = id();
-  const n = current.students.length + 1;
-  const now = new Date();
   const end = new Date(now);
   end.setFullYear(end.getFullYear() + 1);
   end.setDate(end.getDate() - 1);
@@ -219,8 +219,34 @@ export function addStudent(input: {
     annual_review_due: day(end),
     reevaluation_due: day(end),
   };
+  return { student, iep };
+}
+
+export function addStudent(input: StudentInput): string {
+  const { student, iep } = buildStudent(input, current.students.length + 1, new Date());
   commit({ ...current, students: [...current.students, student], ieps: [...current.ieps, iep] });
-  return sid;
+  return student.id;
+}
+
+/** Adds several students with one save. If any entry is refused, none is added. */
+export function addStudents(inputs: StudentInput[]): string[] {
+  const now = new Date();
+  const built = inputs.map((input, i) => {
+    try {
+      return buildStudent(input, current.students.length + i + 1, now);
+    } catch (err) {
+      throw new Error(
+        `Entry ${i + 1}: ${err instanceof Error ? err.message : "could not be added"}`,
+        { cause: err },
+      );
+    }
+  });
+  commit({
+    ...current,
+    students: [...current.students, ...built.map((b) => b.student)],
+    ieps: [...current.ieps, ...built.map((b) => b.iep)],
+  });
+  return built.map((b) => b.student.id);
 }
 
 export interface GoalInput {
