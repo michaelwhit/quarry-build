@@ -10,7 +10,9 @@ extension PrototypeStore {
         let shown = displayStudent(student)
         return goals(for: student).compactMap { goal in
             plan(for: goal).map {
-                SessionGoal(student: shown, goal: goal, plan: $0, history: dataPoints(for: goal))
+                SessionGoal(
+                    student: shown, goal: displayGoal(goal, for: student), plan: $0,
+                    history: dataPoints(for: goal))
             }
         }
     }

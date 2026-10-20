@@ -204,7 +204,9 @@ extension PrototypeStore {
     /// The goals a role that works from a short list should see today. Until goal-by-goal
     /// delegation exists this is every goal of the students on the person's list.
     public var goalsForToday: [Goal] {
-        visibleStudents.flatMap { goals(for: $0) }
+        visibleStudents.flatMap { student in
+            goals(for: student).map { displayGoal($0, for: student) }
+        }
     }
 
     /// A copy of the student safe to hand to screens that print `displayName`: roles that see
@@ -221,7 +223,7 @@ extension PrototypeStore {
         return shown
     }
 
-    private static func firstNameOnly(_ student: Student) -> String {
+    static func firstNameOnly(_ student: Student) -> String {
         if let preferred = student.preferredName, !preferred.isEmpty { return preferred }
         return student.firstName
     }
