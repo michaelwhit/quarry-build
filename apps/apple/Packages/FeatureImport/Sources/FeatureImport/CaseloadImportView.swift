@@ -213,24 +213,28 @@ public struct CaseloadImportView: View {
     private func confirm() {
         guard let plan else { return }
         problem = nil
-        var added = 0
-        for row in plan.ready {
-            guard let schoolID = row.schoolID else { continue }
-            do {
-                try store.addStudent(
-                    firstName: row.firstName, lastName: row.lastName, preferredName: row.preferredName,
-                    grade: row.grade, schoolID: schoolID)
-                added += 1
-            } catch {
-                problem =
-                    added == 0
-                    ? "Could not add students. Try again."
-                    : "Added \(added) students, then stopped. Check the list before trying again."
-                break
-            }
+        let rows = plan.ready
+        let entries = rows.compactMap { row -> PrototypeStore.NewStudent? in
+            guard let schoolID = row.schoolID else { return nil }
+            return PrototypeStore.NewStudent(
+                firstName: row.firstName, lastName: row.lastName, preferredName: row.preferredName,
+                grade: row.grade, schoolID: schoolID)
         }
-        if added > 0 { onImported(added) }
-        if problem == nil { addedCount = added }
+        guard entries.count == rows.count else {
+            problem = "Choose a school for the whole file."
+            return
+        }
+        do {
+            // One save for the whole file: either every student is added or none is.
+            let added = try store.addStudents(entries)
+            if !added.isEmpty { onImported(added.count) }
+            addedCount = added.count
+        } catch PrototypeStore.StoreError.invalidBatchEntry(let index, _) {
+            let line = rows.indices.contains(index) ? rows[index].id : index + 2
+            problem = "Line \(line) could not be added, so no students were added. Fix it in the file and try again."
+        } catch {
+            problem = "Could not add students. Nothing was added. Try again."
+        }
     }
 }
 
