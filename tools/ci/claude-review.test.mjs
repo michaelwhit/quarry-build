@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { clean, normalize, render, verdict } from "./claude-review.mjs";
+import { clean, findingsFrom, normalize, render, verdict } from "./claude-review.mjs";
 
 const finding = (over) => ({
   severity: "low",
@@ -16,11 +16,23 @@ test("a high finding blocks, anything else passes", () => {
   assert.equal(verdict(normalize({ findings: [finding({ severity: "high" })] })), "BLOCK");
   assert.equal(verdict(normalize({ findings: [finding({ severity: "medium" })] })), "PASS");
   assert.equal(verdict(normalize({ findings: [] })), "PASS");
-  assert.equal(verdict(normalize(undefined)), "PASS");
 });
 
-test("unknown severities are dropped", () => {
-  assert.equal(normalize({ findings: [finding({ severity: "critical" })] }).length, 0);
+test("a malformed finding or findings list fails instead of passing", () => {
+  assert.throws(() => normalize({ findings: [finding({ severity: "critical" })] }));
+  assert.throws(() => normalize({ findings: [finding({ severity: undefined })] }));
+  assert.throws(() => normalize({ findings: [null] }));
+  assert.throws(() => normalize({ findings: "none" }));
+  assert.throws(() => normalize(undefined));
+});
+
+test("a cut-off or empty model answer fails instead of passing", () => {
+  const call = { type: "tool_use", name: "report_findings", input: { findings: [] } };
+  assert.deepEqual(findingsFrom({ stop_reason: "tool_use", content: [call] }), []);
+  assert.throws(() => findingsFrom({ stop_reason: "max_tokens", content: [call] }), /cut off/);
+  assert.throws(() => findingsFrom({ stop_reason: "end_turn", content: [] }), /no findings/);
+  assert.throws(() => findingsFrom({ content: [{ ...call, input: {} }] }));
+  assert.throws(() => findingsFrom(undefined));
 });
 
 test("the verdict is the first line and model text cannot forge one", () => {

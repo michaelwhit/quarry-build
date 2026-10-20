@@ -53,18 +53,29 @@ export function clean(text, max = 600) {
     .slice(0, max);
 }
 
+// A malformed finding fails the run instead of being dropped, so it can never turn into a PASS.
 export function normalize(raw) {
-  const list = Array.isArray(raw?.findings) ? raw.findings : [];
-  return list
-    .filter((f) => f && SEVERITIES.includes(f.severity))
-    .map((f) => ({
+  if (!Array.isArray(raw?.findings)) throw new Error("findings is not a list");
+  return raw.findings.map((f) => {
+    if (!f || !SEVERITIES.includes(f.severity))
+      throw new Error("finding has an unrecognized severity");
+    return {
       severity: f.severity,
       file: clean(f.file, 200),
       line: Number.isInteger(f.line) ? f.line : 0,
       problem: clean(f.problem),
       fix: clean(f.fix),
       security: f.security_concern === true,
-    }));
+    };
+  });
+}
+
+// Findings from a Messages API response. A cut-off or missing answer fails the run.
+export function findingsFrom(out) {
+  if (out?.stop_reason === "max_tokens") throw new Error("model output was cut off");
+  const call = (out?.content ?? []).find((b) => b.type === "tool_use" && b.name === TOOL.name);
+  if (!call) throw new Error("model returned no findings call");
+  return normalize(call.input);
 }
 
 export function verdict(findings) {
@@ -156,11 +167,7 @@ async function main(env) {
       }),
     }),
   );
-  const out = await res.json();
-  const call = (out.content ?? []).find((b) => b.type === "tool_use" && b.name === TOOL.name);
-  if (!call) throw new Error("model returned no findings call");
-
-  const body = render(normalize(call.input), HEAD_SHA, RUN_URL);
+  const body = render(findingsFrom(await res.json()), HEAD_SHA, RUN_URL);
   await withRetry("comment", () =>
     gh(`issues/${PR_NUMBER}/comments`, {
       method: "POST",
