@@ -58,7 +58,8 @@ extension PrototypeStore {
         } catch let error as StoreError {
             switch error {
             case .saveFailed, .notSignedIn: throw error  // may work on retry
-            case .notAllowed, .unknownPlan, .invalidDataPoint, .unknownSchool, .invalidStudent:
+            case .notAllowed, .unknownPlan, .invalidDataPoint, .unknownSchool, .invalidStudent,
+                .invalidBatchEntry:
                 throw SessionDeliveryError()
             }
         }

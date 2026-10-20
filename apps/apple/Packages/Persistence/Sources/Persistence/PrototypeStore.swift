@@ -18,7 +18,14 @@ public final class PrototypeStore {
         case unknownPlan
         case unknownSchool
         case invalidStudent(StudentFieldError)
+        case invalidBatchEntry(index: Int, problem: BatchEntryProblem)
         case saveFailed
+    }
+
+    /// Why one entry of a batch was refused.
+    public enum BatchEntryProblem: Error, Equatable {
+        case unknownSchool
+        case field(StudentFieldError)
     }
 
     /// What was wrong with a student the user typed in.
@@ -246,6 +253,73 @@ public final class PrototypeStore {
             throw StoreError.saveFailed
         }
         return student
+    }
+
+    /// One student to add as part of a batch, such as a row of an imported file.
+    public struct NewStudent: Equatable, Sendable {
+        public var firstName: String
+        public var lastName: String
+        public var preferredName: String?
+        public var grade: String
+        public var schoolID: UUID
+
+        public init(
+            firstName: String, lastName: String, preferredName: String? = nil, grade: String,
+            schoolID: UUID
+        ) {
+            self.firstName = firstName
+            self.lastName = lastName
+            self.preferredName = preferredName
+            self.grade = grade
+            self.schoolID = schoolID
+        }
+    }
+
+    /// Adds several students at once and puts them all on the signed-in person's caseload, with a
+    /// single save. Nothing is added if any entry fails its checks, or if the save fails. A failed
+    /// entry is reported with its position in `entries` through `StoreError.invalidBatchEntry`.
+    @discardableResult
+    public func addStudents(_ entries: [NewStudent]) throws -> [Student] {
+        guard let staff = currentStaff else { throw StoreError.notSignedIn }
+        guard canManageStudents else { throw StoreError.notAllowed }
+        let schools = Set(dataset.schools.map(\.id))
+        let today = calendarToday()
+        var students: [Student] = []
+        var links: [CaseloadAssignment] = []
+        for (index, entry) in entries.enumerated() {
+            guard schools.contains(entry.schoolID) else {
+                throw StoreError.invalidBatchEntry(index: index, problem: .unknownSchool)
+            }
+            let fields: (first: String, last: String, preferred: String?, grade: String)
+            do {
+                fields = try Self.cleaned(
+                    firstName: entry.firstName, lastName: entry.lastName,
+                    preferredName: entry.preferredName, grade: entry.grade)
+            } catch StoreError.invalidStudent(let field) {
+                throw StoreError.invalidBatchEntry(index: index, problem: .field(field))
+            }
+            let student = Student(
+                id: UUIDv7.make(), tenantID: staff.tenantID, schoolID: entry.schoolID,
+                firstName: fields.first, lastName: fields.last, preferredName: fields.preferred,
+                grade: fields.grade)
+            students.append(student)
+            links.append(
+                CaseloadAssignment(
+                    id: UUIDv7.make(), tenantID: staff.tenantID, staffID: staff.id,
+                    studentID: student.id, relationship: .caseload, grantedBy: staff.id,
+                    startDate: today))
+        }
+        guard !students.isEmpty else { return [] }
+        let before = (addedStudents, addedAssignments)
+        addedStudents.append(contentsOf: students)
+        addedAssignments.append(contentsOf: links)
+        do {
+            try write()
+        } catch {
+            (addedStudents, addedAssignments) = before
+            throw StoreError.saveFailed
+        }
+        return students
     }
 
     /// Fixes the name, grade or school of a student on the signed-in person's list.
