@@ -1,17 +1,17 @@
 # Sets the commit status "Approval on head" on a pull request's current head commit.
 #
-# success: the newest automated review run for that exact head says PASS, and, when the change
+# success: the newest run of the review workflow for that exact head succeeded (PASS), and, when the change
 #          touches a path listed in tools/ci/protected-paths.txt, owner-written lines also name the
 #          full head sha in both "Reviewed by Clawson, Verdict: approved on <sha>" and
 #          "Security review by Sable, relayed by Clawson, Verdict: approved on <sha>".
 # pending: something above is still missing.
-# failure: the newest automated review run for the head says BLOCK.
+# failure: the newest run of the review workflow for the head failed (BLOCK, or it could not run).
 #
 # Only the event payload and the GitHub API are read. This workflow never checks out or runs pull
 # request code, and it does not use pull_request_target. The protected-path list is read from the
 # default branch, never from the pull request. Comment text is data: it is matched with jq and
 # grep and never reaches a shell. Approval lines count only when written by the repository owner;
-# the automated review counts only from the review bot.
+# the automated review counts only through the conclusion of its workflow run on the exact head.
 name: Approval on head
 
 # Only triggers that run the default branch's copy of this file are used (issue_comment and
@@ -96,29 +96,22 @@ jobs:
             done <<<"$protected"
           fi
 
-          # Newest automated review run for this exact head, found through the run links in the
-          # bot's own comments. The verdict may sit anywhere in that comment's text (outside quotes and
-          # code); BLOCK anywhere wins, otherwise PASS anywhere counts.
-          verdict=none
-          best=0
-          while IFS=$'\t' read -r run_id body_b64; do
-            [ -n "$run_id" ] || continue
-            run=$(gh api "repos/$REPO/actions/runs/$run_id" 2>/dev/null) || continue
-            ok=$(jq -r --arg s "$sha" '(.head_sha == $s) and (.name == "Claude PR review") and (.event == "pull_request") and (.conclusion == "success")' <<<"$run")
-            [ "$ok" = "true" ] || continue
-            if [ "$run_id" -gt "$best" ]; then
-              best="$run_id"
-              # Quoted lines and fenced code are not the bot's own verdict, so they are dropped
-              # first. The phrase must stand alone: not glued to other letters, not after a quote.
-              body=$(base64 -d <<<"$body_b64" | awk '/^[[:space:]]*```/ { f = !f; next } !f && !/^[[:space:]]*>/')
-              if grep -Eq '(^|[^[:alnum:]`"'"'"'])Claude review: BLOCK([^[:alnum:]]|$)' <<<"$body"; then verdict=block
-              elif grep -Eq '(^|[^[:alnum:]`"'"'"'])Claude review: PASS([^[:alnum:]]|$)' <<<"$body"; then verdict=pass
-              else verdict=none; fi
-            fi
-          done < <(jq -r '.[] | select(.user.login == "claude[bot]") | (.body // "") as $b
-            | (try ($b | capture("actions/runs/(?<id>[0-9]+)") | .id) catch null) as $id
-            | select($id != null)
-            | [$id, ($b | @base64)] | @tsv' <<<"$comments")
+          # Verdict from the review workflow's newest run for this exact head, never from comment text:
+          # success = PASS, failure = BLOCK (the job fails on BLOCK and when it could not run), and
+          # anything else (cancelled, skipped, still running, no run) = no verdict yet.
+          # verdict-filter-begin
+          review_filter='
+            [.workflow_runs[]?
+              | select(.head_sha == $s and .event == "pull_request" and ((.path // "") | split("@")[0]) == $p)]
+            | sort_by(.id) | last
+            | if . == null or .status != "completed" then "none"
+              elif .conclusion == "success" then "pass"
+              elif .conclusion == "failure" then "block"
+              else "none" end
+          '
+          # verdict-filter-end
+          runs=$(gh api "repos/$REPO/actions/workflows/claude-review.yml/runs?head_sha=$sha&event=pull_request&per_page=50")
+          verdict=$(jq -r --arg s "$sha" --arg p ".github/workflows/claude-review.yml" "$review_filter" <<<"$runs")
 
           echo "head=$sha lead=$lead_ok security_needed=$needs_sec security=$sec_ok review=$verdict"
 
