@@ -32,6 +32,11 @@ test("a cut-off or empty model answer fails instead of passing", () => {
   assert.throws(() => findingsFrom({ stop_reason: "max_tokens", content: [call] }), /cut off/);
   assert.throws(() => findingsFrom({ stop_reason: "end_turn", content: [] }), /no findings/);
   assert.throws(() => findingsFrom({ content: [{ ...call, input: {} }] }));
+  const high = { ...call, input: { findings: [finding({ severity: "high" })] } };
+  assert.throws(
+    () => findingsFrom({ stop_reason: "tool_use", content: [call, high] }),
+    /more than one/,
+  );
   assert.throws(() => findingsFrom(undefined));
 });
 
