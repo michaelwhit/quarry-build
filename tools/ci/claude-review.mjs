@@ -76,9 +76,10 @@ export function normalize(raw) {
 // Findings from a Messages API response. A cut-off or missing answer fails the run.
 export function findingsFrom(out) {
   if (out?.stop_reason === "max_tokens") throw new Error("model output was cut off");
-  const call = (out?.content ?? []).find((b) => b.type === "tool_use" && b.name === TOOL.name);
-  if (!call) throw new Error("model returned no findings call");
-  return normalize(call.input);
+  const calls = (out?.content ?? []).filter((b) => b.type === "tool_use" && b.name === TOOL.name);
+  if (calls.length === 0) throw new Error("model returned no findings call");
+  if (calls.length > 1) throw new Error("model returned more than one findings call");
+  return normalize(calls[0].input);
 }
 
 export function verdict(findings) {
