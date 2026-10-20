@@ -34,7 +34,7 @@ enum AppTab: String, CaseIterable, Identifiable {
 
 /// Where a Home tile or number can send the teacher.
 enum AppDestination {
-    case today, caseload, caseloadSummary, libraries, evaluation
+    case today, caseload, caseloadSummary, libraries, evaluation, staff
 }
 
 /// Screens other parts of the app provide. Until a screen is wired in, its tab shows "Planned"
@@ -49,6 +49,7 @@ struct AppShell: View {
     @State private var column: NavigationSplitViewColumn = .sidebar
     @State private var launched: LaunchedSession?
     @State private var intake: EvidenceIntake?
+    @State private var showingStaff = false
     @Environment(PrototypeStore.self) private var store
     let screens: ShellScreens
 
@@ -89,6 +90,16 @@ struct AppShell: View {
                     SessionHost(
                         launch: launch, store: store, context: context, drafts: drafts,
                         onClose: { launched = nil })
+                }
+            }
+            .sheet(isPresented: $showingStaff) {
+                NavigationStack {
+                    StaffAndRolesScreen()
+                        .toolbar {
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button("Done") { showingStaff = false }
+                            }
+                        }
                 }
             }
             .sheet(
@@ -202,6 +213,7 @@ struct AppShell: View {
         case .today: tab = .today
         case .libraries: tab = .libraries
         case .evaluation: intake = EvidenceIntake(names: rosterNames())
+        case .staff: showingStaff = true
         case .caseload:
             selection = nil
             column = .sidebar

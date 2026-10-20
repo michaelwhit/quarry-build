@@ -146,6 +146,17 @@ struct RoleViewTests {
                 == "Maggie reads with Maggie.")
     }
 
+    @Test("goal text for the staff screens carries the first name and last initial, for any role")
+    func minimizedForStaffScreens() throws {
+        let store = try makeStore()
+        let student = Student(
+            id: UUID(), tenantID: UUID(), schoolID: UUID(), firstName: "Sam", lastName: "Rivera",
+            grade: "3", localStudentID: "L-4471")
+        #expect(
+            store.minimizedText("Sam Rivera (L-4471) and Rivera's cards", of: student)
+                == "Sam R. ([ID]) and Sam R.'s cards")
+    }
+
     @Test("a last name inside another word is left alone")
     func wholeWordsOnly() {
         let student = Student(
