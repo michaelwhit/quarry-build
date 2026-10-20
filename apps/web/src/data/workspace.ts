@@ -1,4 +1,11 @@
-import raw from "@synthetic/fixtures/demo-district.json";
+import {
+  data_points,
+  goals as sampleGoals,
+  ieps as sampleIeps,
+  measurement_plans,
+  students as sampleStudents,
+  synthetic,
+} from "@synthetic/fixtures/demo-district.json";
 import type {
   DataPoint,
   Goal,
@@ -20,9 +27,25 @@ export interface Workspace {
   goals: Goal[];
   plans: MeasurementPlan[];
   points: DataPoint[];
+  /** Student ids an SLP or school psych serves. Practice sign-in only. */
+  served: string[];
+  /** Goal ids a paraprofessional or gen-ed teacher may enter data for. Practice sign-in only. */
+  delegated: string[];
 }
 
-export const sampleDistrict = raw as unknown as SyntheticDistrict;
+// Named imports let the bundler drop the parts of the sample file the practice page never shows
+// (the tenant and staff records).
+const sampleDistrict = {
+  synthetic,
+  students: sampleStudents,
+  ieps: sampleIeps,
+  goals: sampleGoals,
+  measurement_plans,
+  data_points,
+} as unknown as Pick<
+  SyntheticDistrict,
+  "synthetic" | "students" | "ieps" | "goals" | "measurement_plans" | "data_points"
+>;
 if (sampleDistrict.synthetic !== true)
   throw new Error("Refusing to load a dataset not marked synthetic");
 
@@ -32,15 +55,32 @@ export const emptyWorkspace = (): Workspace => ({
   goals: [],
   plans: [],
   points: [],
+  served: [],
+  delegated: [],
 });
 
-const sampleWorkspace = (): Workspace => ({
-  students: sampleDistrict.students,
-  ieps: sampleDistrict.ieps,
-  goals: sampleDistrict.goals,
-  plans: sampleDistrict.measurement_plans,
-  points: sampleDistrict.data_points,
-});
+/** The sample students, with a few served and delegated so every practice role has something. */
+const sampleWorkspace = (): Workspace => {
+  const students = sampleDistrict.students;
+  const firstGoalOf = (studentId: string) => {
+    const iep = sampleDistrict.ieps.find((i) => i.student_id === studentId);
+    return sampleDistrict.goals
+      .filter((g) => g.iep_id === iep?.id)
+      .sort((a, b) => a.sequence - b.sequence)[0]?.id;
+  };
+  return {
+    students,
+    ieps: sampleDistrict.ieps,
+    goals: sampleDistrict.goals,
+    plans: sampleDistrict.measurement_plans,
+    points: sampleDistrict.data_points,
+    served: students.slice(0, 5).map((s) => s.id),
+    delegated: students
+      .slice(0, 6)
+      .map((s) => firstGoalOf(s.id))
+      .filter((g): g is string => g !== undefined),
+  };
+};
 
 export const STORAGE_KEY = "goalline-practice-v1";
 const MAX_STORED_CHARS = 4_000_000;
@@ -137,7 +177,19 @@ export function parse(text: string | null): Workspace | null {
     const plans = keep(v["plans"], validPlan).filter((p) => goalIds.has(p["goal_id"]));
     const planGoals = new Set(plans.map((p) => p["goal_id"]));
     const points = keep(v["points"], validPoint).filter((p) => planGoals.has(p["goal_id"]));
-    return { students, ieps, goals, plans, points } as unknown as Workspace;
+    const ids = (list: unknown, allowed: Set<unknown>): string[] =>
+      Array.isArray(list)
+        ? list.filter((x): x is string => typeof x === "string" && allowed.has(x))
+        : [];
+    return {
+      students,
+      ieps,
+      goals,
+      plans,
+      points,
+      served: ids(v["served"], studentIds),
+      delegated: ids(v["delegated"], goalIds),
+    } as unknown as Workspace;
   } catch {
     return null;
   }
@@ -342,6 +394,8 @@ export function deleteStudent(studentId: string) {
     goals: current.goals.filter((g) => !goalIds.has(g.id)),
     plans: current.plans.filter((p) => !goalIds.has(p.goal_id)),
     points: current.points.filter((p) => !goalIds.has(p.goal_id)),
+    served: current.served.filter((s) => s !== studentId),
+    delegated: current.delegated.filter((g) => !goalIds.has(g)),
   });
 }
 
@@ -399,6 +453,7 @@ export function deleteGoal(goalId: string) {
     goals: current.goals.filter((g) => g.id !== goalId),
     plans: current.plans.filter((p) => p.goal_id !== goalId),
     points: current.points.filter((p) => p.goal_id !== goalId),
+    delegated: current.delegated.filter((g) => g !== goalId),
   });
 }
 
@@ -427,4 +482,19 @@ export function importText(text: string): ImportResult {
 
 export function deletePoint(pointId: string) {
   commit({ ...current, points: current.points.filter((p) => p.id !== pointId) });
+}
+
+const toggle = (list: string[], id: string, on: boolean) =>
+  on ? (list.includes(id) ? list : [...list, id]) : list.filter((x) => x !== id);
+
+/** Practice sign-in: an SLP or school psych serves this student. */
+export function setServed(studentId: string, on: boolean) {
+  if (!current.students.some((s) => s.id === studentId)) throw new Error("Student not found");
+  commit({ ...current, served: toggle(current.served, studentId, on) });
+}
+
+/** Practice sign-in: a paraprofessional or gen-ed teacher may enter data for this goal. */
+export function setDelegated(goalId: string, on: boolean) {
+  if (!current.goals.some((g) => g.id === goalId)) throw new Error("Goal not found");
+  commit({ ...current, delegated: toggle(current.delegated, goalId, on) });
 }

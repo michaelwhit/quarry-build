@@ -1,3 +1,4 @@
+import { setRole } from "../src/data/roles.ts";
 import { beforeEach, describe, expect, it } from "vitest";
 import { students } from "../src/data/district.ts";
 import {
@@ -46,6 +47,7 @@ const goal = {
 
 let store: ReturnType<typeof fakeStorage>;
 beforeEach(() => {
+  setRole("sped_director");
   store = fakeStorage();
   useStorage(store);
   clearAll();
@@ -142,7 +144,15 @@ describe("reading stored data back", () => {
       plans: [],
       points: [],
     });
-    expect(parse(text)).toEqual({ students: [], ieps: [], goals: [], plans: [], points: [] });
+    expect(parse(text)).toEqual({
+      students: [],
+      ieps: [],
+      goals: [],
+      plans: [],
+      points: [],
+      served: [],
+      delegated: [],
+    });
   });
 
   it("refuses text that is not marked synthetic or is not JSON", () => {

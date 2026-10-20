@@ -9,6 +9,7 @@ import {
   sessionValue,
 } from "../data/session.ts";
 import { addPoint, deletePoint, getWorkspace } from "../data/workspace.ts";
+import { can, getRole } from "../data/roles.ts";
 import { DeleteButton } from "./Forms.tsx";
 import { Chip } from "./Chip.tsx";
 import { GoalPanel } from "./GoalPanel.tsx";
@@ -38,13 +39,20 @@ export function TrackPicker() {
               </li>
             ))}
           </ul>
-          <a className="btn" href={`#/student/${s.student.id}/add-goal`}>
-            Add a goal
-          </a>
+          {can(getRole(), "editGoal") && (
+            <a className="btn" href={`#/student/${s.student.id}/add-goal`}>
+              Add a goal
+            </a>
+          )}
         </>
       ) : students.length === 0 ? (
         <p>
-          No students yet. <a href="#/add-student">Add a student</a> first.
+          No students yet.{" "}
+          {can(getRole(), "addStudent") && (
+            <>
+              <a href="#/add-student">Add a student</a> first.
+            </>
+          )}
         </p>
       ) : (
         <ul className="pick">
@@ -289,7 +297,7 @@ export function TrackGoal({ studentId, goalId }: { studentId: string; goalId: st
           unit={unit}
         />
       </section>
-      <History goalId={goalId} unit={unit} />
+      {can(getRole(), "history") && <History goalId={goalId} unit={unit} />}
       <p style={{ color: "var(--text-muted)", fontSize: ".8rem" }}>
         Practice mode: made-up data only. Sessions you save stay in this browser; clear them on the
         More tab.

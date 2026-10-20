@@ -752,3 +752,17 @@ h2.page-title {
 .history .danger-ghost {
   margin-top: 0;
 }
+
+.tabbar[hidden] {
+  display: none;
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+  color: var(--text-muted);
+}
+.signin {
+  padding-bottom: 24px;
+}

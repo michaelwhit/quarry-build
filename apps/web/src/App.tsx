@@ -1,20 +1,24 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { STATUS_LABEL, type GoalStatus } from "./data/derive.ts";
-import {
-  dataTotals,
-  displayName,
-  districtName,
-  staffName,
-  studentById,
-  students,
-} from "./data/district.ts";
+import { dataTotals, displayName, districtName, studentById, students } from "./data/district.ts";
 import { Chip } from "./ui/Chip.tsx";
 import { Home, More, PlannedScreen, Today } from "./ui/Home.tsx";
 import { GoalPanel } from "./ui/GoalPanel.tsx";
 import { Graph, Sparkline } from "./ui/Graph.tsx";
 import { AddGoal, AddStudent } from "./ui/Forms.tsx";
 import { TrackGoal, TrackPicker } from "./ui/Track.tsx";
-import { getVersion, subscribe } from "./data/workspace.ts";
+import {
+  can,
+  getRole,
+  getRoleVersion,
+  isDelegateRole,
+  needsPrivacy,
+  roleById,
+  setRole,
+  subscribeRole,
+} from "./data/roles.ts";
+import { Privacy, SignIn } from "./ui/SignIn.tsx";
+import { getVersion, getWorkspace, setDelegated, setServed, subscribe } from "./data/workspace.ts";
 
 function useRoute(): string {
   const [hash, setHash] = useState(() => window.location.hash);
@@ -34,7 +38,8 @@ const TABS = [
   { id: "more", title: "More", href: "#/more", icon: "⋯" },
 ];
 
-function activeTab(hash: string): string {
+function activeTab(hash: string, delegate = false): string {
+  if (delegate) return hash === "#/more" ? "more" : "today";
   if (hash.startsWith("#/student") || hash === "#/caseload" || hash === "#/add-student")
     return "caseload";
   if (hash === "#/today") return "today";
@@ -89,14 +94,20 @@ function Caseload() {
         ))}
       </ul>
       <h2>Caseload (needs attention first)</h2>
-      <p>
-        <a className="btn" href="#/add-student">
-          Add a student
-        </a>
-      </p>
+      {can(getRole(), "addStudent") && (
+        <p>
+          <a className="btn" href="#/add-student">
+            Add a student
+          </a>
+        </p>
+      )}
       {students.length === 0 && (
         <p className="empty">
-          No students yet. Add a made-up student, or load the sample students from the More tab.
+          {can(getRole(), "addStudent")
+            ? "No students yet. Add a made-up student, or load the sample students from the More tab."
+            : getRole() === "related_service_provider"
+              ? "No students are marked as served by you yet. Ask the director to mark the students you serve."
+              : "No students are shared with this role yet. Sign in as the director or a case manager to share some."}
         </p>
       )}
       <ul className="cards">
@@ -120,7 +131,22 @@ function Caseload() {
   );
 }
 
+function NotAllowed() {
+  return (
+    <>
+      <h2 className="page-title">Not available for this role</h2>
+      <p className="empty">Sign in as a different practice role to do this.</p>
+      <a className="btn" href="#/">
+        ← Home
+      </a>
+    </>
+  );
+}
+
 function StudentPage({ id }: { id: string }) {
+  useSyncExternalStore(subscribe, getVersion);
+  const role = getRole();
+  const ws = getWorkspace();
   const s = studentById(id);
   if (!s)
     return (
@@ -136,17 +162,33 @@ function StudentPage({ id }: { id: string }) {
       <h2 style={{ textTransform: "none", color: "var(--text)", fontSize: "1.4rem" }}>
         {displayName(s.student)}
       </h2>
-      <p style={{ color: "var(--text-muted)" }}>
-        Grade {s.student.grade} · Case ID {s.student.local_student_id}
-      </p>
+      {s.student.local_student_id && (
+        <p style={{ color: "var(--text-muted)" }}>
+          Grade {s.student.grade} · Case ID {s.student.local_student_id}
+        </p>
+      )}
       <p>
-        <a className="btn" href={`#/student/${s.student.id}/add-goal`}>
-          Add a goal
-        </a>{" "}
-        <a className="btn" href={`#/student/${s.student.id}/edit`}>
-          Edit student
-        </a>
+        {can(role, "editGoal") && (
+          <a className="btn" href={`#/student/${s.student.id}/add-goal`}>
+            Add a goal
+          </a>
+        )}{" "}
+        {can(role, "editStudent") && (
+          <a className="btn" href={`#/student/${s.student.id}/edit`}>
+            Edit student
+          </a>
+        )}
       </p>
+      {can(role, "assignServed") && (
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={ws.served.includes(s.student.id)}
+            onChange={(e) => setServed(s.student.id, e.target.checked)}
+          />
+          Served by an SLP or school psychologist (they can see this student)
+        </label>
+      )}
       {s.goals.length === 0 && <p className="empty">No goals yet.</p>}
       {s.goals.map(({ goal, plan, series, progress }) => (
         <section className="goal" key={goal.id} aria-label={`${goal.area} goal`}>
@@ -158,9 +200,21 @@ function StudentPage({ id }: { id: string }) {
           <a className="btn" href={`#/track/${s.student.id}/${goal.id}`}>
             Track this goal
           </a>{" "}
-          <a className="btn" href={`#/student/${s.student.id}/goal/${goal.id}/edit`}>
-            Edit goal
-          </a>
+          {can(role, "editGoal") && (
+            <a className="btn" href={`#/student/${s.student.id}/goal/${goal.id}/edit`}>
+              Edit goal
+            </a>
+          )}
+          {can(role, "share") && (
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={ws.delegated.includes(goal.id)}
+                onChange={(e) => setDelegated(goal.id, e.target.checked)}
+              />
+              Paras and gen-ed teachers may enter data for this goal
+            </label>
+          )}
           <Graph
             series={series}
             target={plan.target_value}
@@ -177,27 +231,51 @@ export function App() {
   const hash = useRoute();
   const theme = useTheme();
   const m = /^#\/student\/(.+)$/.exec(hash);
-  const active = activeTab(hash);
+  const active = activeTab(hash, isDelegateRole(getRole()));
   const t = /^#\/track\/([^/]+)\/([^/]+)$/.exec(hash);
   const [noticeSeen, setNoticeSeen] = useState(false);
   // Re-render on every practice-data change; the views are rebuilt in data/district.ts.
   useSyncExternalStore(subscribe, getVersion);
+  useSyncExternalStore(subscribeRole, getRoleVersion);
+  const role = getRole();
+  const allow = (a: Parameters<typeof can>[1]) => can(role, a);
   const g = /^#\/student\/([^/]+)\/add-goal$/.exec(hash);
   const es = /^#\/student\/([^/]+)\/edit$/.exec(hash);
   const eg = /^#\/student\/([^/]+)\/goal\/([^/]+)\/edit$/.exec(hash);
+  const delegate = isDelegateRole(role);
+  // Paras and gen-ed teachers get Today and More, and the session screen reached from Today.
+  const delegateOk = hash === "#/today" || hash === "#/more" || (t?.[1] && t[2]);
   const screen =
-    t?.[1] && t[2] ? (
+    delegate && !delegateOk ? (
+      <Today />
+    ) : t?.[1] && t[2] ? (
       <TrackGoal studentId={t[1]} goalId={t[2]} />
     ) : hash.startsWith("#/track") ? (
       <TrackPicker />
     ) : hash === "#/add-student" ? (
-      <AddStudent />
+      allow("addStudent") ? (
+        <AddStudent />
+      ) : (
+        <NotAllowed />
+      )
     ) : es?.[1] ? (
-      <AddStudent editId={decodeURIComponent(es[1])} />
+      allow("editStudent") ? (
+        <AddStudent editId={decodeURIComponent(es[1])} />
+      ) : (
+        <NotAllowed />
+      )
     ) : eg?.[1] && eg[2] ? (
-      <AddGoal studentId={decodeURIComponent(eg[1])} editGoalId={decodeURIComponent(eg[2])} />
+      allow("editGoal") ? (
+        <AddGoal studentId={decodeURIComponent(eg[1])} editGoalId={decodeURIComponent(eg[2])} />
+      ) : (
+        <NotAllowed />
+      )
     ) : g?.[1] ? (
-      <AddGoal studentId={decodeURIComponent(g[1])} />
+      allow("editGoal") ? (
+        <AddGoal studentId={decodeURIComponent(g[1])} />
+      ) : (
+        <NotAllowed />
+      )
     ) : m?.[1] ? (
       <StudentPage id={decodeURIComponent(m[1])} />
     ) : hash === "#/caseload" ? (
@@ -244,16 +322,27 @@ export function App() {
         <h1>
           GoalLine
           <span className="sub">
-            {districtName} · {staffName}
+            {districtName} · {roleById(role)?.person}
           </span>
         </h1>
         <button type="button" onClick={theme.toggle}>
           {theme.label}
         </button>
+        {role && (
+          <button type="button" onClick={() => setRole(null)}>
+            Sign out
+          </button>
+        )}
       </header>
-      <main id="main">{screen}</main>
-      <nav className="tabbar" aria-label="Main">
-        {TABS.map((tab) => (
+      {role && needsPrivacy(role) ? (
+        <Privacy role={role} />
+      ) : role ? (
+        <main id="main">{screen}</main>
+      ) : (
+        <SignIn />
+      )}
+      <nav className="tabbar" aria-label="Main" hidden={!role}>
+        {TABS.filter((x) => !delegate || x.id === "today" || x.id === "more").map((tab) => (
           <a
             key={tab.id}
             href={tab.href}

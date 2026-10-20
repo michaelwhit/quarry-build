@@ -6,7 +6,8 @@ import {
   seriesFor,
   worstStatus,
 } from "./derive.ts";
-import { type Workspace, clearAll, getWorkspace, sampleDistrict, subscribe } from "./workspace.ts";
+import { type RoleId, getRole, isDelegateRole, subscribeRole } from "./roles.ts";
+import { type Workspace, clearAll, getWorkspace, subscribe } from "./workspace.ts";
 
 // Views derived from the practice workspace. `students` is a live binding: it is rebuilt whenever
 // the workspace changes, and the app re-renders from the workspace store.
@@ -27,11 +28,38 @@ export interface StudentView {
   lastDataAt: string | undefined;
 }
 
-function build(ws: Workspace): StudentView[] {
+/** What a role may see of a student: paras and gen-ed teachers get a trimmed identity. */
+function maskFor(role: RoleId | null, s: Student): Student {
+  if (role !== "paraprofessional" && role !== "gen_ed_teacher") return s;
+  return {
+    ...s,
+    last_name: "",
+    grade: "",
+    local_student_id: "",
+    state_student_id: "",
+    dob: "",
+  };
+}
+
+const escapeRe = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** Removes the student's last name from free text shown to paras and gen-ed teachers. */
+export function scrub(text: string, s: Student): string {
+  const last = s.last_name.trim();
+  if (!last) return text;
+  return text.replace(new RegExp(`\\s*(?<!\\w)${escapeRe(last)}(?!\\w)`, "gi"), "");
+}
+
+export function build(ws: Workspace, role: RoleId | null): StudentView[] {
+  if (role === null) return [];
+  const delegate = isDelegateRole(role);
+  const delegated = new Set(ws.delegated);
+  const served = new Set(ws.served);
   const byGoal = new Map<string, Workspace["points"]>();
   for (const p of ws.points) byGoal.set(p.goal_id, [...(byGoal.get(p.goal_id) ?? []), p]);
   const planFor = new Map(ws.plans.map((p) => [p.goal_id, p]));
   return ws.students
+    .filter((student) => role !== "related_service_provider" || served.has(student.id))
     .map((student) => {
       const iep = ws.ieps.find((i) => i.student_id === student.id);
       const goals = ws.goals
@@ -40,10 +68,18 @@ function build(ws: Workspace): StudentView[] {
         .flatMap((goal): GoalView[] => {
           const plan = planFor.get(goal.id);
           if (!iep || !plan) return [];
+          if (delegate && !delegated.has(goal.id)) return [];
           const series = seriesFor(byGoal.get(goal.id) ?? []);
           return [
             {
-              goal,
+              goal: delegate
+                ? {
+                    ...goal,
+                    statement: scrub(goal.statement, student),
+                    baseline: scrub(goal.baseline, student),
+                    criteria: scrub(goal.criteria, student),
+                  }
+                : goal,
               effectiveFrom: iep.effective_from,
               effectiveTo: iep.effective_to,
               plan,
@@ -57,12 +93,13 @@ function build(ws: Workspace): StudentView[] {
         .sort()
         .at(-1);
       return {
-        student,
+        student: maskFor(role, student),
         goals,
         status: worstStatus(goals.map((g) => g.progress.status)),
         lastDataAt,
       };
     })
+    .filter((v) => !delegate || v.goals.length > 0)
     .sort((a, b) => a.student.last_name.localeCompare(b.student.last_name));
 }
 
@@ -70,7 +107,7 @@ function build(ws: Workspace): StudentView[] {
 // leave the app blank with no way to reach Clear practice data.
 function safeBuild(): StudentView[] {
   try {
-    return build(getWorkspace());
+    return build(getWorkspace(), getRole());
   } catch {
     clearAll();
     return [];
@@ -81,17 +118,19 @@ export let students: StudentView[] = safeBuild();
 subscribe(() => {
   students = safeBuild();
 });
+subscribeRole(() => {
+  students = safeBuild();
+});
 
-export const districtName = sampleDistrict.tenant.name;
-export const staffName =
-  sampleDistrict.staff.find((s) => s.role === "sped_director")?.display_name ?? "";
+// A neutral label for the practice page; the sample file carries its own tenant name.
+export const districtName = "Practice district";
 
 export function studentById(id: string): StudentView | undefined {
   return students.find((s) => s.student.id === id);
 }
 
 export function displayName(s: Student): string {
-  return `${s.preferred_name ?? s.first_name} ${s.last_name}`;
+  return `${s.preferred_name ?? s.first_name} ${s.last_name}`.trim();
 }
 
 export const dataTotals = () => ({

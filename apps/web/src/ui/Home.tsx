@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { dueFor } from "../data/derive.ts";
+import { can, getRole, isDelegateRole, roleById, setRole } from "../data/roles.ts";
 import { displayName, districtName, goalCounts, students } from "../data/district.ts";
 import { clearAll, exportText, getWorkspace, importText, loadSample } from "../data/workspace.ts";
 
@@ -58,7 +59,7 @@ export function Home() {
           </span>
         </div>
       </a>
-      {students.length === 0 && (
+      {students.length === 0 && can(getRole(), "addStudent") && (
         <div className="card empty-start">
           <p className="name">Start with a made-up student</p>
           <p className="meta">
@@ -69,9 +70,11 @@ export function Home() {
             <a className="btn save" href="#/add-student">
               Add a student
             </a>
-            <button type="button" onClick={loadSample}>
-              Load sample students
-            </button>
+            {can(getRole(), "manageData") && (
+              <button type="button" onClick={loadSample}>
+                Load sample students
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -123,8 +126,49 @@ export function PlannedScreen({ title, text }: { title: string; text: string }) 
 
 const PERIOD_WORD = { day: "today", week: "this week", month: "this month" } as const;
 
+/** About 100 characters, cut at a word. */
+export function shortGoal(text: string, max = 100): string {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max);
+  const at = cut.lastIndexOf(" ");
+  return `${(at > 40 ? cut.slice(0, at) : cut).trimEnd()}…`;
+}
+
+/** What paras and gen-ed teachers see: a card per shared goal and one button to start. */
+function DelegateToday() {
+  const rows = students.flatMap((s) => s.goals.map((g) => ({ s, g })));
+  return (
+    <>
+      <p className="eyebrow">{new Date().toLocaleDateString(undefined, { dateStyle: "full" })}</p>
+      <h2 className="page-title">Your goals today</h2>
+      {rows.length === 0 ? (
+        <p className="empty">No goals are shared with you yet.</p>
+      ) : (
+        <ul className="pick">
+          {rows.map(({ s, g }) => (
+            <li key={g.goal.id} className="card">
+              <strong>{displayName(s.student)}</strong>
+              <p>{shortGoal(g.goal.statement)}</p>
+              {g.goal.statement.length > 100 && (
+                <details>
+                  <summary>Show full goal</summary>
+                  <p>{g.goal.statement}</p>
+                </details>
+              )}
+              <a className="btn save" href={`#/track/${s.student.id}/${g.goal.id}`}>
+                Start a session
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  );
+}
+
 /** The goals that still need a session on their schedule, then the ones that are caught up. */
 export function Today() {
+  if (isDelegateRole(getRole())) return <DelegateToday />;
   const rows = students.flatMap((s) =>
     s.goals.map((g) => ({ s, g, due: dueFor(g.plan.frequency, g.series) })),
   );
@@ -172,6 +216,7 @@ export function Today() {
 }
 
 export function More() {
+  const role = getRole();
   const [armed, setArmed] = useState<"sample" | "clear" | null>(null);
   const [pending, setPending] = useState<string | null>(null);
   const [fileMessage, setFileMessage] = useState("");
@@ -191,101 +236,137 @@ export function More() {
       <h2 className="page-title">More</h2>
       <section className="card">
         <h3 className="sec">Signed in</h3>
-        <p className="name">Demo account</p>
-        <p className="meta">Sign-in with school accounts comes before any real student data.</p>
+        <p className="name">{roleById(role)?.person ?? "Practice account"}</p>
+        <p className="meta">
+          {roleById(role)?.label}. Practice sign-in only: no account, and the choice is forgotten
+          when you reload. Real sign-in with school accounts comes before any real student data.
+        </p>
+        <button type="button" onClick={() => setRole(null)}>
+          Sign out and pick another role
+        </button>
       </section>
-      <section className="card" style={{ marginTop: 12 }}>
-        <h3 className="sec">Practice data</h3>
-        <p className="meta">
-          {students.length} student{students.length === 1 ? "" : "s"}, {c.goals} goal
-          {c.goals === 1 ? "" : "s"}, {points} data point{points === 1 ? "" : "s"}. Made up only. It
-          stays in this browser and is never sent anywhere.
-        </p>
-        <div className="actions">
-          {armed === "sample" ? (
-            <>
-              <button type="button" className="save" onClick={() => (loadSample(), setArmed(null))}>
-                Replace with sample students
-              </button>
-              <button type="button" onClick={() => setArmed(null)}>
-                Cancel
-              </button>
-            </>
-          ) : (
-            <button type="button" onClick={() => (hasData ? setArmed("sample") : loadSample())}>
-              Load sample students
-            </button>
-          )}
-          {armed === "clear" ? (
-            <>
-              <button type="button" className="save" onClick={() => (clearAll(), setArmed(null))}>
-                Yes, clear practice data
-              </button>
-              <button type="button" onClick={() => setArmed(null)}>
-                Cancel
-              </button>
-            </>
-          ) : (
-            <button type="button" onClick={() => setArmed("clear")} disabled={!hasData}>
-              Clear practice data
-            </button>
-          )}
-        </div>
-        <h4 className="sec" style={{ marginTop: 16 }}>
-          Save to a file or load from a file
-        </h4>
-        <p className="meta">
-          The file holds made-up data only. Load only files you saved from this app; loading
-          replaces what is here.
-        </p>
-        <div className="actions">
-          <button type="button" onClick={download} disabled={!hasData}>
-            Save practice data to a file
-          </button>
-          <label className="btn file-btn">
-            Load from a file
-            <input
-              type="file"
-              accept="application/json,.json"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                e.target.value = "";
-                if (!f) return;
-                if (f.size > 4_000_000) {
-                  setFileMessage("That file is too large.");
-                  return;
-                }
-                void f.text().then((t) => {
-                  if (hasData) {
-                    setPending(t);
-                    setFileMessage("");
-                  } else setFileMessage(importText(t).message);
-                });
-              }}
-            />
-          </label>
-        </div>
-        {pending !== null && (
+      {!can(role, "manageData") ? (
+        <section className="card" style={{ marginTop: 12 }}>
+          <h3 className="sec">Practice data</h3>
+          <p className="meta">
+            Loading and saving practice data is for the director role. Anyone can clear what is
+            stored in this browser. Signing out keeps it.
+          </p>
           <div className="actions">
-            <button
-              type="button"
-              className="save"
-              onClick={() => {
-                setFileMessage(importText(pending).message);
-                setPending(null);
-              }}
-            >
-              Replace what is here with the file
-            </button>
-            <button type="button" onClick={() => setPending(null)}>
-              Cancel
-            </button>
+            {armed === "clear" ? (
+              <>
+                <button type="button" className="save" onClick={() => (clearAll(), setArmed(null))}>
+                  Yes, clear practice data
+                </button>
+                <button type="button" onClick={() => setArmed(null)}>
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button type="button" onClick={() => setArmed("clear")} disabled={!hasData}>
+                Clear practice data
+              </button>
+            )}
           </div>
-        )}
-        <p className="saved" role="status">
-          {fileMessage}
-        </p>
-      </section>
+        </section>
+      ) : (
+        <section className="card" style={{ marginTop: 12 }}>
+          <h3 className="sec">Practice data</h3>
+          <p className="meta">
+            {students.length} student{students.length === 1 ? "" : "s"}, {c.goals} goal
+            {c.goals === 1 ? "" : "s"}, {points} data point{points === 1 ? "" : "s"}. Made up only.
+            It stays in this browser and is never sent anywhere.
+          </p>
+          <div className="actions">
+            {armed === "sample" ? (
+              <>
+                <button
+                  type="button"
+                  className="save"
+                  onClick={() => (loadSample(), setArmed(null))}
+                >
+                  Replace with sample students
+                </button>
+                <button type="button" onClick={() => setArmed(null)}>
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button type="button" onClick={() => (hasData ? setArmed("sample") : loadSample())}>
+                Load sample students
+              </button>
+            )}
+            {armed === "clear" ? (
+              <>
+                <button type="button" className="save" onClick={() => (clearAll(), setArmed(null))}>
+                  Yes, clear practice data
+                </button>
+                <button type="button" onClick={() => setArmed(null)}>
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button type="button" onClick={() => setArmed("clear")} disabled={!hasData}>
+                Clear practice data
+              </button>
+            )}
+          </div>
+          <h4 className="sec" style={{ marginTop: 16 }}>
+            Save to a file or load from a file
+          </h4>
+          <p className="meta">
+            The file holds made-up data only. Load only files you saved from this app; loading
+            replaces what is here.
+          </p>
+          <div className="actions">
+            <button type="button" onClick={download} disabled={!hasData}>
+              Save practice data to a file
+            </button>
+            <label className="btn file-btn">
+              Load from a file
+              <input
+                type="file"
+                accept="application/json,.json"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = "";
+                  if (!f) return;
+                  if (f.size > 4_000_000) {
+                    setFileMessage("That file is too large.");
+                    return;
+                  }
+                  void f.text().then((t) => {
+                    if (hasData) {
+                      setPending(t);
+                      setFileMessage("");
+                    } else setFileMessage(importText(t).message);
+                  });
+                }}
+              />
+            </label>
+          </div>
+          {pending !== null && (
+            <div className="actions">
+              <button
+                type="button"
+                className="save"
+                onClick={() => {
+                  setFileMessage(importText(pending).message);
+                  setPending(null);
+                }}
+              >
+                Replace what is here with the file
+              </button>
+              <button type="button" onClick={() => setPending(null)}>
+                Cancel
+              </button>
+            </div>
+          )}
+          <p className="saved" role="status">
+            {fileMessage}
+          </p>
+        </section>
+      )}
     </>
   );
 }

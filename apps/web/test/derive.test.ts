@@ -1,9 +1,11 @@
+import { setRole } from "../src/data/roles.ts";
 import { describe, expect, it } from "vitest";
 import { dueFor, progressFor, seriesFor, worstStatus } from "../src/data/derive.ts";
 import { trendLine } from "../src/ui/Graph.tsx";
 import { dataTotals, goalCounts, students } from "../src/data/district.ts";
 import { loadSample } from "../src/data/workspace.ts";
 
+setRole("sped_director");
 loadSample();
 
 const plan = { target_value: 10 };
