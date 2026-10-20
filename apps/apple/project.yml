@@ -38,6 +38,7 @@ packages:
   FeatureEvaluation: { path: Packages/FeatureEvaluation }
   FeatureAIAssist: { path: Packages/FeatureAIAssist }
   FeatureAdmin: { path: Packages/FeatureAdmin }
+  FeatureAcknowledgment: { path: Packages/FeatureAcknowledgment }
   PDFKitRendering: { path: Packages/PDFKitRendering }
 targets:
   IEPAssistant-macOS:
@@ -75,6 +76,7 @@ targets:
       - package: FeatureEvaluation
       - package: FeatureAIAssist
       - package: FeatureAdmin
+      - package: FeatureAcknowledgment
       - package: PDFKitRendering
   IEPAssistant-iOS:
     type: application

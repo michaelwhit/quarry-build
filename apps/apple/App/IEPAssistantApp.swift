@@ -11,8 +11,8 @@ struct IEPAssistantApp: App {
     var body: some Scene {
         WindowGroup {
             Group {
-                if let store = model.store {
-                    RootView().environment(store)
+                if let store = model.store, let acknowledgments = model.acknowledgments {
+                    RootView(acknowledgments: acknowledgments).environment(store)
                 } else {
                     LoadFailureView(message: model.loadError ?? "Unknown error")
                 }
