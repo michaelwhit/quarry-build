@@ -19,7 +19,7 @@
     "synthetic:generate": "pnpm --filter @iep/synthetic-data generate",
     "synthetic:check": "pnpm --filter @iep/synthetic-data check",
     "fixtures:scan": "node tools/scan-fixtures.mjs",
-    "test:tools": "node --test tools/ci/apple-scope.test.mjs"
+    "test:tools": "node --test tools/ci/apple-scope.test.mjs tools/ci/claude-review.test.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
