@@ -4,22 +4,25 @@ import { type RoleId, ROLES, agreeToPrivacy, roleById, setRole } from "../data/r
 export function SignIn() {
   return (
     <main id="main" className="signin">
-      <p className="eyebrow">Practice sign-in, not a real account</p>
-      <h2 className="page-title">Who are you signing in as?</h2>
+      <h2 className="page-title">GoalLine</h2>
+      <p className="meta">Practice build with made-up students. Pick who is signing in.</p>
       <p className="form-warn" role="note">
-        Pick a made-up staff role to see what that role would see. No account, no password, and
-        nothing leaves this browser.
-        <br />
-        Hiding what a role cannot see is for display only: all the practice data sits in this
-        browser, so never enter real students.
+        Practice data only: never enter real students. No account or password, and nothing leaves
+        this browser. Hiding what a role cannot see is for display only.
       </p>
+      <button type="button" className="save signin-main" onClick={() => setRole("sped_director")}>
+        Continue as the director
+      </button>
+      <h3 className="sec">Or sign in as</h3>
       <ul className="pick">
-        {ROLES.map((r) => (
+        {ROLES.filter((r) => r.id !== "sped_director").map((r) => (
           <li key={r.id}>
             <button type="button" className="pick-btn" onClick={() => setRole(r.id)}>
-              <strong>{r.label}</strong>
-              <span>{r.person}</span>
-              <span className="meta">{r.sees}</span>
+              <strong>{r.person}</strong>
+              <span className="meta">{r.label}</span>
+              <span aria-hidden="true" className="chev">
+                ›
+              </span>
             </button>
           </li>
         ))}
