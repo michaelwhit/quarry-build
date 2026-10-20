@@ -1,5 +1,5 @@
 // swift-tools-version:6.0
-// The one-page confidentiality acknowledgment shown on a paraprofessional's first sign-in.
+// The one-page confidentiality acknowledgment shown on first sign-in to roles that must agree before seeing students.
 // The screen reports the choice through callbacks; recording it is done by the sign-in code.
 import PackageDescription
 

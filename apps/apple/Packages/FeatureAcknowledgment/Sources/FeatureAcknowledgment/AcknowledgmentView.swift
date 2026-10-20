@@ -1,7 +1,7 @@
 import DesignSystem
 import SwiftUI
 
-/// One page a paraprofessional reads and agrees to before seeing any student. Agreeing is the only way
+/// One page a staff member reads and agrees to before seeing any student. Agreeing is the only way
 /// forward; declining hands control back to the caller (for example to sign out).
 public struct AcknowledgmentView: View {
     private let onAgree: (AcknowledgmentRecord) -> Void
