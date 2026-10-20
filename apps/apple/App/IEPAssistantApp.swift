@@ -18,6 +18,7 @@ struct IEPAssistantApp: App {
                 }
             }
             .testDataWatermark()
+            .practiceDataNotice()
         }
     }
 }

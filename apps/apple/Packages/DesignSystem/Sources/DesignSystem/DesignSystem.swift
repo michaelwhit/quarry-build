@@ -16,6 +16,11 @@ public struct TestDataWatermark: ViewModifier {
         // button on any screen.
         content.safeAreaInset(edge: .top, spacing: 0) {
             HStack {
+                Text("Practice data, no real students")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
                 Spacer()
                 Text("TEST DATA")
                     .font(.caption2.weight(.bold))
@@ -37,6 +42,35 @@ extension View {
     /// Marks the screen as showing synthetic data.
     public func testDataWatermark() -> some View {
         modifier(TestDataWatermark())
+    }
+}
+
+/// A notice shown the first time the app opens: this build is for practice, with made-up
+/// students only. It stays away once the person accepts it on this device.
+public struct PracticeDataNotice: ViewModifier {
+    @AppStorage("practiceDataNoticeAccepted") private var accepted = false
+
+    public init() {}
+
+    public func body(content: Content) -> some View {
+        content.alert(
+            "Practice data only",
+            isPresented: Binding(get: { !accepted }, set: { _ in })
+        ) {
+            Button("I understand") { accepted = true }
+                .accessibilityIdentifier("practice-notice-accept")
+        } message: {
+            Text(
+                "This build is for practice. It holds made-up students and made-up data. Use made-up names only, and never enter real student information."
+            )
+        }
+    }
+}
+
+extension View {
+    /// Asks the person to accept, once, that this build is for practice data only.
+    public func practiceDataNotice() -> some View {
+        modifier(PracticeDataNotice())
     }
 }
 
