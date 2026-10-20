@@ -54,12 +54,30 @@ public struct TodayView: View {
                     .accessibilityIdentifier("today.quick")
                 }
             }
-            Section("Students") {
-                if cards.isEmpty {
+            if cards.isEmpty {
+                Section("Students") {
                     Text("No students on your caseload yet.").foregroundStyle(SessionStyle.muted)
                 }
-                ForEach(cards) { card in
-                    cardRow(card)
+            } else {
+                let todo = cards.filter(\.hasDue)
+                let caughtUp = cards.filter { !$0.hasDue }
+                Section("To do (\(todo.count))") {
+                    if todo.isEmpty {
+                        Text("Every goal is caught up for its schedule.")
+                            .foregroundStyle(SessionStyle.muted)
+                    }
+                    ForEach(todo) { card in
+                        cardRow(card)
+                    }
+                }
+                .accessibilityIdentifier("today.todo")
+                if !caughtUp.isEmpty {
+                    Section("Caught up (\(caughtUp.count))") {
+                        ForEach(caughtUp) { card in
+                            cardRow(card)
+                        }
+                    }
+                    .accessibilityIdentifier("today.caughtUp")
                 }
             }
         }
@@ -97,8 +115,13 @@ public struct TodayView: View {
             .accessibilityIdentifier("today.card")
             ForEach(card.goals) { item in
                 HStack {
-                    Text(PrivacyLabel.text(item.goal.statement, for: item.student, hidden: hideNames)).font(.caption)
-                        .foregroundStyle(SessionStyle.muted)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(PrivacyLabel.text(item.goal.statement, for: item.student, hidden: hideNames)).font(.caption)
+                            .foregroundStyle(SessionStyle.muted)
+                        Text(scheduleText(item, now: card.now))
+                            .font(.caption2)
+                            .foregroundStyle(SessionStyle.muted)
+                    }
                     Spacer()
                     Button {
                         onTogglePin(item.id)
@@ -113,8 +136,15 @@ public struct TodayView: View {
         }
     }
 
+    private func scheduleText(_ item: SessionGoal, now: Date) -> String {
+        let due = item.scheduleDue(now: now)
+        let frequency = item.plan.frequency.map { " · \($0)" } ?? ""
+        return "\(due.done) of \(due.required) \(due.period.phrase)\(frequency)"
+    }
+
     private func detail(_ card: TodayCard) -> String {
         var parts = ["\(card.goals.count) \(card.goals.count == 1 ? "goal" : "goals")"]
+        if card.hasDue, card.caughtUpCount > 0 { parts.append("\(card.dueGoals.count) due") }
         parts.append(TodayPlanner.lastDataText(days: card.daysSinceData))
         if card.skippedCount > 0 { parts.append("\(card.skippedCount) on the goal screen") }
         return parts.joined(separator: " · ")

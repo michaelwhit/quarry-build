@@ -26,7 +26,8 @@ enum Fixture {
 
     static func goal(
         for student: Student, type: MeasurementType, unit: String? = nil, target: Double? = nil,
-        trials: Int? = nil, prompts: [String] = [], sequence: Int = 1, history: [Double] = []
+        trials: Int? = nil, prompts: [String] = [], sequence: Int = 1, history: [Double] = [],
+        frequency: String? = nil
     ) -> SessionGoal {
         let goalID = UUIDv7.make()
         let goal = Goal(
@@ -34,7 +35,8 @@ enum Fixture {
             statement: "Read CVC words", sequence: sequence)
         let plan = MeasurementPlan(
             id: UUIDv7.make(), tenantID: tenant, goalID: goalID, type: type, unit: unit,
-            targetValue: target, trialsPerSession: trials, promptHierarchy: prompts)
+            targetValue: target, trialsPerSession: trials, promptHierarchy: prompts,
+            frequency: frequency)
         let points = history.enumerated().map { index, value -> DataPoint in
             let at = t0.addingTimeInterval(Double(index - history.count) * 86_400)
             switch type {

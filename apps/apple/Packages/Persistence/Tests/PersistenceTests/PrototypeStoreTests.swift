@@ -379,4 +379,162 @@ struct PrototypeStoreTests {
         #expect(restarted.addedStudents.count == 25)
         #expect(restarted.visibleStudents.count == before + 25)
     }
+
+
+    // MARK: History and practice-data files
+
+    func frequencyGoal(_ store: PrototypeStore) throws -> (Goal, MeasurementPlan) {
+        let goal = try #require(store.dataset.goals.first { store.plan(for: $0)?.type == .frequency })
+        return (goal, try #require(store.plan(for: goal)))
+    }
+
+    @Test("a mistaken session can be removed; the district's own data cannot")
+    func removeAddedPoint() throws {
+        let store = try makeStore()
+        store.signIn(as: try staff(store, .spedDirector))
+        let (goal, _) = try frequencyGoal(store)
+        let before = store.dataPoints(for: goal).count
+        let point = try store.record(goal: goal, valueNum: 3)
+        try store.removeAddedPoint(id: point.id)
+        #expect(store.dataPoints(for: goal).count == before)
+        try store.removeAddedPoint(id: point.id)  // already gone: nothing happens
+        if let seeded = store.dataset.dataPoints.first(where: { $0.goalID == goal.id }) {
+            try store.removeAddedPoint(id: seeded.id)
+            #expect(store.dataPoints(for: goal).count == before)
+        }
+    }
+
+    @Test("removing needs a sign-in and a student in scope")
+    func removeNeedsScope() throws {
+        let store = try makeStore()
+        store.signIn(as: try staff(store, .spedDirector))
+        let (goal, _) = try frequencyGoal(store)
+        let point = try store.record(goal: goal, valueNum: 3)
+        store.signOut()
+        #expect(throws: PrototypeStore.StoreError.notSignedIn) { try store.removeAddedPoint(id: point.id) }
+        let manager = try staff(store, .caseManager)
+        store.signIn(as: manager)
+        let visible = Set(store.visibleStudents.map(\.id))
+        if !(store.student(for: goal).map { visible.contains($0.id) } ?? false) {
+            #expect(throws: PrototypeStore.StoreError.notAllowed) { try store.removeAddedPoint(id: point.id) }
+        }
+    }
+
+    @Test("a removal survives a restart")
+    func removeSaved() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("goalline-\(UUID().uuidString)").appendingPathComponent("state.json")
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+        let store = try makeStore(stateURL: url)
+        store.signIn(as: try staff(store, .spedDirector))
+        let (goal, _) = try frequencyGoal(store)
+        let keep = try store.record(goal: goal, valueNum: 1)
+        let drop = try store.record(goal: goal, valueNum: 2)
+        try store.removeAddedPoint(id: drop.id)
+        let reopened = try makeStore(stateURL: url)
+        #expect(reopened.addedPoints.map(\.id) == [keep.id])
+    }
+
+    @Test("a saved practice file loads back once and refuses other files")
+    func practiceFileRoundTrip() throws {
+        let store = try makeStore()
+        let director = try staff(store, .spedDirector)
+        store.signIn(as: director)
+        let (goal, _) = try frequencyGoal(store)
+        let a = try store.record(goal: goal, valueNum: 4, note: "note")
+        let b = try store.record(goal: goal, valueNum: 5)
+        let file = try store.exportPracticeData()
+        let text = String(decoding: file, as: UTF8.self)
+        #expect(text.contains("\"synthetic\":true"))
+
+        store.resetLocalData()
+        #expect(try store.importPracticeData(file) == 2)
+        #expect(Set(store.addedPoints.map(\.id)) == [a.id, b.id])
+        #expect(try store.importPracticeData(file) == 0)  // loading it again changes nothing
+
+        #expect(throws: PrototypeStore.FileError.notAPracticeFile) {
+            try store.importPracticeData(Data("not json".utf8))
+        }
+        #expect(throws: PrototypeStore.FileError.notAPracticeFile) {
+            try store.importPracticeData(Data("{}".utf8))
+        }
+        let notFake = text.replacingOccurrences(of: "\"synthetic\":true", with: "\"synthetic\":false")
+        #expect(throws: PrototypeStore.FileError.notAPracticeFile) {
+            try store.importPracticeData(Data(notFake.utf8))
+        }
+        #expect(throws: PrototypeStore.FileError.tooLarge) {
+            try store.importPracticeData(Data(count: PrototypeStore.maxPracticeFileBytes + 1))
+        }
+    }
+
+    @Test("a file with one bad session loads nothing")
+    func practiceFileAllOrNothing() throws {
+        let store = try makeStore()
+        store.signIn(as: try staff(store, .spedDirector))
+        let (goal, _) = try frequencyGoal(store)
+        _ = try store.record(goal: goal, valueNum: 4)
+        var text = String(decoding: try store.exportPracticeData(), as: UTF8.self)
+        store.resetLocalData()
+        text = text.replacingOccurrences(of: "\"value_num\":4", with: "\"value_num\":-4")
+        #expect(throws: PrototypeStore.FileError.notAPracticeFile) {
+            try store.importPracticeData(Data(text.utf8))
+        }
+        #expect(store.addedPoints.isEmpty)
+    }
+
+    @Test("loading a file needs a sign-in, and a case manager cannot load sessions for others' students")
+    func practiceFileScope() throws {
+        let store = try makeStore()
+        store.signIn(as: try staff(store, .spedDirector))
+        let (goal, _) = try frequencyGoal(store)
+        _ = try store.record(goal: goal, valueNum: 4)
+        let file = try store.exportPracticeData()
+        store.signOut()
+        #expect(throws: PrototypeStore.StoreError.notSignedIn) { try store.importPracticeData(file) }
+        #expect(throws: PrototypeStore.StoreError.notSignedIn) { try store.exportPracticeData() }
+        // A fresh store, so the session is not skipped as already present.
+        let other = try makeStore()
+        let manager = try staff(other, .caseManager)
+        other.signIn(as: manager)
+        let visible = Set(other.visibleStudents.map(\.id))
+        if !(other.student(for: goal).map { visible.contains($0.id) } ?? false) {
+            #expect(throws: PrototypeStore.FileError.notAPracticeFile) { try other.importPracticeData(file) }
+            #expect(other.addedPoints.isEmpty)
+        }
+    }
+
+    @Test("paraprofessionals, gen-ed teachers and related-service providers have no file save or load")
+    func fileNeedsExportRight() throws {
+        let store = try makeStore()
+        store.signIn(as: try staff(store, .spedDirector))
+        let (goal, _) = try frequencyGoal(store)
+        _ = try store.record(goal: goal, valueNum: 4)
+        let file = try store.exportPracticeData()
+        #expect(store.canExportFiles)
+        for role in [StaffRole.paraprofessional, .genEdTeacher, .relatedServiceProvider] {
+            let other = try makeStore()
+            guard let person = other.dataset.staff.first(where: { $0.role == role }) else { continue }
+            other.signIn(as: person)
+            #expect(!other.canExportFiles)
+            #expect(throws: PrototypeStore.StoreError.notAllowed) { try other.exportPracticeData() }
+            #expect(throws: PrototypeStore.StoreError.notAllowed) { try other.importPracticeData(file) }
+        }
+    }
+
+    @Test("Save counts only the sessions a file would hold")
+    func exportableCount() throws {
+        let store = try makeStore()
+        store.signIn(as: try staff(store, .spedDirector))
+        let (goal, _) = try frequencyGoal(store)
+        _ = try store.record(goal: goal, valueNum: 4)
+        #expect(store.exportableSessionCount == 1)
+        // Another person on this device cannot see that student: nothing to save.
+        let manager = try staff(store, .caseManager)
+        store.signIn(as: manager)
+        let visible = Set(store.visibleStudents.map(\.id))
+        if !(store.student(for: goal).map { visible.contains($0.id) } ?? false) {
+            #expect(store.addedPoints.count == 1)
+            #expect(store.exportableSessionCount == 0)
+        }
+    }
 }

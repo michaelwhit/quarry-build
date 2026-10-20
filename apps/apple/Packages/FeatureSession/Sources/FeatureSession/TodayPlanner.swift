@@ -11,6 +11,13 @@ public struct TodayCard: Identifiable, Hashable, Sendable {
 
     public var runnableGoals: [SessionGoal] { goals.filter(\.isSupported) }
     public var skippedCount: Int { goals.count - runnableGoals.count }
+
+    /// The goals that still need a session on their schedule, and how many are caught up.
+    public var dueGoals: [SessionGoal]
+    /// The moment the card was planned for, so every schedule line on it agrees.
+    public var now: Date
+    public var caughtUpCount: Int { goals.count - dueGoals.count }
+    public var hasDue: Bool { !dueGoals.isEmpty }
 }
 
 /// Builds the Today tab from a caseload. Services and a bell schedule do not exist in the data
@@ -26,7 +33,12 @@ public enum TodayPlanner {
             let ordered = items.sorted { $0.goal.sequence < $1.goal.sequence }
             let last = ordered.compactMap(\.lastDataAt).max()
             let days = last.map { daysBetween($0, now, calendar) }
-            return TodayCard(student: student, goals: ordered, daysSinceData: days)
+            // A goal the session screen cannot run is not a reason to list the student as to do.
+            let due = ordered.filter {
+                $0.isSupported && $0.scheduleDue(now: now, calendar: calendar).isDue
+            }
+            return TodayCard(student: student, goals: ordered, daysSinceData: days, dueGoals: due,
+                now: now)
         }
         // Longest without data first (never recorded counts as longest), then by name.
         return cards.sorted { a, b in

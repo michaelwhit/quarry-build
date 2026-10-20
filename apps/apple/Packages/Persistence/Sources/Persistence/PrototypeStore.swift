@@ -36,6 +36,27 @@ public final class PrototypeStore {
         case nameTooLong
     }
 
+    /// Why a practice-data file could not be read.
+    public enum FileError: Error, Equatable {
+        case tooLarge
+        case notAPracticeFile
+        case noSessions
+    }
+
+    /// The most a practice-data file may hold, so a wrong file is refused before it is parsed.
+    public static let maxPracticeFileBytes = 4_000_000
+
+    /// What "Save practice data to a file" writes: the sessions recorded here, nothing else. The
+    /// `synthetic` flag and `app` name let the loader refuse any other file.
+    private struct PracticeFile: Codable {
+        var synthetic: Bool
+        var app: String
+        var version: Int
+        var points: [DataPoint]
+    }
+
+    private static let practiceFileApp = "goalline-practice"
+
     private struct SavedState: Codable {
         var deviceID: UUID
         var points: [DataPoint]
@@ -179,6 +200,13 @@ public final class PrototypeStore {
         case .spedDirector, .caseManager, .relatedServiceProvider: true
         default: false
         }
+    }
+
+    /// Whether the signed-in role may save sessions to a file or load them from one. Follows the
+    /// role matrix's export permission, so paraprofessionals, gen-ed teachers and related-service
+    /// providers have neither.
+    public var canExportFiles: Bool {
+        currentStaff.map { RoleCapabilities.proposedDefaults(for: $0.role).canExport } ?? false
     }
 
     // MARK: Reading records
@@ -434,6 +462,97 @@ public final class PrototypeStore {
         guard !fresh.isEmpty else { return 0 }
         // Success means the points are on disk. If the write fails, roll back so the caller keeps
         // its draft and nothing exists only in memory.
+        let before = addedPoints
+        addedPoints.append(contentsOf: fresh)
+        do {
+            try write()
+        } catch {
+            addedPoints = before
+            throw StoreError.saveFailed
+        }
+        return fresh.count
+    }
+
+    /// Removes one session someone recorded by mistake. Only data added in the app can go; the
+    /// synthetic district's own points stay. Removing an id that is not there does nothing.
+    public func removeAddedPoint(id: UUID) throws {
+        guard currentStaff != nil else { throw StoreError.notSignedIn }
+        guard canRecordData else { throw StoreError.notAllowed }
+        guard let point = addedPoints.first(where: { $0.id == id }) else { return }
+        guard let goal = dataset.goals.first(where: { $0.id == point.goalID }),
+            let owner = student(for: goal), visibleStudents.contains(where: { $0.id == owner.id })
+        else { throw StoreError.notAllowed }
+        let before = addedPoints
+        addedPoints.removeAll { $0.id == id }
+        do {
+            try write()
+        } catch {
+            addedPoints = before
+            throw StoreError.saveFailed
+        }
+    }
+
+    /// The sessions recorded here for students the signed-in person may see.
+    private var exportablePoints: [DataPoint] {
+        let visible = Set(visibleStudents.map(\.id))
+        return addedPoints.filter { point in
+            dataset.goals.first { $0.id == point.goalID }
+                .flatMap { student(for: $0) }
+                .map { visible.contains($0.id) } ?? false
+        }
+    }
+
+    /// How many sessions a saved file would hold, so a screen can leave Save off when it is none.
+    public var exportableSessionCount: Int { exportablePoints.count }
+
+    /// Every session recorded here for students the signed-in person may see, newest first, as the
+    /// text of a practice-data file. Fake data only; the file says so.
+    public func exportPracticeData() throws -> Data {
+        guard currentStaff != nil else { throw StoreError.notSignedIn }
+        guard canExportFiles else { throw StoreError.notAllowed }
+        let file = PracticeFile(
+            synthetic: true, app: Self.practiceFileApp, version: 1,
+            points: exportablePoints.sorted { $0.observedAt > $1.observedAt })
+        return try JSONEncoder.coreModels.encode(file)
+    }
+
+    /// Adds the sessions from a file made by `exportPracticeData`. Sessions already here (same id)
+    /// are skipped, so loading the same file twice changes nothing. The file lands whole or not at
+    /// all: one session that is out of scope or fails its plan refuses the file. Returns how many
+    /// sessions were new.
+    @discardableResult
+    public func importPracticeData(_ data: Data) throws -> Int {
+        guard currentStaff != nil else { throw StoreError.notSignedIn }
+        guard canExportFiles else { throw StoreError.notAllowed }
+        guard data.count <= Self.maxPracticeFileBytes else { throw FileError.tooLarge }
+        guard let file = try? JSONDecoder.coreModels.decode(PracticeFile.self, from: data),
+            file.synthetic, file.app == Self.practiceFileApp, file.version == 1
+        else { throw FileError.notAPracticeFile }
+        guard !file.points.isEmpty else { throw FileError.noSessions }
+        let known = Set(dataset.staff.map(\.id))
+        // The same checks as a session delivered by the app, except the recorder: a file may hold
+        // sessions another person recorded on this device, as long as they are in the district.
+        guard canRecordData else { throw StoreError.notAllowed }
+        let visible = Set(visibleStudents.map(\.id))
+        var seen = Set(addedPoints.map(\.id))
+        var fresh: [DataPoint] = []
+        for point in file.points where !seen.contains(point.id) {
+            guard let goal = dataset.goals.first(where: { $0.id == point.goalID }),
+                let owner = student(for: goal), visible.contains(owner.id),
+                point.tenantID == goal.tenantID, known.contains(point.collectorID)
+            else { throw FileError.notAPracticeFile }
+            guard let plan = plan(for: goal), plan.id == point.planID else {
+                throw FileError.notAPracticeFile
+            }
+            do {
+                try point.validate(against: plan)
+            } catch {
+                throw FileError.notAPracticeFile
+            }
+            seen.insert(point.id)
+            fresh.append(point)
+        }
+        guard !fresh.isEmpty else { return 0 }
         let before = addedPoints
         addedPoints.append(contentsOf: fresh)
         do {
