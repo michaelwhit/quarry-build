@@ -215,6 +215,7 @@ describe("export and import", () => {
     const sid = addStudent({ firstName: "Pat", lastName: "Example", grade: "3" });
     addPoint(addGoal(sid, goal), 4, "note");
     const text = exportText();
+    expect(text).not.toContain("\n");
     clearAll();
     expect(importText("{}").ok).toBe(false);
     expect(importText("not json").ok).toBe(false);

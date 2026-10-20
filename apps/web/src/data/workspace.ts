@@ -404,11 +404,7 @@ export function deleteGoal(goalId: string) {
 
 /** The practice data as text for a download. Made-up data only; the same shape is kept in storage. */
 export function exportText(): string {
-  return JSON.stringify(
-    { synthetic: true, app: "goalline-practice", version: 1, ...current },
-    null,
-    2,
-  );
+  return JSON.stringify({ synthetic: true, app: "goalline-practice", version: 1, ...current });
 }
 
 export interface ImportResult {
