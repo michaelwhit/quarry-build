@@ -120,6 +120,7 @@ public enum AccessibilityID {
     public static let loadPracticeFile = "load-practice-file"
     public static let showToday = "show-today"
     public static let signInList = "sign-in-list"
+    public static let signInContinue = "sign-in-continue"
     public static func signInRow(_ id: UUID) -> String { "sign-in-row-\(id.uuidString)" }
     /// A number card on the overview, by its title in lower case with dashes ("needs-a-look").
     public static func kpi(_ title: String) -> String { "kpi-" + slug(title) }
