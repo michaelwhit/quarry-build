@@ -37,7 +37,7 @@ public enum StaffFilter: String, CaseIterable, Identifiable, Sendable {
     public var label: String {
         switch self {
         case .all: "All"
-        case .teachers: "SPED teachers"
+        case .teachers: "Case managers"
         case .providers: "SLP / psych"
         case .paras: "Paras"
         case .needsAttention: "Needs attention"

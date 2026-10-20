@@ -88,7 +88,7 @@ struct StaffAdminTests {
         #expect(preview == RoleChangePreview(studentsRemoved: 2, delegationsEnded: 1))
         let text = StaffRolesText.roleChangeConfirm(
             name: "Ms. Garcia", from: .caseManager, to: .paraprofessional, preview: preview)
-        #expect(text.contains("from SPED teacher to Para"))
+        #expect(text.contains("from Case manager to Para"))
         #expect(text.contains("2 students leave"))
         #expect(director.changeRole(of: f.garcia.id, to: .paraprofessional))
         #expect(director.ownCaseload(of: f.garcia.id).isEmpty)
@@ -252,6 +252,8 @@ struct StaffAdminTests {
         #expect(director.detailLine(for: f.garcia) == "2 students")
         #expect(director.detailLine(for: f.sam) == "1 delegated goal · ends Nov 2026")
         #expect(director.people(matching: .teachers, search: "").count == 2)
+        #expect(StaffFilter.teachers.label == "Case managers")
+        #expect(StaffRolesText.roleName(.caseManager) == StaffRole.caseManager.title)
         #expect(director.people(matching: .paras, search: "").count == 2)
         #expect(director.people(matching: .all, search: "  garcia ").map(\.id) == [f.garcia.id])
         // Pat has no students; Sam's goal ends within 14 days.
@@ -278,7 +280,7 @@ struct StaffAdminTests {
             preview: RoleChangePreview(studentsRemoved: 0, delegationsEnded: 0))
         #expect(
             text
-                == "Change Sam Rivera from Para to SPED teacher? They will see full student records for their caseload."
+                == "Change Sam Rivera from Para to Case manager? They will see full student records for their caseload."
         )
     }
 
