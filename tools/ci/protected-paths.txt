@@ -1,0 +1,22 @@
+# Paths whose changes need a security approval on the exact head before the "Approval on head"
+# status turns green. One extended regular expression per line, matched against repository-relative
+# file names. Blank lines and lines starting with # are ignored. The status workflow reads this file
+# from the default branch, so a pull request cannot change its own list.
+^\.github/
+^tools/
+^packages/db/
+^packages/policies/
+^services/api/src/modules/(auth|signin|sync|audit|hardening)
+^services/api/src/(scope|session|db|app)\.ts
+^services/api/src/crypto
+^apps/apple/Packages/(AuthKit|SyncEngine|Persistence|Audit)
+^apps/apple/App/.*(SignIn|Wiring)
+^apps/apple/Config/
+^apps/apple/scripts/
+^apps/apple/.*Role
+^apps/web/public/sw\.js$
+^apps/web/scripts/
+^SECURITY\.md$
+(^|/)package\.json$
+(^|/)pnpm-lock\.yaml$
+Package\.resolved$
