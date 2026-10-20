@@ -21,6 +21,13 @@ extension PrototypeStore {
         return copy
     }
 
+    /// Goal text for a screen that labels the student as first name and last initial: the full
+    /// name and the last name become that label, and student ids are taken out. Unlike
+    /// `displayGoal(_:for:)` this applies to every role.
+    public func minimizedText(_ text: String, of student: Student) -> String {
+        Self.scrubbed(text, of: student, shownAs: student.displayName)
+    }
+
     /// Text with the student's full name (first or preferred, then last) replaced by `shown`, then the
     /// last name and the long parts of a compound one replaced by `shown`, and the student ids replaced by "[ID]". Whole words only, any capitalization, so
     /// a possessive such as "Rivera's" still matches.

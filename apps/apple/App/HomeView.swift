@@ -77,7 +77,7 @@ struct HomeView: View {
             (
                 HomeTile(
                     title: "Staff and roles", subtitle: "Assign roles and caseloads",
-                    systemImage: "person.badge.key", destination: nil), role.canManageStaff
+                    systemImage: "person.badge.key", destination: .staff), role.canManageStaff
             ),
             (
                 HomeTile(

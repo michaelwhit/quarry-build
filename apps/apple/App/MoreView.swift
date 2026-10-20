@@ -20,6 +20,13 @@ struct MoreView: View {
                     .accessibilityIdentifier(AccessibilityID.accountMenu)
                 }
             }
+            if store.roleView.canManageStaff {
+                Section {
+                    NavigationLink("Staff and roles") { StaffAndRolesScreen() }
+                        .frame(minHeight: Spacing.minTapTarget, alignment: .leading)
+                        .accessibilityIdentifier("more-staff-and-roles")
+                }
+            }
             Section {
                 Button("Reset demo data", role: .destructive) { confirmReset = true }
                     .frame(minHeight: Spacing.minTapTarget, alignment: .leading)
