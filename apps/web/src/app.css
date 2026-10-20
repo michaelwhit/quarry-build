@@ -766,3 +766,18 @@ h2.page-title {
 .signin {
   padding-bottom: 24px;
 }
+
+.signin-main {
+  width: 100%;
+  margin: 12px 0;
+}
+.pick-btn {
+  position: relative;
+}
+.pick-btn .chev {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 22px;
+}

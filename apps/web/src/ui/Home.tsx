@@ -242,7 +242,7 @@ export function More() {
           when you reload. Real sign-in with school accounts comes before any real student data.
         </p>
         <button type="button" onClick={() => setRole(null)}>
-          Sign out and pick another role
+          Sign out
         </button>
       </section>
       {!can(role, "manageData") ? (
