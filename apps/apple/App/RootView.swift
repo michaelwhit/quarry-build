@@ -22,11 +22,6 @@ struct RootView: View {
                 SignInView()
             }
         }
-        #if DEMO_IDENTITY
-            // Demo builds open signed in as the fake SPED director so the data shows at once.
-            // Signing out still returns to the picker (this runs once, when the window appears).
-            .task { await DemoSignIn.openAsDirector(store) }
-        #endif
     }
 }
 

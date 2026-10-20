@@ -23,47 +23,61 @@ struct SignInView: View {
     struct DemoSignInView: View {
         @Environment(PrototypeStore.self) private var store
 
+        private var director: Staff? {
+            store.demoStaff.first { $0.role == .spedDirector }
+        }
+
         var body: some View {
-            NavigationStack {
-                List {
-                    Section {
-                        Text(
-                            "Demo build with fake students. Pick a fake staff member to see what each role can do."
-                        )
-                        .foregroundStyle(.secondary)
+            ScrollView {
+                VStack(alignment: .leading, spacing: Spacing.large) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("GoalLine").font(.largeTitle.weight(.heavy)).foregroundStyle(Theme.ink)
+                        Text("Practice build with made-up students. Pick who is signing in.")
+                            .font(.subheadline).foregroundStyle(Theme.muted)
                     }
-                    Section("Sign in as") {
+                    if let director {
+                        Button {
+                            store.signIn(as: director)
+                        } label: {
+                            Label("Continue as the director", systemImage: "arrow.right.circle.fill")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity, minHeight: Spacing.minTapTarget)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .accessibilityIdentifier(AccessibilityID.signInContinue)
+                    }
+                    VStack(alignment: .leading, spacing: Spacing.medium) {
+                        Text("Or sign in as")
+                            .font(.caption.weight(.bold)).foregroundStyle(Theme.accent)
                         ForEach(store.demoStaff) { staff in
                             Button {
                                 store.signIn(as: staff)
                             } label: {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(staff.displayName).font(.headline)
-                                    Text(staff.role.title).font(.footnote).foregroundStyle(.secondary)
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(staff.displayName).font(.headline)
+                                            .foregroundStyle(Theme.ink)
+                                        Text(staff.role.title).font(.footnote)
+                                            .foregroundStyle(Theme.muted)
+                                    }
+                                    Spacer()
+                                    Image(systemName: "chevron.right").foregroundStyle(Theme.muted)
                                 }
+                                .frame(maxWidth: .infinity, minHeight: Spacing.minTapTarget)
+                                .card()
                             }
                             .buttonStyle(.plain)
                             .accessibilityElement(children: .combine)
                             .accessibilityIdentifier(AccessibilityID.signInRow(staff.id))
                         }
                     }
+                    .accessibilityIdentifier(AccessibilityID.signInList)
                 }
-                .accessibilityIdentifier(AccessibilityID.signInList)
-                .themedList()
-                .navigationTitle(AppInfo.name)
+                .padding(Spacing.large)
+                .frame(maxWidth: 560, alignment: .leading)
+                .frame(maxWidth: .infinity)
             }
-        }
-    }
-#endif
-
-#if DEMO_IDENTITY
-    enum DemoSignIn {
-        @MainActor
-        static func openAsDirector(_ store: PrototypeStore) {
-            guard store.currentStaff == nil,
-                let director = store.demoStaff.first(where: { $0.role == .spedDirector })
-            else { return }
-            store.signIn(as: director)
+            .themedScreen()
         }
     }
 #endif
