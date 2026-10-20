@@ -22,23 +22,34 @@ public struct RecentDataList: View {
             Text("No sessions recorded yet.").foregroundStyle(.secondary)
         } else {
             ForEach(points) { point in
-                HStack(alignment: .firstTextBaseline) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(point.summary(for: plan)).font(.headline)
-                        if let note = point.note {
-                            Text(note).font(.footnote).foregroundStyle(.secondary)
-                        }
-                    }
-                    Spacer()
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text(point.observedAt.formatted(date: .abbreviated, time: .shortened))
-                        Text(store.staffName(point.collectorID))
-                            .foregroundStyle(.secondary)
-                    }
-                    .font(.footnote)
-                }
-                .accessibilityElement(children: .combine)
+                SessionRow(point: point, plan: plan)
             }
         }
+    }
+}
+
+/// One saved session: the result, the note, when, and who collected it.
+struct SessionRow: View {
+    @Environment(PrototypeStore.self) private var store
+    let point: DataPoint
+    let plan: MeasurementPlan
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(point.summary(for: plan)).font(.headline)
+                if let note = point.note {
+                    Text(note).font(.footnote).foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(point.observedAt.formatted(date: .abbreviated, time: .shortened))
+                Text(store.staffName(point.collectorID))
+                    .foregroundStyle(.secondary)
+            }
+            .font(.footnote)
+        }
+        .accessibilityElement(children: .combine)
     }
 }

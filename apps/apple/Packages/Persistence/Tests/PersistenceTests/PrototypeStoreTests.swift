@@ -77,6 +77,52 @@ struct PrototypeStoreTests {
         #expect(store.dataPoints(for: goal).count == before + 1)
     }
 
+    @Test("a removed session leaves the history and stays gone after a restart")
+    func removeSession() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("removal-\(UUID().uuidString).json")
+        defer { try? FileManager.default.removeItem(at: url) }
+        let store = try makeStore(stateURL: url)
+        store.signIn(as: try staff(store, .spedDirector))
+        let goal = try #require(store.dataset.goals.first { store.plan(for: $0)?.type == .trials })
+        let kept = try store.record(goal: goal, correct: 5, total: 10)
+        let mistake = try store.record(goal: goal, correct: 9, total: 10)
+        try store.removePoint(mistake.id)
+        try store.removePoint(mistake.id)
+        #expect(!store.dataPoints(for: goal).contains { $0.id == mistake.id })
+        #expect(store.dataPoints(for: goal).contains { $0.id == kept.id })
+        let samples = try #require(store.progress(for: goal)).samples
+        #expect(!samples.contains { $0.id == mistake.id })
+
+        let again = try makeStore(stateURL: url)
+        #expect(!again.dataPoints(for: goal).contains { $0.id == mistake.id })
+        #expect(again.dataPoints(for: goal).contains { $0.id == kept.id })
+
+        again.resetLocalData()
+        #expect(again.removedPointIDs.isEmpty)
+    }
+
+    @Test("only a teacher or the person who recorded a session may remove it")
+    func removeSessionRules() throws {
+        let store = try makeStore()
+        let director = try staff(store, .spedDirector)
+        store.signIn(as: director)
+        let goal = try #require(store.dataset.goals.first { store.plan(for: $0)?.type == .trials })
+        let point = try store.record(goal: goal, correct: 4, total: 10)
+
+        let para = Staff(
+            id: UUIDv7.make(), tenantID: store.dataset.tenant.id, email: "para@bluestem.example",
+            displayName: "Para", role: .paraprofessional)
+        store.signIn(as: para)
+        #expect(!store.canRemove(point))
+        #expect(throws: PrototypeStore.StoreError.notAllowed) { try store.removePoint(point.id) }
+
+        store.signIn(as: director)
+        #expect(store.canRemove(point))
+        #expect(throws: PrototypeStore.StoreError.notAllowed) { try store.removePoint(UUIDv7.make()) }
+        #expect(store.dataPoints(for: goal).contains { $0.id == point.id })
+    }
+
     @Test("a session's points land once, even when delivered twice")
     func addPointsOnce() throws {
         let store = try makeStore()

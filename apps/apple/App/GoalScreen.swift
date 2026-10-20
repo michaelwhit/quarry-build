@@ -33,6 +33,9 @@ struct GoalScreen: View {
             if let plan {
                 Section("Recent sessions") {
                     RecentDataList(goal: goal, plan: plan)
+                    NavigationLink("All sessions") {
+                        SessionHistoryView(goal: goal, plan: plan)
+                    }
                 }
             }
             if store.canUseAI {

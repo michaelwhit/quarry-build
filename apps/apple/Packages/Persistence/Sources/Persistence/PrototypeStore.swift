@@ -37,9 +37,11 @@ public final class PrototypeStore {
         var students: [Student]?
         var assignments: [CaseloadAssignment]?
         var studentEdits: [Student]?
+        var removedPoints: [UUID]?
 
         enum CodingKeys: String, CodingKey {
             case points, approvals, students, assignments
+            case removedPoints = "removed_points"
             case deviceID = "device_id"
             case studentEdits = "student_edits"
         }
@@ -55,6 +57,9 @@ public final class PrototypeStore {
     public private(set) var addedAssignments: [CaseloadAssignment]
     /// Changes to students already in the district or added by hand, keyed by student id.
     public private(set) var studentEdits: [UUID: Student]
+    /// Sessions the user took out of a goal's history. They stay on file but are no longer shown
+    /// or graphed.
+    public private(set) var removedPointIDs: Set<UUID>
     @ObservationIgnored private let stateURL: URL?
     @ObservationIgnored private let calendarToday: @Sendable () -> LocalDate
 
@@ -75,6 +80,7 @@ public final class PrototypeStore {
         var students: [Student] = []
         var assignments: [CaseloadAssignment] = []
         var edits: [UUID: Student] = [:]
+        var removed: Set<UUID> = []
         if let stateURL, let data = try? Data(contentsOf: stateURL),
             let saved = try? JSONDecoder.coreModels.decode(SavedState.self, from: data)
         {
@@ -86,6 +92,7 @@ public final class PrototypeStore {
             assignments = saved.assignments ?? []
             edits = Dictionary(
                 (saved.studentEdits ?? []).map { ($0.id, $0) }, uniquingKeysWith: { _, newer in newer })
+            removed = Set(saved.removedPoints ?? [])
         }
         self.deviceID = device
         self.addedPoints = points
@@ -93,6 +100,7 @@ public final class PrototypeStore {
         self.addedStudents = students
         self.addedAssignments = assignments
         self.studentEdits = edits
+        self.removedPointIDs = removed
     }
 
     public nonisolated static func systemToday() -> LocalDate {
@@ -196,8 +204,15 @@ public final class PrototypeStore {
 
     public func dataPoints(for goal: Goal) -> [DataPoint] {
         (dataset.dataPoints + addedPoints)
-            .filter { $0.goalID == goal.id }
+            .filter { $0.goalID == goal.id && !removedPointIDs.contains($0.id) }
             .sorted { $0.observedAt < $1.observedAt }
+    }
+
+    /// Whether the signed-in person may take this session out of history: teachers and the
+    /// director for any session on a student they can see, everyone else only their own.
+    public func canRemove(_ point: DataPoint) -> Bool {
+        guard let staff = currentStaff, canRecordData else { return false }
+        return canManageStudents || point.collectorID == staff.id
     }
 
     public func progress(for goal: Goal) -> GoalProgress? {
@@ -371,6 +386,25 @@ public final class PrototypeStore {
         return fresh.count
     }
 
+    /// Takes one mistaken session out of a goal's history and graph. Nothing is stored if the
+    /// change cannot be saved.
+    public func removePoint(_ id: UUID) throws {
+        guard currentStaff != nil else { throw StoreError.notSignedIn }
+        // Judge the stored session, never the copy the caller holds.
+        guard let point = (dataset.dataPoints + addedPoints).first(where: { $0.id == id }),
+            canRemove(point), let goal = dataset.goals.first(where: { $0.id == point.goalID }),
+            let owner = student(for: goal), visibleStudents.contains(where: { $0.id == owner.id })
+        else { throw StoreError.notAllowed }
+        guard !removedPointIDs.contains(id) else { return }
+        removedPointIDs.insert(id)
+        do {
+            try write()
+        } catch {
+            removedPointIDs.remove(id)
+            throw StoreError.saveFailed
+        }
+    }
+
     /// Stores the teacher's approved answer for a goal, replacing any earlier one.
     public func approve(
         goal: Goal, sufficient: Bool, comment: String, aiSuggestedSufficient: Bool?,
@@ -400,6 +434,7 @@ public final class PrototypeStore {
         addedStudents = []
         addedAssignments = []
         studentEdits = [:]
+        removedPointIDs = []
         save()
     }
 
@@ -418,7 +453,8 @@ public final class PrototypeStore {
             deviceID: deviceID, points: addedPoints,
             approvals: approvals.values.sorted { $0.approvedAt < $1.approvedAt },
             students: addedStudents, assignments: addedAssignments,
-            studentEdits: studentEdits.values.sorted { $0.id.uuidString < $1.id.uuidString })
+            studentEdits: studentEdits.values.sorted { $0.id.uuidString < $1.id.uuidString },
+            removedPoints: removedPointIDs.sorted { $0.uuidString < $1.uuidString })
         try FileManager.default.createDirectory(
             at: stateURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         let data = try JSONEncoder.coreModels.encode(state)
