@@ -134,7 +134,7 @@ export type RowStatus =
   { kind: "ready" } | { kind: "duplicate" } | { kind: "problem"; why: string };
 
 export interface PlannedRow {
-  /** Position in the file, counting the header as line 1. */
+  /** Row number as a spreadsheet shows it, counting the header as row 1. */
   line: number;
   firstName: string;
   lastName: string;

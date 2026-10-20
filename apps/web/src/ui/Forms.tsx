@@ -562,22 +562,24 @@ export function ImportStudents() {
               ? `${added} student${added === 1 ? "" : "s"} added.`
               : `${ready.length} to add, ${plan.filter((r) => r.status.kind === "duplicate").length} already on the list, ${plan.filter((r) => r.status.kind === "problem").length} to fix in the file`}
           </p>
-          <ul className="import-list">
-            {plan.map((r) => (
-              <li key={r.line}>
-                <span>
-                  {`${r.firstName} ${r.lastName}`.trim() || "(no name)"}
-                  <span className="meta">
-                    {" "}
-                    Grade {r.grade || "?"} · line {r.line}
+          {added === null && (
+            <ul className="import-list">
+              {plan.map((r) => (
+                <li key={r.line}>
+                  <span>
+                    {`${r.firstName} ${r.lastName}`.trim() || "(no name)"}
+                    <span className="meta">
+                      {" "}
+                      Grade {r.grade || "?"} · row {r.line}
+                    </span>
                   </span>
-                </span>
-                <span className={r.status.kind === "problem" ? "form-error" : "meta"}>
-                  {statusText(r)}
-                </span>
-              </li>
-            ))}
-          </ul>
+                  <span className={r.status.kind === "problem" ? "form-error" : "meta"}>
+                    {statusText(r)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
           <div className="actions">
             <button
               type="button"
