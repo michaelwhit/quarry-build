@@ -1,7 +1,14 @@
 import { useState } from "react";
 import type { GoalArea, MeasurementType } from "@synthetic/src/types.ts";
-import { displayName, studentById } from "../data/district.ts";
-import { addGoal, addStudent } from "../data/workspace.ts";
+import { displayName, goalById, studentById } from "../data/district.ts";
+import {
+  addGoal,
+  addStudent,
+  deleteGoal,
+  deleteStudent,
+  updateGoal,
+  updateStudent,
+} from "../data/workspace.ts";
 
 const GRADES = ["PK", "K", ...Array.from({ length: 12 }, (_, i) => String(i + 1))];
 
@@ -59,32 +66,66 @@ const lines = (t: string) =>
     ),
   ].slice(0, 20);
 
-export function AddStudent() {
-  const [first, setFirst] = useState("");
-  const [last, setLast] = useState("");
-  const [preferred, setPreferred] = useState("");
-  const [grade, setGrade] = useState("3");
+/** A two-step delete button: the first press asks, the second does it. */
+export function DeleteButton({
+  label,
+  ask,
+  onDelete,
+}: {
+  label: string;
+  ask: string;
+  onDelete: () => void;
+}) {
+  const [armed, setArmed] = useState(false);
+  return armed ? (
+    <div className="actions">
+      <button type="button" className="danger" onClick={onDelete}>
+        {ask}
+      </button>
+      <button type="button" onClick={() => setArmed(false)}>
+        Cancel
+      </button>
+    </div>
+  ) : (
+    <button type="button" className="danger-ghost" onClick={() => setArmed(true)}>
+      {label}
+    </button>
+  );
+}
+
+export function AddStudent({ editId }: { editId?: string }) {
+  const existing = editId ? studentById(editId)?.student : undefined;
+  const [first, setFirst] = useState(existing?.first_name ?? "");
+  const [last, setLast] = useState(existing?.last_name ?? "");
+  const [preferred, setPreferred] = useState(existing?.preferred_name ?? "");
+  const [grade, setGrade] = useState(existing?.grade ?? "3");
   const [error, setError] = useState("");
+  if (editId && !existing)
+    return (
+      <p>
+        Student not found. <a href="#/caseload">Back to caseload</a>
+      </p>
+    );
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const id = addStudent({
-        firstName: first,
-        lastName: last,
-        preferredName: preferred,
-        grade,
-      });
-      window.location.hash = `#/student/${id}`;
+      const input = { firstName: first, lastName: last, preferredName: preferred, grade };
+      if (editId) {
+        updateStudent(editId, input);
+        window.location.hash = `#/student/${editId}`;
+      } else {
+        window.location.hash = `#/student/${addStudent(input)}`;
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not add the student");
+      setError(err instanceof Error ? err.message : "Could not save the student");
     }
   };
   return (
     <>
-      <a className="btn back" href="#/caseload">
-        ← Caseload
+      <a className="btn back" href={editId ? `#/student/${editId}` : "#/caseload"}>
+        ← {editId ? "Back" : "Caseload"}
       </a>
-      <h2 className="page-title">Add a student</h2>
+      <h2 className="page-title">{editId ? "Edit student" : "Add a student"}</h2>
       <p className="form-warn" role="note">
         Practice only: use made-up names. Do not enter a real student.
       </p>
@@ -115,32 +156,44 @@ export function AddStudent() {
           </p>
         )}
         <button type="submit" className="save">
-          Add student
+          {editId ? "Save changes" : "Add student"}
         </button>
       </form>
+      {editId && (
+        <DeleteButton
+          label="Delete this student"
+          ask="Yes, delete the student and all their goals and data"
+          onDelete={() => {
+            deleteStudent(editId);
+            window.location.hash = "#/caseload";
+          }}
+        />
+      )}
     </>
   );
 }
 
-export function AddGoal({ studentId }: { studentId: string }) {
+export function AddGoal({ studentId, editGoalId }: { studentId: string; editGoalId?: string }) {
   const s = studentById(studentId);
-  const [area, setArea] = useState<GoalArea>("reading");
-  const [statement, setStatement] = useState("");
-  const [baseline, setBaseline] = useState("");
-  const [criteria, setCriteria] = useState("");
-  const [type, setType] = useState<MeasurementType>("percent_correct");
-  const [unit, setUnit] = useState("percent");
-  const [target, setTarget] = useState("80");
-  const [trials, setTrials] = useState("10");
-  const [levels, setLevels] = useState(DEFAULT_LEVELS.join("\n"));
-  const [steps, setSteps] = useState("");
-  const [frequency, setFrequency] = useState("2x weekly");
+  const old = editGoalId ? goalById(studentId, editGoalId)?.g : undefined;
+  const editing = old !== undefined;
+  const [area, setArea] = useState<GoalArea>(old?.goal.area ?? "reading");
+  const [statement, setStatement] = useState(old?.goal.statement ?? "");
+  const [baseline, setBaseline] = useState(old?.goal.baseline ?? "");
+  const [criteria, setCriteria] = useState(old?.goal.criteria ?? "");
+  const [type, setType] = useState<MeasurementType>(old?.plan.type ?? "percent_correct");
+  const [unit, setUnit] = useState(old ? (old.plan.unit ?? "") : "percent");
+  const [target, setTarget] = useState(old ? String(old.plan.target_value) : "80");
+  const [trials, setTrials] = useState(String(old?.plan.trials_per_session ?? 10));
+  const [levels, setLevels] = useState((old?.plan.prompt_hierarchy ?? DEFAULT_LEVELS).join("\n"));
+  const [steps, setSteps] = useState((old?.plan.task_steps ?? []).join("\n"));
+  const [frequency, setFrequency] = useState(old?.plan.frequency ?? "2x weekly");
   const [error, setError] = useState("");
 
-  if (!s)
+  if (!s || (editGoalId && !old))
     return (
       <p>
-        Student not found. <a href="#/caseload">Back to caseload</a>
+        Not found. <a href="#/caseload">Back to caseload</a>
       </p>
     );
 
@@ -162,6 +215,21 @@ export function AddGoal({ studentId }: { studentId: string }) {
       if (type === "task_analysis" && stepList.length < 1) throw new Error("Add the steps");
       if (type === "trials" && !(Number(trials) > 0))
         throw new Error("Enter the trials per session");
+      if (editGoalId) {
+        updateGoal(editGoalId, {
+          area,
+          statement,
+          baseline,
+          criteria,
+          unit:
+            type === "prompt_level" || type === "task_analysis" || type === "yes_no" ? "" : unit,
+          targetValue,
+          trialsPerSession: type === "trials" ? Number(trials) : null,
+          frequency,
+        });
+        window.location.hash = `#/student/${s.student.id}`;
+        return;
+      }
       addGoal(s.student.id, {
         area,
         statement,
@@ -186,7 +254,7 @@ export function AddGoal({ studentId }: { studentId: string }) {
       <a className="btn back" href={`#/student/${s.student.id}`}>
         ← {displayName(s.student)}
       </a>
-      <h2 className="page-title">Add a goal</h2>
+      <h2 className="page-title">{editing ? "Edit goal" : "Add a goal"}</h2>
       <p className="form-warn" role="note">
         Practice only: write a made-up goal.
       </p>
@@ -232,7 +300,11 @@ export function AddGoal({ studentId }: { studentId: string }) {
         </label>
         <label>
           <span>How it is measured</span>
-          <select value={type} onChange={(e) => pickType(e.target.value as MeasurementType)}>
+          <select
+            value={type}
+            disabled={editing}
+            onChange={(e) => pickType(e.target.value as MeasurementType)}
+          >
             {TYPES.map(([v, l]) => (
               <option key={v} value={v}>
                 {l}
@@ -258,6 +330,7 @@ export function AddGoal({ studentId }: { studentId: string }) {
             <textarea
               value={levels}
               rows={6}
+              readOnly={editing}
               onChange={(e) => {
                 setLevels(e.target.value);
                 setTarget("");
@@ -268,7 +341,12 @@ export function AddGoal({ studentId }: { studentId: string }) {
         {type === "task_analysis" && (
           <label>
             <span>Steps (one per line)</span>
-            <textarea value={steps} rows={5} onChange={(e) => setSteps(e.target.value)} />
+            <textarea
+              value={steps}
+              rows={5}
+              readOnly={editing}
+              onChange={(e) => setSteps(e.target.value)}
+            />
           </label>
         )}
         {type !== "yes_no" && type !== "prompt_level" && type !== "task_analysis" && (
@@ -308,9 +386,11 @@ export function AddGoal({ studentId }: { studentId: string }) {
         <label>
           <span>How often</span>
           <select value={frequency} onChange={(e) => setFrequency(e.target.value)}>
-            {["daily", "3x weekly", "2x weekly", "weekly", "monthly"].map((f) => (
-              <option key={f}>{f}</option>
-            ))}
+            {[...new Set(["daily", "3x weekly", "2x weekly", "weekly", "monthly", frequency])].map(
+              (f) => (
+                <option key={f}>{f}</option>
+              ),
+            )}
           </select>
         </label>
         {error && (
@@ -319,9 +399,19 @@ export function AddGoal({ studentId }: { studentId: string }) {
           </p>
         )}
         <button type="submit" className="save">
-          Add goal
+          {editing ? "Save changes" : "Add goal"}
         </button>
       </form>
+      {editGoalId && (
+        <DeleteButton
+          label="Delete this goal"
+          ask="Yes, delete the goal and its data"
+          onDelete={() => {
+            deleteGoal(editGoalId);
+            window.location.hash = `#/student/${s.student.id}`;
+          }}
+        />
+      )}
     </>
   );
 }

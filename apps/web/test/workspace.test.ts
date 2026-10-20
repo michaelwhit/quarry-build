@@ -7,9 +7,16 @@ import {
   addPoint,
   addStudent,
   clearAll,
+  deleteGoal,
+  deletePoint,
+  deleteStudent,
+  exportText,
+  importText,
   getWorkspace,
   loadSample,
   parse,
+  updateGoal,
+  updateStudent,
   useStorage,
 } from "../src/data/workspace.ts";
 
@@ -156,5 +163,76 @@ describe("prompt levels", () => {
       promptHierarchy: ["model", "independent"],
     });
     expect(students[0]?.goals[0]?.plan.prompt_hierarchy).toEqual(["model", "independent"]);
+  });
+});
+
+describe("editing and deleting", () => {
+  it("edits a student and a goal, keeping recorded data", () => {
+    const sid = addStudent({ firstName: "Pat", lastName: "Example", grade: "3" });
+    const gid = addGoal(sid, goal);
+    addPoint(gid, 4, "");
+    updateStudent(sid, { firstName: "Sam", lastName: "Example", grade: "4" });
+    updateGoal(gid, {
+      area: "math",
+      statement: "Practice goal: edited.",
+      baseline: "2 minutes",
+      criteria: "",
+      unit: "minutes",
+      frequency: "daily",
+      targetValue: 12,
+      trialsPerSession: null,
+    });
+    const v = students[0];
+    expect(v?.student.first_name).toBe("Sam");
+    expect(v?.student.grade).toBe("4");
+    expect(v?.goals[0]?.goal.statement).toBe("Practice goal: edited.");
+    expect(v?.goals[0]?.goal.target).toBe("12 minutes");
+    expect(v?.goals[0]?.plan.type).toBe("duration");
+    expect(v?.goals[0]?.series).toHaveLength(1);
+    expect(() => updateStudent("nope", { firstName: "A", lastName: "B", grade: "1" })).toThrow();
+    expect(() => updateGoal("nope", { ...goal, targetValue: 1 })).toThrow();
+  });
+
+  it("deletes a goal with its data, and a student with everything", () => {
+    const sid = addStudent({ firstName: "Pat", lastName: "Example", grade: "3" });
+    const other = addStudent({ firstName: "Lee", lastName: "Sample", grade: "2" });
+    const g1 = addGoal(sid, goal);
+    const g2 = addGoal(other, goal);
+    addPoint(g1, 3, "");
+    addPoint(g2, 5, "");
+    deleteGoal(g1);
+    expect(getWorkspace().points).toHaveLength(1);
+    expect(getWorkspace().plans).toHaveLength(1);
+    deleteStudent(other);
+    const ws = getWorkspace();
+    expect(ws.students).toHaveLength(1);
+    expect([ws.ieps, ws.goals, ws.plans, ws.points].map((a) => a.length)).toEqual([1, 0, 0, 0]);
+  });
+});
+
+describe("export and import", () => {
+  it("round-trips the workspace and refuses other files", () => {
+    const sid = addStudent({ firstName: "Pat", lastName: "Example", grade: "3" });
+    addPoint(addGoal(sid, goal), 4, "note");
+    const text = exportText();
+    clearAll();
+    expect(importText("{}").ok).toBe(false);
+    expect(importText("not json").ok).toBe(false);
+    expect(importText(JSON.stringify({ synthetic: true, students: [] })).ok).toBe(false);
+    expect(importText(text)).toEqual({ ok: true, message: "Loaded 1 student." });
+    expect(students[0]?.goals[0]?.series).toHaveLength(1);
+  });
+});
+
+describe("history", () => {
+  it("removes one saved session", () => {
+    const sid = addStudent({ firstName: "Pat", lastName: "Example", grade: "3" });
+    const gid = addGoal(sid, goal);
+    addPoint(gid, 3, "");
+    addPoint(gid, 5, "");
+    const [first] = getWorkspace().points;
+    deletePoint(first!.id);
+    expect(getWorkspace().points).toHaveLength(1);
+    expect(students[0]?.goals[0]?.series).toHaveLength(1);
   });
 });

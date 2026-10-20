@@ -307,3 +307,128 @@ export function loadSample() {
 export function clearAll() {
   commit(emptyWorkspace());
 }
+
+export function updateStudent(
+  studentId: string,
+  input: { firstName: string; lastName: string; preferredName?: string; grade: string },
+) {
+  const first = input.firstName.trim().slice(0, 40);
+  const last = input.lastName.trim().slice(0, 40);
+  if (!first || !last) throw new Error("First and last name are required");
+  if (!current.students.some((s) => s.id === studentId)) throw new Error("Student not found");
+  commit({
+    ...current,
+    students: current.students.map((s) =>
+      s.id === studentId
+        ? {
+            ...s,
+            first_name: first,
+            last_name: last,
+            preferred_name: input.preferredName?.trim().slice(0, 40) || null,
+            grade: input.grade,
+          }
+        : s,
+    ),
+  });
+}
+
+/** Removes the student and everything that belongs to them. */
+export function deleteStudent(studentId: string) {
+  const iepIds = new Set(current.ieps.filter((i) => i.student_id === studentId).map((i) => i.id));
+  const goalIds = new Set(current.goals.filter((g) => iepIds.has(g.iep_id)).map((g) => g.id));
+  commit({
+    students: current.students.filter((s) => s.id !== studentId),
+    ieps: current.ieps.filter((i) => !iepIds.has(i.id)),
+    goals: current.goals.filter((g) => !goalIds.has(g.id)),
+    plans: current.plans.filter((p) => !goalIds.has(p.goal_id)),
+    points: current.points.filter((p) => !goalIds.has(p.goal_id)),
+  });
+}
+
+/**
+ * Edits the wording and target of a goal. The measurement type, prompt levels and steps stay as
+ * they were, because data already recorded depends on them.
+ */
+export function updateGoal(
+  goalId: string,
+  input: Pick<GoalInput, "area" | "statement" | "baseline" | "criteria" | "unit" | "frequency"> & {
+    targetValue: number;
+    trialsPerSession: number | null;
+  },
+) {
+  const plan = current.plans.find((p) => p.goal_id === goalId);
+  if (!plan || !current.goals.some((g) => g.id === goalId)) throw new Error("Goal not found");
+  const statement = input.statement.trim().slice(0, 800);
+  if (!statement) throw new Error("The goal needs wording");
+  if (!Number.isFinite(input.targetValue) || input.targetValue <= 0)
+    throw new Error("The target must be a number above zero");
+  const unit = input.unit.trim().slice(0, 40) || null;
+  const level = plan.prompt_hierarchy[input.targetValue - 1];
+  commit({
+    ...current,
+    goals: current.goals.map((g) =>
+      g.id === goalId
+        ? {
+            ...g,
+            area: input.area,
+            statement,
+            baseline: input.baseline.trim().slice(0, 200),
+            criteria: input.criteria.trim().slice(0, 300),
+            target: level ?? `${input.targetValue}${unit ? ` ${unit}` : ""}`,
+          }
+        : g,
+    ),
+    plans: current.plans.map((p) =>
+      p.goal_id === goalId
+        ? {
+            ...p,
+            unit,
+            target_value: input.targetValue,
+            trials_per_session: input.trialsPerSession,
+            frequency: input.frequency,
+          }
+        : p,
+    ),
+  });
+}
+
+/** Removes the goal and its recorded data. */
+export function deleteGoal(goalId: string) {
+  commit({
+    ...current,
+    goals: current.goals.filter((g) => g.id !== goalId),
+    plans: current.plans.filter((p) => p.goal_id !== goalId),
+    points: current.points.filter((p) => p.goal_id !== goalId),
+  });
+}
+
+/** The practice data as text for a download. Made-up data only; the same shape is kept in storage. */
+export function exportText(): string {
+  return JSON.stringify(
+    { synthetic: true, app: "goalline-practice", version: 1, ...current },
+    null,
+    2,
+  );
+}
+
+export interface ImportResult {
+  ok: boolean;
+  message: string;
+}
+
+/** Replaces the workspace with a file produced by exportText. Anything malformed is dropped. */
+export function importText(text: string): ImportResult {
+  const ws = parse(text);
+  if (!ws || ws.students.length === 0)
+    return {
+      ok: false,
+      message: "That file is not a practice-data export, or it has no students.",
+    };
+  commit(ws);
+  const n = ws.students.length;
+  return { ok: true, message: `Loaded ${n} student${n === 1 ? "" : "s"}.` };
+}
+
+export function deletePoint(pointId: string) {
+  commit({ ...current, points: current.points.filter((p) => p.id !== pointId) });
+}

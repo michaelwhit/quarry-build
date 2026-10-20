@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { progressFor, seriesFor, worstStatus } from "../src/data/derive.ts";
+import { dueFor, progressFor, seriesFor, worstStatus } from "../src/data/derive.ts";
 import { trendLine } from "../src/ui/Graph.tsx";
 import { dataTotals, goalCounts, students } from "../src/data/district.ts";
 import { loadSample } from "../src/data/workspace.ts";
@@ -71,5 +71,28 @@ describe("goalCounts", () => {
     expect(c.goals).toBe(dataTotals().goals);
     expect(c.onTrack + c.needsLook).toBe(c.goals);
     expect(c.met).toBeLessThanOrEqual(c.onTrack);
+  });
+});
+
+describe("dueFor", () => {
+  const wed = new Date(2026, 9, 21, 12, 0, 0); // Wednesday, October 21, 2026
+  const at = (y: number, m: number, d: number) => ({
+    at: new Date(y, m, d, 9).toISOString(),
+    value: 1,
+  });
+  it("needs one session a day for a daily goal", () => {
+    expect(dueFor("daily", [], wed)).toMatchObject({ required: 1, done: 0, due: true });
+    expect(dueFor("daily", [at(2026, 9, 21)], wed).due).toBe(false);
+    expect(dueFor("daily", [at(2026, 9, 20)], wed).due).toBe(true);
+  });
+  it("counts this week from Monday for weekly goals", () => {
+    const s = [at(2026, 9, 18), at(2026, 9, 19)]; // Sunday (last week) and Monday
+    expect(dueFor("2x weekly", s, wed)).toMatchObject({ required: 2, done: 1, due: true });
+    expect(dueFor("2x weekly", [...s, at(2026, 9, 21)], wed).due).toBe(false);
+    expect(dueFor("weekly", [at(2026, 9, 18)], wed).due).toBe(true);
+  });
+  it("counts the calendar month for monthly goals", () => {
+    expect(dueFor("monthly", [at(2026, 9, 2)], wed).due).toBe(false);
+    expect(dueFor("monthly", [at(2026, 8, 30)], wed).due).toBe(true);
   });
 });
