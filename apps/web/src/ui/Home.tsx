@@ -315,8 +315,8 @@ export function More() {
             Save to a file or load from a file
           </h4>
           <p className="meta">
-            The file holds made-up data only. Load only files you saved from this app; loading
-            replaces what is here.
+            The file holds made-up data only. Load only files you saved from this app. If something
+            is already here you choose whether to add the file's students or replace everything.
           </p>
           <div className="actions">
             <button type="button" onClick={download} disabled={!hasData}>
@@ -351,11 +351,20 @@ export function More() {
                 type="button"
                 className="save"
                 onClick={() => {
-                  setFileMessage(importText(pending).message);
+                  setFileMessage(importText(pending, "add").message);
                   setPending(null);
                 }}
               >
-                Replace what is here with the file
+                Add the file's students to what is here
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFileMessage(importText(pending, "replace").message);
+                  setPending(null);
+                }}
+              >
+                Replace everything with the file
               </button>
               <button type="button" onClick={() => setPending(null)}>
                 Cancel

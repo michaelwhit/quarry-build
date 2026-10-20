@@ -467,17 +467,47 @@ export interface ImportResult {
   message: string;
 }
 
-/** Replaces the workspace with a file produced by exportText. Anything malformed is dropped. */
-export function importText(text: string): ImportResult {
+/**
+ * Loads a file produced by exportText. "replace" swaps the whole workspace; "add" keeps what is
+ * here and brings in only the students (with their goals and data) whose ids are not already
+ * present. Anything malformed is dropped.
+ */
+export function importText(text: string, mode: "replace" | "add" = "replace"): ImportResult {
   const ws = parse(text);
   if (!ws || ws.students.length === 0)
     return {
       ok: false,
       message: "That file is not a practice-data export, or it has no students.",
     };
-  commit(ws);
-  const n = ws.students.length;
-  return { ok: true, message: `Loaded ${n} student${n === 1 ? "" : "s"}.` };
+  if (mode === "replace") {
+    commit(ws);
+    const n = ws.students.length;
+    return { ok: true, message: `Loaded ${n} student${n === 1 ? "" : "s"}.` };
+  }
+  const have = new Set(current.students.map((s) => s.id));
+  const students = ws.students.filter((s) => !have.has(s.id));
+  const keepS = new Set(students.map((s) => s.id));
+  const ieps = ws.ieps.filter((i) => keepS.has(i.student_id));
+  const keepI = new Set(ieps.map((i) => i.id));
+  const goals = ws.goals.filter((g) => keepI.has(g.iep_id));
+  const keepG = new Set(goals.map((g) => g.id));
+  if (students.length > 0)
+    commit({
+      students: [...current.students, ...students],
+      ieps: [...current.ieps, ...ieps],
+      goals: [...current.goals, ...goals],
+      plans: [...current.plans, ...ws.plans.filter((p) => keepG.has(p.goal_id))],
+      points: [...current.points, ...ws.points.filter((p) => keepG.has(p.goal_id))],
+      served: [...current.served, ...ws.served.filter((x) => keepS.has(x))],
+      delegated: [...current.delegated, ...ws.delegated.filter((x) => keepG.has(x))],
+    });
+  const skipped = ws.students.length - students.length;
+  return {
+    ok: true,
+    message: `Added ${students.length} student${students.length === 1 ? "" : "s"}${
+      skipped > 0 ? `; ${skipped} already here and left as they are` : ""
+    }.`,
+  };
 }
 
 export function deletePoint(pointId: string) {
