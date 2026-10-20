@@ -492,20 +492,27 @@ public final class PrototypeStore {
         }
     }
 
+    /// The sessions recorded here for students the signed-in person may see.
+    private var exportablePoints: [DataPoint] {
+        let visible = Set(visibleStudents.map(\.id))
+        return addedPoints.filter { point in
+            dataset.goals.first { $0.id == point.goalID }
+                .flatMap { student(for: $0) }
+                .map { visible.contains($0.id) } ?? false
+        }
+    }
+
+    /// How many sessions a saved file would hold, so a screen can leave Save off when it is none.
+    public var exportableSessionCount: Int { exportablePoints.count }
+
     /// Every session recorded here for students the signed-in person may see, newest first, as the
     /// text of a practice-data file. Fake data only; the file says so.
     public func exportPracticeData() throws -> Data {
         guard currentStaff != nil else { throw StoreError.notSignedIn }
         guard canExportFiles else { throw StoreError.notAllowed }
-        let visible = Set(visibleStudents.map(\.id))
-        let mine = addedPoints.filter { point in
-            dataset.goals.first { $0.id == point.goalID }
-                .flatMap { student(for: $0) }
-                .map { visible.contains($0.id) } ?? false
-        }
         let file = PracticeFile(
             synthetic: true, app: Self.practiceFileApp, version: 1,
-            points: mine.sorted { $0.observedAt > $1.observedAt })
+            points: exportablePoints.sorted { $0.observedAt > $1.observedAt })
         return try JSONEncoder.coreModels.encode(file)
     }
 

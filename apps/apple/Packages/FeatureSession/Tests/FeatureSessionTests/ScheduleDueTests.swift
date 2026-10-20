@@ -81,4 +81,17 @@ struct ScheduleDueTests {
         #expect(cards[0].dueGoals.map(\.id) == [open.id])
         #expect(cards[0].caughtUpCount == 1)
     }
+
+    @Test("a goal the session screen cannot run does not put the student under To do")
+    func unsupportedNotDue() {
+        let student = Fixture.student()
+        let unsupported = Fixture.goal(for: student, type: .rubric, frequency: "daily")
+        #expect(!unsupported.isSupported)
+        let cards = TodayPlanner.cards(
+            goals: [unsupported], now: wednesday, calendar: Self.calendar)
+        #expect(cards.count == 1)
+        #expect(!cards[0].hasDue)
+        #expect(cards[0].caughtUpCount == 1)
+        #expect(cards[0].now == wednesday)
+    }
 }

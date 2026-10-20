@@ -520,4 +520,21 @@ struct PrototypeStoreTests {
             #expect(throws: PrototypeStore.StoreError.notAllowed) { try other.importPracticeData(file) }
         }
     }
+
+    @Test("Save counts only the sessions a file would hold")
+    func exportableCount() throws {
+        let store = try makeStore()
+        store.signIn(as: try staff(store, .spedDirector))
+        let (goal, _) = try frequencyGoal(store)
+        _ = try store.record(goal: goal, valueNum: 4)
+        #expect(store.exportableSessionCount == 1)
+        // Another person on this device cannot see that student: nothing to save.
+        let manager = try staff(store, .caseManager)
+        store.signIn(as: manager)
+        let visible = Set(store.visibleStudents.map(\.id))
+        if !(store.student(for: goal).map { visible.contains($0.id) } ?? false) {
+            #expect(store.addedPoints.count == 1)
+            #expect(store.exportableSessionCount == 0)
+        }
+    }
 }

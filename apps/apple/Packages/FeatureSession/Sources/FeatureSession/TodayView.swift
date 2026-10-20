@@ -118,7 +118,7 @@ public struct TodayView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(PrivacyLabel.text(item.goal.statement, for: item.student, hidden: hideNames)).font(.caption)
                             .foregroundStyle(SessionStyle.muted)
-                        Text(scheduleText(item))
+                        Text(scheduleText(item, now: card.now))
                             .font(.caption2)
                             .foregroundStyle(SessionStyle.muted)
                     }
@@ -136,8 +136,8 @@ public struct TodayView: View {
         }
     }
 
-    private func scheduleText(_ item: SessionGoal) -> String {
-        let due = item.scheduleDue(now: Date())
+    private func scheduleText(_ item: SessionGoal, now: Date) -> String {
+        let due = item.scheduleDue(now: now)
         let frequency = item.plan.frequency.map { " · \($0)" } ?? ""
         return "\(due.done) of \(due.required) \(due.period.phrase)\(frequency)"
     }

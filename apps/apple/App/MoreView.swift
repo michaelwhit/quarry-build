@@ -40,7 +40,7 @@ struct MoreView: View {
                     )
                     .font(.footnote).foregroundStyle(Theme.muted)
                     Button("Save practice data to a file") { prepareExport() }
-                        .disabled(store.addedPoints.isEmpty)
+                        .disabled(store.exportableSessionCount == 0)
                         .frame(minHeight: Spacing.minTapTarget, alignment: .leading)
                         .accessibilityIdentifier(AccessibilityID.savePracticeFile)
                     Button("Load from a file") { importing = true }
