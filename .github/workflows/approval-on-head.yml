@@ -97,7 +97,8 @@ jobs:
           fi
 
           # Newest automated review run for this exact head, found through the run links in the
-          # bot's own comments. Its verdict line must be PASS.
+          # bot's own comments. The verdict may sit anywhere in that comment's text (outside quotes and
+          # code); BLOCK anywhere wins, otherwise PASS anywhere counts.
           verdict=none
           best=0
           while IFS=$'\t' read -r run_id body_b64; do
@@ -107,9 +108,11 @@ jobs:
             [ "$ok" = "true" ] || continue
             if [ "$run_id" -gt "$best" ]; then
               best="$run_id"
-              body=$(base64 -d <<<"$body_b64")
-              if grep -Eq '^[*_ ]*Claude review: BLOCK' <<<"$body"; then verdict=block
-              elif grep -Eq '^[*_ ]*Claude review: PASS' <<<"$body"; then verdict=pass
+              # Quoted lines and fenced code are not the bot's own verdict, so they are dropped
+              # first. The phrase must stand alone: not glued to other letters, not after a quote.
+              body=$(base64 -d <<<"$body_b64" | awk '/^[[:space:]]*```/ { f = !f; next } !f && !/^[[:space:]]*>/')
+              if grep -Eq '(^|[^[:alnum:]`"'"'"'])Claude review: BLOCK([^[:alnum:]]|$)' <<<"$body"; then verdict=block
+              elif grep -Eq '(^|[^[:alnum:]`"'"'"'])Claude review: PASS([^[:alnum:]]|$)' <<<"$body"; then verdict=pass
               else verdict=none; fi
             fi
           done < <(jq -r '.[] | select(.user.login == "claude[bot]") | (.body // "") as $b
