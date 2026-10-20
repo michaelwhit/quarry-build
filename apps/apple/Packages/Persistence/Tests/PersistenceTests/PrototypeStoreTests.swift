@@ -333,4 +333,50 @@ struct PrototypeStoreTests {
         #expect(third.addedStudents.isEmpty)
         #expect(third.studentEdits.isEmpty)
     }
+
+    @Test("adding a batch of students saves once, and a bad row adds nothing")
+    func addingStudentBatch() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("iep-proto-\(UUID().uuidString)/state.json")
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+        let store = try makeStore(stateURL: url)
+        let school = try #require(store.dataset.schools.first)
+        func row(_ first: String, grade: String = "3") -> PrototypeStore.NewStudent {
+            .init(firstName: first, lastName: "Test", grade: grade, schoolID: school.id)
+        }
+
+        #expect(throws: PrototypeStore.StoreError.notSignedIn) { try store.addStudents([row("A")]) }
+        store.signIn(as: try staff(store, .paraprofessional))
+        #expect(throws: PrototypeStore.StoreError.notAllowed) { try store.addStudents([row("A")]) }
+
+        let manager = try staff(store, .caseManager)
+        store.signIn(as: manager)
+        let before = store.visibleStudents.count
+        #expect(
+            throws: PrototypeStore.StoreError.invalidBatchEntry(
+                index: 1, problem: .field(.gradeMissing))
+        ) {
+            try store.addStudents([row("A"), row("B", grade: " "), row("C")])
+        }
+        #expect(
+            throws: PrototypeStore.StoreError.invalidBatchEntry(index: 0, problem: .unknownSchool)
+        ) {
+            try store.addStudents([
+                .init(firstName: "A", lastName: "B", grade: "1", schoolID: UUIDv7.make())
+            ])
+        }
+        #expect(store.addedStudents.isEmpty)
+        #expect(store.addedAssignments.isEmpty)
+        #expect(try store.addStudents([]).isEmpty)
+
+        let added = try store.addStudents((1...25).map { row("Student\($0)") })
+        #expect(added.count == 25)
+        #expect(store.visibleStudents.count == before + 25)
+        #expect(store.addedAssignments.allSatisfy { $0.staffID == manager.id })
+
+        let restarted = try makeStore(stateURL: url)
+        restarted.signIn(as: manager)
+        #expect(restarted.addedStudents.count == 25)
+        #expect(restarted.visibleStudents.count == before + 25)
+    }
 }
