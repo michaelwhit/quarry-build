@@ -1,0 +1,132 @@
+# Sets the commit status "Approval on head" on a pull request's current head commit.
+#
+# success: the newest automated review run for that exact head says PASS, and, when the change
+#          touches a path listed in tools/ci/protected-paths.txt, owner-written lines also name the
+#          full head sha in both "Reviewed by Clawson, Verdict: approved on <sha>" and
+#          "Security review by Sable, relayed by Clawson, Verdict: approved on <sha>".
+# pending: something above is still missing.
+# failure: the newest automated review run for the head says BLOCK.
+#
+# Only the event payload and the GitHub API are read. This workflow never checks out or runs pull
+# request code, and it does not use pull_request_target. The protected-path list is read from the
+# default branch, never from the pull request. Comment text is data: it is matched with jq and
+# grep and never reaches a shell. Approval lines count only when written by the repository owner;
+# the automated review counts only from the review bot.
+name: Approval on head
+
+# Only triggers that run the default branch's copy of this file are used (issue_comment and
+# workflow_run), so a pull request cannot edit this workflow to approve itself.
+on:
+  issue_comment:
+    types: [created, edited]
+  workflow_run:
+    workflows: ["Claude PR review"]
+    types: [completed]
+
+permissions: {}
+
+concurrency:
+  group: approval-on-head-${{ github.event.workflow_run.pull_requests[0].number || github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  status:
+    # Comments on plain issues are ignored, and so are review runs with no same-repo pull request.
+    if: >-
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request != null) ||
+      (github.event_name == 'workflow_run' && join(github.event.workflow_run.pull_requests.*.number, '') != '')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read
+      statuses: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      PR: ${{ github.event.workflow_run.pull_requests[0].number || github.event.issue.number }}
+    steps:
+      - name: Work out the approval state of the current head
+        shell: bash
+        run: |
+          set -euo pipefail
+          owner="${REPO%%/*}"
+          pr_json=$(gh api "repos/$REPO/pulls/$PR")
+          sha=$(jq -r '.head.sha' <<<"$pr_json")
+          state=$(jq -r '.state' <<<"$pr_json")
+          same_repo=$(jq -r '.head.repo.full_name == "'"$REPO"'"' <<<"$pr_json")
+          [ "$state" = "open" ] || { echo "PR is not open"; exit 0; }
+
+          set_status() {
+            gh api "repos/$REPO/statuses/$sha" -f state="$1" -f context="Approval on head" \
+              -f description="$2" >/dev/null || echo "could not write the status (read-only token?)"
+          }
+
+          if [ "$same_repo" != "true" ]; then
+            set_status pending "Pull request from a fork: not evaluated"
+            exit 0
+          fi
+
+          comments=$(gh api --paginate "repos/$REPO/issues/$PR/comments" | jq -s 'add // []')
+          reviews=$(gh api --paginate "repos/$REPO/pulls/$PR/reviews" | jq -s 'add // []')
+          files=$(gh api --paginate "repos/$REPO/pulls/$PR/files" --jq '.[].filename')
+
+          # Text written by the repository owner (comments and review bodies) that can hold an approval.
+          owner_text=$(jq -r --arg o "$owner" \
+            '[.[] | select(.user.login == $o) | .body // ""] | .[]' <<<"$comments"
+            jq -r --arg o "$owner" \
+            '[.[] | select(.user.login == $o and .state != "DISMISSED") | .body // ""] | .[]' <<<"$reviews")
+          has_line() { grep -Fq -- "$1 $sha" <<<"$owner_text"; }
+          lead_ok=false
+          has_line "Reviewed by Clawson, Verdict: approved on" && lead_ok=true
+          sec_ok=false
+          has_line "Security review by Sable, relayed by Clawson, Verdict: approved on" && sec_ok=true
+
+          # Paths that need the lead and security lines as well. The list comes from the default
+          # branch; if it cannot be read, every change counts as protected.
+          default_branch=$(gh api "repos/$REPO" --jq '.default_branch')
+          protected=$(gh api "repos/$REPO/contents/tools/ci/protected-paths.txt?ref=$default_branch" \
+            --jq '.content' 2>/dev/null | base64 -d 2>/dev/null | grep -Ev '^[[:space:]]*(#|$)' || true)
+          needs_sec=false
+          if [ -z "$protected" ]; then
+            needs_sec=true
+          else
+            while IFS= read -r re; do
+              if grep -Eq -- "$re" <<<"$files"; then needs_sec=true; fi
+            done <<<"$protected"
+          fi
+
+          # Newest automated review run for this exact head, found through the run links in the
+          # bot's own comments. Its verdict line must be PASS.
+          verdict=none
+          best=0
+          while IFS=$'\t' read -r run_id body_b64; do
+            [ -n "$run_id" ] || continue
+            run=$(gh api "repos/$REPO/actions/runs/$run_id" 2>/dev/null) || continue
+            ok=$(jq -r --arg s "$sha" '(.head_sha == $s) and (.name == "Claude PR review") and (.event == "pull_request") and (.conclusion == "success")' <<<"$run")
+            [ "$ok" = "true" ] || continue
+            if [ "$run_id" -gt "$best" ]; then
+              best="$run_id"
+              body=$(base64 -d <<<"$body_b64")
+              if grep -Eq '^[*_ ]*Claude review: BLOCK' <<<"$body"; then verdict=block
+              elif grep -Eq '^[*_ ]*Claude review: PASS' <<<"$body"; then verdict=pass
+              else verdict=none; fi
+            fi
+          done < <(jq -r '.[] | select(.user.login == "claude[bot]") | (.body // "") as $b
+            | (try ($b | capture("actions/runs/(?<id>[0-9]+)") | .id) catch null) as $id
+            | select($id != null)
+            | [$id, ($b | @base64)] | @tsv' <<<"$comments")
+
+          echo "head=$sha lead=$lead_ok security_needed=$needs_sec security=$sec_ok review=$verdict"
+
+          if [ "$verdict" = "block" ]; then
+            set_status failure "Automated review says BLOCK on this head"
+          elif [ "$verdict" = "pass" ] && { [ "$needs_sec" = "false" ] || { [ "$lead_ok" = "true" ] && [ "$sec_ok" = "true" ]; }; }; then
+            set_status success "Approved on this exact head"
+          else
+            missing=""
+            [ "$verdict" = "pass" ] || missing="review PASS"
+            { [ "$needs_sec" = "false" ] || [ "$lead_ok" = "true" ]; } || missing="${missing:+$missing, }lead approval"
+            { [ "$needs_sec" = "false" ] || [ "$sec_ok" = "true" ]; } || missing="${missing:+$missing, }security approval"
+            set_status pending "Waiting for: $missing"
+          fi
