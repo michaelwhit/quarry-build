@@ -176,7 +176,7 @@ public struct RoleView: Equatable, Sendable {
         canSeeFullIEP = c.canSeeFullIEP
         canSeeEvaluations = c.canSeeEvaluations
         iPhoneOnly = c.iPhoneOnly
-        needsAcknowledgment = c.role == .paraprofessional
+        needsAcknowledgment = c.role == .paraprofessional || c.role == .genEdTeacher
         isProposedDefault = c.isProposedDefault
     }
 

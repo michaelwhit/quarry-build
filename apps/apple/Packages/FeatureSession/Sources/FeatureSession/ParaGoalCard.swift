@@ -3,7 +3,8 @@ import Foundation
 
 /// One goal on a paraprofessional's list: the student's first name, the goal in short form, and
 /// the full text and scoring note for when they tap it. Only these fields exist, so a screen built
-/// from a card cannot show a last name, an id, a baseline or a history.
+/// from a card cannot show a last name, a baseline or a history. `studentID` is for ordering and
+/// grouping only and is never drawn.
 public struct ParaGoalCard: Identifiable, Equatable, Sendable {
     /// The goal's id.
     public var id: UUID

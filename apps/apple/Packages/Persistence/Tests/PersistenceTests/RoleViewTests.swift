@@ -174,10 +174,11 @@ struct RoleViewTests {
         }
     }
 
-    @Test("only the paraprofessional agrees to the confidentiality page first")
+    @Test("roles that see only delegated goals agree to the confidentiality page first")
     func acknowledgment() {
         for role in StaffRole.allCases {
-            #expect(RoleView(role: role).needsAcknowledgment == (role == .paraprofessional))
+            let expected = role == .paraprofessional || role == .genEdTeacher
+            #expect(RoleView(role: role).needsAcknowledgment == expected)
         }
         #expect(!RoleView.signedOut.needsAcknowledgment)
     }
