@@ -219,3 +219,52 @@ test("approval workflow: a protected path needs the security line on the full he
   );
   assert.doesNotMatch(workflow, /lead_ok/);
 });
+
+const approvalBlock = workflow.match(
+  /# approval-lines-begin\n([\s\S]*?)\n\s*# approval-lines-end/,
+)?.[1];
+assert.ok(approvalBlock, "approval lines block not found in the workflow");
+const PHRASE = "Security review by Sable, relayed by Clawson, Verdict: approved on";
+const OWNER = "owner";
+
+function secOk({ comments = [], reviews = [], sha = SHA }) {
+  const script = `set -euo pipefail\n${approvalBlock}\necho "$sec_ok"`;
+  return execFileSync("bash", ["-c", script], {
+    env: {
+      PATH: process.env.PATH,
+      owner: OWNER,
+      sha,
+      comments: JSON.stringify(comments),
+      reviews: JSON.stringify(reviews),
+    },
+  })
+    .toString()
+    .trim();
+}
+const comment = (body, login = OWNER) => ({ user: { login }, body });
+const review = (body, state = "COMMENTED", login = OWNER) => ({ user: { login }, body, state });
+
+test("approval line: the exact line counts, in a comment or a review, with trailing text on later lines", () => {
+  const line = `${PHRASE} ${SHA}`;
+  assert.equal(secOk({ comments: [comment(line)] }), "true");
+  assert.equal(secOk({ comments: [comment(`${line}\r\n`)] }), "true");
+  assert.equal(secOk({ reviews: [review(`${line}\n\ndiff sha256: x`)] }), "true");
+  assert.equal(secOk({ reviews: [review(line, "APPROVED")] }), "true");
+});
+
+test("approval line: look-alikes, other authors, other shas and requested changes do not count", () => {
+  const line = `${PHRASE} ${SHA}`;
+  const no = (input) => assert.equal(secOk(input), "false");
+  no({ comments: [comment(`> ${line}`)] });
+  no({ comments: [comment(`do not post: ${line}`)] });
+  no({ comments: [comment(`${line} (not yet)`)] });
+  no({ comments: [comment(`not ${line}`)] });
+  no({ comments: [comment(line, "someone-else")] });
+  no({ comments: [comment(`${PHRASE} ${"b".repeat(40)}`)] });
+  no({ comments: [comment(`${PHRASE} ${SHA.slice(0, 39)}`)] });
+  no({ comments: [comment(`${PHRASE} ${SHA}b`)] });
+  no({ reviews: [review(line, "CHANGES_REQUESTED")] });
+  no({ reviews: [review(line, "DISMISSED")] });
+  no({ reviews: [review(line, "PENDING")] });
+  no({});
+});
