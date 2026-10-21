@@ -106,6 +106,8 @@ public final class PrototypeStore {
         var plans: [MeasurementPlan]?
         var goalEdits: [Goal]?
         var planEdits: [MeasurementPlan]?
+        var removedStudents: [UUID]?
+        var removedGoals: [UUID]?
 
         enum CodingKeys: String, CodingKey {
             case points, approvals, students, assignments
@@ -114,6 +116,8 @@ public final class PrototypeStore {
             case ieps, goals, plans
             case goalEdits = "goal_edits"
             case planEdits = "plan_edits"
+            case removedStudents = "removed_students"
+            case removedGoals = "removed_goals"
         }
     }
 
@@ -134,6 +138,10 @@ public final class PrototypeStore {
     public private(set) var addedPlans: [MeasurementPlan]
     public private(set) var goalEdits: [UUID: Goal]
     public private(set) var planEdits: [UUID: MeasurementPlan]
+    /// Students and goals taken off the list. District records cannot be erased from the
+    /// synthetic dataset, so they are hidden; anything added by hand is hidden the same way.
+    public private(set) var removedStudentIDs: Set<UUID>
+    public private(set) var removedGoalIDs: Set<UUID>
     @ObservationIgnored private let stateURL: URL?
     @ObservationIgnored private let calendarToday: @Sendable () -> LocalDate
 
@@ -159,6 +167,8 @@ public final class PrototypeStore {
         var plans: [MeasurementPlan] = []
         var goalEdits: [UUID: Goal] = [:]
         var planEdits: [UUID: MeasurementPlan] = [:]
+        var removedStudents: Set<UUID> = []
+        var removedGoals: Set<UUID> = []
         if let stateURL, let data = try? Data(contentsOf: stateURL),
             let saved = try? JSONDecoder.coreModels.decode(SavedState.self, from: data)
         {
@@ -175,6 +185,8 @@ public final class PrototypeStore {
             plans = saved.plans ?? []
             goalEdits = Dictionary(
                 (saved.goalEdits ?? []).map { ($0.id, $0) }, uniquingKeysWith: { _, newer in newer })
+            removedStudents = Set(saved.removedStudents ?? [])
+            removedGoals = Set(saved.removedGoals ?? [])
             planEdits = Dictionary(
                 (saved.planEdits ?? []).map { ($0.goalID, $0) }, uniquingKeysWith: { _, newer in newer })
         }
@@ -189,6 +201,8 @@ public final class PrototypeStore {
         self.addedPlans = plans
         self.goalEdits = goalEdits
         self.planEdits = planEdits
+        self.removedStudentIDs = removedStudents
+        self.removedGoalIDs = removedGoals
     }
 
     public nonisolated static func systemToday() -> LocalDate {
@@ -239,7 +253,9 @@ public final class PrototypeStore {
 
     /// Everyone in the district plus anyone added by hand, with edits applied.
     public var allStudents: [Student] {
-        (dataset.students + addedStudents).map { studentEdits[$0.id] ?? $0 }
+        (dataset.students + addedStudents)
+            .filter { !removedStudentIDs.contains($0.id) }
+            .map { studentEdits[$0.id] ?? $0 }
     }
 
     /// Who may add a student by hand or fix one on their list. Prototype default; the district
@@ -255,7 +271,9 @@ public final class PrototypeStore {
 
     /// Every goal, district and hand-typed, with edits applied.
     public var allGoals: [Goal] {
-        (dataset.goals + addedGoals).map { goalEdits[$0.id] ?? $0 }
+        (dataset.goals + addedGoals)
+            .filter { !removedGoalIDs.contains($0.id) }
+            .map { goalEdits[$0.id] ?? $0 }
     }
 
     private var allPlans: [MeasurementPlan] { dataset.measurementPlans + addedPlans }
@@ -544,6 +562,56 @@ public final class PrototypeStore {
             throw StoreError.saveFailed
         }
         return goal
+    }
+
+    /// What taking a student or goal off the list also takes away, so a screen can say it before
+    /// the person confirms.
+    public struct RemovalImpact: Equatable, Sendable {
+        public var goals: Int
+        public var dataPoints: Int
+    }
+
+    public func removalImpact(ofStudent student: Student) -> RemovalImpact {
+        let goals = self.goals(for: student)
+        return RemovalImpact(
+            goals: goals.count, dataPoints: goals.reduce(0) { $0 + dataPoints(for: $1).count })
+    }
+
+    public func removalImpact(ofGoal goal: Goal) -> RemovalImpact {
+        RemovalImpact(goals: 1, dataPoints: dataPoints(for: goal).count)
+    }
+
+    /// Takes a student on the signed-in person's list off it, with their goals and recorded data.
+    public func removeStudent(id: UUID) throws {
+        guard currentStaff != nil else { throw StoreError.notSignedIn }
+        guard canManageStudents, visibleStudents.contains(where: { $0.id == id }) else {
+            throw StoreError.notAllowed
+        }
+        let before = removedStudentIDs
+        removedStudentIDs.insert(id)
+        do {
+            try write()
+        } catch {
+            removedStudentIDs = before
+            throw StoreError.saveFailed
+        }
+    }
+
+    /// Takes a goal off a student in the signed-in person's scope, with its recorded data.
+    public func removeGoal(id: UUID) throws {
+        guard currentStaff != nil else { throw StoreError.notSignedIn }
+        guard let goal = allGoals.first(where: { $0.id == id }) else { throw StoreError.unknownGoal }
+        guard canManageGoals, let owner = student(for: goal),
+            visibleStudents.contains(where: { $0.id == owner.id })
+        else { throw StoreError.notAllowed }
+        let before = removedGoalIDs
+        removedGoalIDs.insert(id)
+        do {
+            try write()
+        } catch {
+            removedGoalIDs = before
+            throw StoreError.saveFailed
+        }
     }
 
     private static func latest(_ ieps: [IEP]) -> IEP? {
@@ -935,6 +1003,8 @@ public final class PrototypeStore {
         addedStudents = []
         addedAssignments = []
         studentEdits = [:]
+        removedStudentIDs = []
+        removedGoalIDs = []
         addedIEPs = []
         addedGoals = []
         addedPlans = []
@@ -961,7 +1031,9 @@ public final class PrototypeStore {
             studentEdits: studentEdits.values.sorted { $0.id.uuidString < $1.id.uuidString },
             ieps: addedIEPs, goals: addedGoals, plans: addedPlans,
             goalEdits: goalEdits.values.sorted { $0.id.uuidString < $1.id.uuidString },
-            planEdits: planEdits.values.sorted { $0.goalID.uuidString < $1.goalID.uuidString })
+            planEdits: planEdits.values.sorted { $0.goalID.uuidString < $1.goalID.uuidString },
+            removedStudents: removedStudentIDs.sorted { $0.uuidString < $1.uuidString },
+            removedGoals: removedGoalIDs.sorted { $0.uuidString < $1.uuidString })
         try FileManager.default.createDirectory(
             at: stateURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         let data = try JSONEncoder.coreModels.encode(state)

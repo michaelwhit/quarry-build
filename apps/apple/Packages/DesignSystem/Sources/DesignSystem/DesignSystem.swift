@@ -156,6 +156,9 @@ public enum AccessibilityID {
     public static let goalSave = "goal-save"
     public static let goalCancel = "goal-cancel"
     public static let goalFormProblem = "goal-form-problem"
+    public static let removeStudent = "remove-student"
+    public static let removeGoal = "remove-goal"
+    public static let removeConfirm = "remove-confirm"
     public static func homeTile(_ title: String) -> String { "home-tile-" + slug(title) }
     private static func slug(_ title: String) -> String {
         title.lowercased().split(whereSeparator: { !$0.isLetter && !$0.isNumber }).joined(separator: "-")

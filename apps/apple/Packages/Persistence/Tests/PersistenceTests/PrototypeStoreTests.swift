@@ -873,4 +873,86 @@ struct PrototypeStoreTests {
         #expect(third.goalEdits.isEmpty)
         #expect(third.planEdits.isEmpty)
     }
+
+    @Test("deleting a student or goal hides it with its data, and the impact is counted first")
+    func removing() throws {
+        let store = try makeStore()
+        store.signIn(as: try staff(store, .spedDirector))
+        let student = try #require(
+            store.visibleStudents.first { s in
+                store.goals(for: s).contains { !store.dataPoints(for: $0).isEmpty }
+            })
+        let goals = store.goals(for: student)
+        let target = try #require(goals.first { !store.dataPoints(for: $0).isEmpty })
+
+        let goalImpact = store.removalImpact(ofGoal: target)
+        #expect(goalImpact.goals == 1)
+        #expect(goalImpact.dataPoints == store.dataPoints(for: target).count)
+        let studentImpact = store.removalImpact(ofStudent: student)
+        #expect(studentImpact.goals == goals.count)
+        #expect(studentImpact.dataPoints >= goalImpact.dataPoints)
+
+        try store.removeGoal(id: target.id)
+        #expect(!store.goals(for: student).contains { $0.id == target.id })
+        #expect(store.plan(for: target) != nil)  // the plan record stays, the goal is gone
+        #expect(throws: PrototypeStore.StoreError.unknownGoal) { try store.removeGoal(id: target.id) }
+
+        try store.removeStudent(id: student.id)
+        #expect(!store.visibleStudents.contains { $0.id == student.id })
+        #expect(!store.allStudents.contains { $0.id == student.id })
+        #expect(throws: PrototypeStore.StoreError.notAllowed) {
+            try store.removeStudent(id: student.id)
+        }
+    }
+
+    @Test("only people who may manage students and goals can delete, and only within their scope")
+    func removingRules() throws {
+        let store = try makeStore()
+        let someone = try #require(store.dataset.students.first)
+        #expect(throws: PrototypeStore.StoreError.notSignedIn) {
+            try store.removeStudent(id: someone.id)
+        }
+        store.signIn(as: try staff(store, .paraprofessional))
+        #expect(throws: PrototypeStore.StoreError.notAllowed) {
+            try store.removeStudent(id: someone.id)
+        }
+        let goal = try #require(store.dataset.goals.first)
+        #expect(throws: PrototypeStore.StoreError.notAllowed) { try store.removeGoal(id: goal.id) }
+
+        store.signIn(as: try staff(store, .caseManager))
+        let hidden = try #require(
+            store.dataset.students.first { s in !store.visibleStudents.contains { $0.id == s.id } })
+        #expect(throws: PrototypeStore.StoreError.notAllowed) {
+            try store.removeStudent(id: hidden.id)
+        }
+        let hiddenGoal = try #require(
+            store.dataset.goals.first { g in
+                guard let owner = store.student(for: g) else { return false }
+                return owner.id == hidden.id
+            })
+        #expect(throws: PrototypeStore.StoreError.notAllowed) {
+            try store.removeGoal(id: hiddenGoal.id)
+        }
+    }
+
+    @Test("deletions come back after a restart, and reset brings everything back")
+    func removalPersistence() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("iep-proto-\(UUID().uuidString)/state.json")
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+        let first = try makeStore(stateURL: url)
+        let director = try staff(first, .spedDirector)
+        first.signIn(as: director)
+        let student = try #require(first.visibleStudents.first)
+        try first.removeStudent(id: student.id)
+
+        let second = try makeStore(stateURL: url)
+        second.signIn(as: director)
+        #expect(!second.visibleStudents.contains { $0.id == student.id })
+        second.resetLocalData()
+        #expect(second.visibleStudents.contains { $0.id == student.id })
+        let third = try makeStore(stateURL: url)
+        third.signIn(as: director)
+        #expect(third.visibleStudents.contains { $0.id == student.id })
+    }
 }
