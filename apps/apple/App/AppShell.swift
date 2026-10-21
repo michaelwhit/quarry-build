@@ -37,7 +37,7 @@ enum AppTab: String, CaseIterable, Identifiable {
 
 /// Where a Home tile or number can send the teacher.
 enum AppDestination {
-    case today, caseload, caseloadSummary, libraries, evaluation, staff
+    case today, caseload, caseloadSummary, libraries, evaluation, staff, overdue
 }
 
 /// Screens other parts of the app provide. Until a screen is wired in, its tab shows "Planned"
@@ -53,6 +53,10 @@ struct AppShell: View {
     @State private var launched: LaunchedSession?
     @State private var intake: EvidenceIntake?
     @State private var showingStaff = false
+    @State private var showingOverdue = false
+    /// The audit rows the overdue view wrote while this person is signed in. Until the audit queue
+    /// is wired to the app these live only for the session, like the view itself.
+    @State private var overdueAudit = OverdueAuditLog()
     @Environment(PrototypeStore.self) private var store
     let screens: ShellScreens
 
@@ -106,6 +110,25 @@ struct AppShell: View {
                                 Button("Done") { showingStaff = false }
                             }
                         }
+                }
+            }
+            .sheet(isPresented: $showingOverdue) {
+                NavigationStack {
+                    OverdueReportsView(
+                        load: { store.overdueList(today: $0, period: $1) },
+                        recordLoad: { overdueAudit.record($0) },
+                        openStudent: { id in
+                            showingOverdue = false
+                            selection = id
+                            column = .detail
+                            tab = .caseload
+                        }
+                    )
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") { showingOverdue = false }
+                        }
+                    }
                 }
             }
             .sheet(
@@ -223,6 +246,7 @@ struct AppShell: View {
         case .libraries: tab = .libraries
         case .evaluation: intake = EvidenceIntake(names: rosterNames())
         case .staff: showingStaff = true
+        case .overdue: showingOverdue = true
         case .caseload:
             selection = nil
             column = .sidebar

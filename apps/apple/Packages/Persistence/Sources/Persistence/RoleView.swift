@@ -132,6 +132,8 @@ public struct RoleView: Equatable, Sendable {
     /// True when the role opens the read-only My students list and At a glance page: students
     /// given to it, whole goals, and nothing to edit, export or send to AI.
     public var showsMyStudents: Bool
+    /// True when the role sees the director's list of progress reports that are not filed yet.
+    public var showsOverdueReports: Bool
     /// True when the role reads and agrees to the confidentiality page before seeing any student.
     public var needsAcknowledgment: Bool
     /// True until the director signs off on the defaults; screens mark such roles "proposed".
@@ -179,6 +181,7 @@ public struct RoleView: Equatable, Sendable {
         canSeeFullIEP = c.canSeeFullIEP
         canSeeEvaluations = c.canSeeEvaluations
         iPhoneOnly = c.iPhoneOnly
+        showsOverdueReports = c.scope == .allStudents && c.canManageStaff
         showsMyStudents = c.scope == .delegatedGoals && !c.minimizedStudentView
         needsAcknowledgment = c.role == .paraprofessional || c.role == .genEdTeacher
         isProposedDefault = c.isProposedDefault
