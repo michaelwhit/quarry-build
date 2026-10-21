@@ -1,0 +1,74 @@
+.lib-sample {
+  padding: 8px 12px;
+  border: 1px solid var(--warn);
+  border-radius: 8px;
+  color: var(--warn);
+  margin: 0 0 12px;
+}
+.lib-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+.lib-tabs button[aria-pressed="true"] {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-color: var(--primary);
+}
+.lib-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 8px;
+  margin: 0 0 12px;
+}
+.lib-filters input,
+.lib-filters select {
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+.lib-list {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.lib-list button {
+  width: 100%;
+  text-align: left;
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  min-height: 44px;
+}
+.lib-list button[aria-current="true"] {
+  border-color: var(--primary);
+}
+.lib-detail {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+.lib-blank {
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--surface-2, var(--border));
+  color: var(--warn);
+}
+.lib-filled {
+  font-weight: 650;
+}
+.lib-checks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}

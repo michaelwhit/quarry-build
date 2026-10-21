@@ -2,7 +2,8 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { STATUS_LABEL, type GoalStatus } from "./data/derive.ts";
 import { dataTotals, displayName, districtName, studentById, students } from "./data/district.ts";
 import { Chip } from "./ui/Chip.tsx";
-import { Home, More, PlannedScreen, Today } from "./ui/Home.tsx";
+import { Home, More, Today } from "./ui/Home.tsx";
+import { Libraries } from "./ui/Libraries.tsx";
 import { GoalPanel } from "./ui/GoalPanel.tsx";
 import { Graph, Sparkline } from "./ui/Graph.tsx";
 import { AddGoal, AddStudent, ImportStudents } from "./ui/Forms.tsx";
@@ -331,10 +332,7 @@ export function App() {
   ) : hash === "#/today" ? (
     <Today />
   ) : hash === "#/libraries" ? (
-    <PlannedScreen
-      title="Libraries"
-      text="The goal and accommodation libraries are not on the web yet."
-    />
+    <Libraries />
   ) : hash === "#/more" ? (
     <More />
   ) : (
