@@ -7,6 +7,7 @@ import {
   addGoal,
   addPoint,
   addStudent,
+  addStudents,
   clearAll,
   deleteGoal,
   deletePoint,
@@ -294,5 +295,39 @@ describe("history", () => {
     deletePoint(first!.id);
     expect(getWorkspace().points).toHaveLength(1);
     expect(students[0]?.goals[0]?.series).toHaveLength(1);
+  });
+});
+
+describe("addStudents", () => {
+  beforeEach(() => {
+    useStorage(fakeStorage());
+    clearAll();
+  });
+  it("adds every student with one save", () => {
+    const store = fakeStorage();
+    useStorage(store);
+    let saves = 0;
+    const set = store.setItem;
+    store.setItem = (k, v) => {
+      saves++;
+      set(k, v);
+    };
+    const ids = addStudents([
+      { firstName: "Ava", lastName: "Stone", grade: "3" },
+      { firstName: "Ben", lastName: "Reed", grade: "K" },
+    ]);
+    expect(ids).toHaveLength(2);
+    expect(saves).toBe(1);
+    expect(getWorkspace().students).toHaveLength(2);
+    expect(getWorkspace().ieps).toHaveLength(2);
+  });
+  it("adds none when one entry is refused", () => {
+    expect(() =>
+      addStudents([
+        { firstName: "Ava", lastName: "Stone", grade: "3" },
+        { firstName: " ", lastName: "Reed", grade: "K" },
+      ]),
+    ).toThrow(/Entry 2/);
+    expect(getWorkspace().students).toHaveLength(0);
   });
 });

@@ -5,7 +5,7 @@ import { Chip } from "./ui/Chip.tsx";
 import { Home, More, PlannedScreen, Today } from "./ui/Home.tsx";
 import { GoalPanel } from "./ui/GoalPanel.tsx";
 import { Graph, Sparkline } from "./ui/Graph.tsx";
-import { AddGoal, AddStudent } from "./ui/Forms.tsx";
+import { AddGoal, AddStudent, ImportStudents } from "./ui/Forms.tsx";
 import { TrackGoal, TrackPicker } from "./ui/Track.tsx";
 import {
   can,
@@ -40,7 +40,12 @@ const TABS = [
 
 function activeTab(hash: string, delegate = false): string {
   if (delegate) return hash === "#/more" ? "more" : "today";
-  if (hash.startsWith("#/student") || hash === "#/caseload" || hash === "#/add-student")
+  if (
+    hash.startsWith("#/student") ||
+    hash === "#/caseload" ||
+    hash === "#/add-student" ||
+    hash === "#/import-students"
+  )
     return "caseload";
   if (hash === "#/today") return "today";
   if (hash === "#/libraries") return "libraries";
@@ -98,6 +103,9 @@ function Caseload() {
         <p>
           <a className="btn" href="#/add-student">
             Add a student
+          </a>{" "}
+          <a className="btn" href="#/import-students">
+            Import from file
           </a>
         </p>
       )}
@@ -260,6 +268,12 @@ export function App() {
     ) : hash === "#/add-student" ? (
       allow("addStudent") ? (
         <AddStudent />
+      ) : (
+        <NotAllowed />
+      )
+    ) : hash === "#/import-students" ? (
+      allow("addStudent") ? (
+        <ImportStudents />
       ) : (
         <NotAllowed />
       )
