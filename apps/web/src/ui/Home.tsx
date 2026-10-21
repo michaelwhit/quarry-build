@@ -2,6 +2,8 @@ import { useState } from "react";
 import { dueFor } from "../data/derive.ts";
 import { can, getRole, isDelegateRole, roleById, setRole } from "../data/roles.ts";
 import { displayName, districtName, goalCounts, students } from "../data/district.ts";
+import { canSeeOverdue } from "../data/overdue.ts";
+import { OverdueHomeLine } from "./Overdue.tsx";
 import { clearAll, exportText, getWorkspace, importText, loadSample } from "../data/workspace.ts";
 
 interface Tile {
@@ -59,6 +61,7 @@ export function Home() {
           </span>
         </div>
       </a>
+      {canSeeOverdue(getRole()) && <OverdueHomeLine />}
       {students.length === 0 && can(getRole(), "addStudent") && (
         <div className="card empty-start">
           <p className="name">Start with a made-up student</p>

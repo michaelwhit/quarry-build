@@ -4,12 +4,16 @@ import type {
   CaseloadAssignment,
   DataPoint,
   Goal,
+  GoalDelegation,
   GoalArea,
   Iep,
   MeasurementPlan,
   MeasurementType,
+  ProgressReport,
+  ProgressReportState,
   ReportingPeriod,
   School,
+  SchoolCalendar,
   Staff,
   StaffRole,
   Student,
@@ -17,6 +21,38 @@ import type {
 } from "./types.ts";
 
 export const GENERATOR_VERSION = "0.1.0";
+
+/**
+ * Fake 2026-27 days without school (weekends are implied): Labor Day, Oct 12, the Nov 9 staff day,
+ * Thanksgiving break, winter break (students return Jan 5) and a few later holidays.
+ */
+const FAKE_NO_SCHOOL = [
+  "2026-09-07",
+  "2026-10-12",
+  "2026-11-09",
+  "2026-11-25",
+  "2026-11-26",
+  "2026-11-27",
+  "2026-12-21",
+  "2026-12-22",
+  "2026-12-23",
+  "2026-12-24",
+  "2026-12-25",
+  "2026-12-28",
+  "2026-12-29",
+  "2026-12-30",
+  "2026-12-31",
+  "2027-01-01",
+  "2027-01-04",
+  "2027-01-18",
+  "2027-02-15",
+  "2027-03-22",
+  "2027-03-23",
+  "2027-03-24",
+  "2027-03-25",
+  "2027-03-26",
+  "2027-05-31",
+];
 export const DEFAULT_SEED = 20261017;
 
 export interface GenerateOptions {
@@ -375,6 +411,96 @@ export function generateDistrict(opts: GenerateOptions = {}): SyntheticDistrict 
     })),
   );
 
+  // Paras and gen-ed teachers see a student only through a delegated goal on top of an active
+  // assignment, so the demo gives each of them a few. Built last so earlier ids stay the same.
+  const goal_delegations: GoalDelegation[] = [];
+  const para = byRole("paraprofessional")[0]!;
+  const delegate = (
+    to: Staff,
+    studentIndex: number,
+    relationship: CaseloadAssignment["relationship"],
+  ) => {
+    const student = students[studentIndex];
+    const iep = student && ieps.find((x) => x.student_id === student.id);
+    const goal = iep && goals.find((g) => g.iep_id === iep.id);
+    const grantor =
+      student &&
+      caseload_assignments.find(
+        (a) => a.student_id === student.id && a.relationship === "caseload",
+      );
+    if (!student || !goal || !grantor) return;
+    if (!caseload_assignments.some((a) => a.staff_id === to.id && a.student_id === student.id)) {
+      caseload_assignments.push({
+        id: rng.uuidv7(created + 9000 + studentIndex),
+        tenant_id: t,
+        staff_id: to.id,
+        student_id: student.id,
+        relationship,
+        granted_by: director.id,
+        start_date: "2026-08-13",
+        end_date: null,
+      });
+    }
+    goal_delegations.push({
+      id: rng.uuidv7(created + 9500 + studentIndex),
+      tenant_id: t,
+      goal_id: goal.id,
+      staff_id: to.id,
+      granted_by: grantor.staff_id,
+      expires_at: null,
+    });
+  };
+  delegate(para, 0, "delegated");
+  delegate(para, 1, "delegated");
+  delegate(genEd, 0, "class_roster");
+
+  // Fake 2026-27 calendar and the Q1 progress reports (overdue progress reports).
+  // Real dates come from the district; these only make the demo behave like a school year.
+  const school_calendar: SchoolCalendar = {
+    school_year: "2026-27",
+    no_school_days: FAKE_NO_SCHOOL,
+  };
+  const q1 = reporting_periods.filter((p) => p.srs_report_date === "2026-10-16");
+  // Six filed (four attested, two checked against the SRS PDF) and six waiting (two not started,
+  // two drafted, one approved, one copied), spread over both buildings by student order.
+  const q1States: ProgressReportState[] = [
+    "filed_attested",
+    "not_started",
+    "verified_by_pdf",
+    "drafted",
+    "filed_attested",
+    "approved",
+    "filed_attested",
+    "copied",
+    "verified_by_pdf",
+    "not_started",
+    "filed_attested",
+    "drafted",
+  ];
+  const progress_reports: ProgressReport[] = students.flatMap((student, i) => {
+    const iep = ieps.find((x) => x.student_id === student.id);
+    const period = q1.find((p) => p.school_id === student.school_id);
+    const state = q1States[i % q1States.length]!;
+    const manager = caseload_assignments.find(
+      (a) => a.student_id === student.id && a.relationship === "caseload",
+    );
+    if (!iep || !period || !manager) return [];
+    const filed = state === "filed_attested" || state === "verified_by_pdf";
+    return [
+      {
+        id: rng.uuidv7(created + 9800 + i),
+        tenant_id: t,
+        iep_id: iep.id,
+        reporting_period_id: period.id,
+        due_date: "2026-10-23",
+        state,
+        srs_method: state === "not_started" ? null : ("paste_kit" as const),
+        filed_attested_by: filed ? manager.staff_id : null,
+        filed_attested_at: filed ? "2026-10-21T15:00:00Z" : null,
+      },
+    ];
+  });
+
   return {
     synthetic: true,
     seed,
@@ -387,8 +513,11 @@ export function generateDistrict(opts: GenerateOptions = {}): SyntheticDistrict 
     ieps,
     goals,
     measurement_plans,
+    goal_delegations,
     data_points,
     reporting_periods,
+    school_calendar,
+    progress_reports,
   };
 }
 

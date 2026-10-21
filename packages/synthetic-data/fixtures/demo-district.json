@@ -398,6 +398,26 @@
       "granted_by": "019fba9e-d800-7592-bf80-f6ed3a008d2c",
       "start_date": "2026-08-13",
       "end_date": null
+    },
+    {
+      "id": "019fba9e-fb28-787e-9e3a-00683cf4c3ba",
+      "tenant_id": "019fba9e-d800-72cb-98cd-08d5bd9ddfb4",
+      "staff_id": "019fba9e-d800-79d5-b7e7-274eaa59e204",
+      "student_id": "019fba9e-d800-7ad4-89af-3e7a20a5e9fd",
+      "relationship": "delegated",
+      "granted_by": "019fba9e-d800-7592-bf80-f6ed3a008d2c",
+      "start_date": "2026-08-13",
+      "end_date": null
+    },
+    {
+      "id": "019fba9e-fb29-7de1-9458-e3b603a3876f",
+      "tenant_id": "019fba9e-d800-72cb-98cd-08d5bd9ddfb4",
+      "staff_id": "019fba9e-d800-79d5-b7e7-274eaa59e204",
+      "student_id": "019fba9e-dbe8-7bdd-9da0-5fa2d77411a0",
+      "relationship": "delegated",
+      "granted_by": "019fba9e-d800-7592-bf80-f6ed3a008d2c",
+      "start_date": "2026-08-13",
+      "end_date": null
     }
   ],
   "ieps": [
@@ -1310,6 +1330,32 @@
       "prompt_hierarchy": [],
       "task_steps": [],
       "frequency": "2x weekly"
+    }
+  ],
+  "goal_delegations": [
+    {
+      "id": "019fba9e-fd1c-70ed-9d92-d719a3ca747a",
+      "tenant_id": "019fba9e-d800-72cb-98cd-08d5bd9ddfb4",
+      "goal_id": "019f7285-d001-769b-a642-9f4ef32d3b0a",
+      "staff_id": "019fba9e-d800-79d5-b7e7-274eaa59e204",
+      "granted_by": "019fba9e-d800-7b99-91e6-bebc4ff3ce87",
+      "expires_at": null
+    },
+    {
+      "id": "019fba9e-fd1d-7da6-a8eb-fe92c107c0c9",
+      "tenant_id": "019fba9e-d800-72cb-98cd-08d5bd9ddfb4",
+      "goal_id": "019e9a3a-b801-7ee0-a932-70e3680c4177",
+      "staff_id": "019fba9e-d800-79d5-b7e7-274eaa59e204",
+      "granted_by": "019fba9e-d800-7e0c-b71f-8b347eb6441b",
+      "expires_at": null
+    },
+    {
+      "id": "019fba9e-fd1c-721a-ad08-cb0bfd68b4e2",
+      "tenant_id": "019fba9e-d800-72cb-98cd-08d5bd9ddfb4",
+      "goal_id": "019f7285-d001-769b-a642-9f4ef32d3b0a",
+      "staff_id": "019fba9e-d800-7174-8fb4-6f03c4cc0b2f",
+      "granted_by": "019fba9e-d800-7b99-91e6-bebc4ff3ce87",
+      "expires_at": null
     }
   ],
   "data_points": [
@@ -8358,6 +8404,170 @@
       "school_id": "019fba9e-d800-70ed-81f7-6ca1c4ca49d6",
       "school_year": "2026-27",
       "srs_report_date": "2027-05-21"
+    }
+  ],
+  "school_calendar": {
+    "school_year": "2026-27",
+    "no_school_days": [
+      "2026-09-07",
+      "2026-10-12",
+      "2026-11-09",
+      "2026-11-25",
+      "2026-11-26",
+      "2026-11-27",
+      "2026-12-21",
+      "2026-12-22",
+      "2026-12-23",
+      "2026-12-24",
+      "2026-12-25",
+      "2026-12-28",
+      "2026-12-29",
+      "2026-12-30",
+      "2026-12-31",
+      "2027-01-01",
+      "2027-01-04",
+      "2027-01-18",
+      "2027-02-15",
+      "2027-03-22",
+      "2027-03-23",
+      "2027-03-24",
+      "2027-03-25",
+      "2027-03-26",
+      "2027-05-31"
+    ]
+  },
+  "progress_reports": [
+    {
+      "id": "019fba9e-fe48-74d0-ae32-a77a858a3a49",
+      "tenant_id": "019fba9e-d800-72cb-98cd-08d5bd9ddfb4",
+      "iep_id": "019f7285-d000-7218-bfb9-96a570188567",
+      "reporting_period_id": "019fba9e-d800-7d99-8001-15176276836f",
+      "due_date": "2026-10-23",
+      "state": "filed_attested",
+      "srs_method": "paste_kit",
+      "filed_attested_by": "019fba9e-d800-7b99-91e6-bebc4ff3ce87",
+      "filed_attested_at": "2026-10-21T15:00:00Z"
+    },
+    {
+      "id": "019fba9e-fe49-7460-bdf8-ad86f19321a5",
+      "tenant_id": "019fba9e-d800-72cb-98cd-08d5bd9ddfb4",
+      "iep_id": "019e9a3a-b800-7524-aa35-c40af37352e7",
+      "reporting_period_id": "019fba9e-d800-7d99-8001-15176276836f",
+      "due_date": "2026-10-23",
+      "state": "not_started",
+      "srs_method": null,
+      "filed_attested_by": null,
+      "filed_attested_at": null
+    },
+    {
+      "id": "019fba9e-fe4a-7768-bd55-259d89ad2e57",
+      "tenant_id": "019fba9e-d800-72cb-98cd-08d5bd9ddfb4",
+      "iep_id": "019f6312-bc00-7f4a-8fb9-575a3461c418",
+      "reporting_period_id": "019fba9e-d800-76f7-a33e-dc5e1b30fa1f",
+      "due_date": "2026-10-23",
+      "state": "verified_by_pdf",
+      "srs_method": "paste_kit",
+      "filed_attested_by": "019fba9e-d800-7b99-91e6-bebc4ff3ce87",
+      "filed_attested_at": "2026-10-21T15:00:00Z"
+    },
+    {
+      "id": "019fba9e-fe4b-798b-9e66-1ddaa2a72d1a",
+      "tenant_id": "019fba9e-d800-72cb-98cd-08d5bd9ddfb4",
+      "iep_id": "019cdf57-d000-7c94-899e-207d09569765",
+      "reporting_period_id": "019fba9e-d800-7d99-8001-15176276836f",
+      "due_date": "2026-10-23",
+      "state": "drafted",
+      "srs_method": "paste_kit",
+      "filed_attested_by": null,
+      "filed_attested_at": null
+    },
+    {
+      "id": "019fba9e-fe4c-711e-95b9-d8d1f05f23f8",
+      "tenant_id": "019fba9e-d800-72cb-98cd-08d5bd9ddfb4",
+      "iep_id": "019fa605-6800-769d-bb4d-4432a0a4532f",
+      "reporting_period_id": "019fba9e-d800-7d99-8001-15176276836f",
+      "due_date": "2026-10-23",
+      "state": "filed_attested",
+      "srs_method": "paste_kit",
+      "filed_attested_by": "019fba9e-d800-7b99-91e6-bebc4ff3ce87",
+      "filed_attested_at": "2026-10-21T15:00:00Z"
+    },
+    {
+      "id": "019fba9e-fe4d-706f-8460-b176cf57bd3c",
+      "tenant_id": "019fba9e-d800-72cb-98cd-08d5bd9ddfb4",
+      "iep_id": "019cb0fe-9400-799a-b003-700ff39b1bb7",
+      "reporting_period_id": "019fba9e-d800-76f7-a33e-dc5e1b30fa1f",
+      "due_date": "2026-10-23",
+      "state": "approved",
+      "srs_method": "paste_kit",
+      "filed_attested_by": null,
+      "filed_attested_at": null
+    },
+    {
+      "id": "019fba9e-fe4e-76fc-bbc4-869e9afbb6f4",
+      "tenant_id": "019fba9e-d800-72cb-98cd-08d5bd9ddfb4",
+      "iep_id": "019d4b7d-5c00-7f1d-9a08-608db681ae42",
+      "reporting_period_id": "019fba9e-d800-7d99-8001-15176276836f",
+      "due_date": "2026-10-23",
+      "state": "filed_attested",
+      "srs_method": "paste_kit",
+      "filed_attested_by": "019fba9e-d800-7b99-91e6-bebc4ff3ce87",
+      "filed_attested_at": "2026-10-21T15:00:00Z"
+    },
+    {
+      "id": "019fba9e-fe4f-7834-b4ee-0bd02de79880",
+      "tenant_id": "019fba9e-d800-72cb-98cd-08d5bd9ddfb4",
+      "iep_id": "019e3d88-4000-744b-8853-60368e018cfc",
+      "reporting_period_id": "019fba9e-d800-7d99-8001-15176276836f",
+      "due_date": "2026-10-23",
+      "state": "copied",
+      "srs_method": "paste_kit",
+      "filed_attested_by": null,
+      "filed_attested_at": null
+    },
+    {
+      "id": "019fba9e-fe50-7eab-8974-b07f9a5a54cd",
+      "tenant_id": "019fba9e-d800-72cb-98cd-08d5bd9ddfb4",
+      "iep_id": "019f6d5f-7400-7158-9c3e-ba26e107e618",
+      "reporting_period_id": "019fba9e-d800-76f7-a33e-dc5e1b30fa1f",
+      "due_date": "2026-10-23",
+      "state": "verified_by_pdf",
+      "srs_method": "paste_kit",
+      "filed_attested_by": "019fba9e-d800-7b99-91e6-bebc4ff3ce87",
+      "filed_attested_at": "2026-10-21T15:00:00Z"
+    },
+    {
+      "id": "019fba9e-fe51-76bd-9c55-cdcfd6342aae",
+      "tenant_id": "019fba9e-d800-72cb-98cd-08d5bd9ddfb4",
+      "iep_id": "019d12d7-6800-74f3-aeca-c1fb8d1ac49d",
+      "reporting_period_id": "019fba9e-d800-7d99-8001-15176276836f",
+      "due_date": "2026-10-23",
+      "state": "not_started",
+      "srs_method": null,
+      "filed_attested_by": null,
+      "filed_attested_at": null
+    },
+    {
+      "id": "019fba9e-fe52-7187-879c-d21affdeeff2",
+      "tenant_id": "019fba9e-d800-72cb-98cd-08d5bd9ddfb4",
+      "iep_id": "019f539f-a800-729a-8cba-3de6d23ed24a",
+      "reporting_period_id": "019fba9e-d800-7d99-8001-15176276836f",
+      "due_date": "2026-10-23",
+      "state": "filed_attested",
+      "srs_method": "paste_kit",
+      "filed_attested_by": "019fba9e-d800-7b99-91e6-bebc4ff3ce87",
+      "filed_attested_at": "2026-10-21T15:00:00Z"
+    },
+    {
+      "id": "019fba9e-fe53-7f59-a9dd-80f2cee8679b",
+      "tenant_id": "019fba9e-d800-72cb-98cd-08d5bd9ddfb4",
+      "iep_id": "019dd162-b400-77f2-8a8c-6c7e5a70043c",
+      "reporting_period_id": "019fba9e-d800-76f7-a33e-dc5e1b30fa1f",
+      "due_date": "2026-10-23",
+      "state": "drafted",
+      "srs_method": "paste_kit",
+      "filed_attested_by": null,
+      "filed_attested_at": null
     }
   ]
 }
