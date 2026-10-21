@@ -12,6 +12,7 @@ import {
   SETUP_NEEDED,
   errorMessage,
   problemLines,
+  waitMessage,
 } from "./messages.ts";
 import type { Route } from "./messages.ts";
 
@@ -169,10 +170,8 @@ export async function secondFactor(
 ): Promise<Outcome> {
   try {
     const res = await post("/v0/auth/second-factor", { challenge, ...entry, deviceId: deviceId() });
-    if (res.status === 200) {
-      const body = await json(res);
-      return body ? signedIn(body) : fail(NO_SERVER);
-    }
+    const body = await json(res);
+    if (res.status === 200) return body ? signedIn(body) : fail(NO_SERVER);
     return fail(errorMessage("second-factor", res.status, res.headers.get("Retry-After")));
   } catch {
     return fail(NO_SERVER);
@@ -226,6 +225,56 @@ export async function enrolConfirm(challenge: string, code: string): Promise<Con
     return { kind: "codes", codes, me: out.me, after: null };
   } catch {
     return fail(NO_SERVER);
+  }
+}
+
+/** Sign-up by picking a school: every answer after the checks is the same waiting screen. */
+export const signUpSchool = (
+  schoolId: string,
+  email: string,
+  displayName: string,
+  password: string,
+) =>
+  call("signup-school", "/v0/auth/signup", {
+    schoolId,
+    email,
+    displayName,
+    password,
+    deviceId: deviceId(),
+  });
+
+export interface School {
+  id: string;
+  name: string;
+  town: string | null;
+  district: string;
+}
+
+export type Found = { ok: true; schools: School[] } | { ok: false; message: string };
+
+/** The caller waits about half a second between keystrokes and sends 3 to 60 characters. */
+export async function searchSchools(q: string): Promise<Found> {
+  try {
+    const res = await doFetch(`/v0/auth/schools?q=${encodeURIComponent(q)}`, {
+      headers: { "X-GoalLine-Client": "web" },
+    });
+    if (res.status === 429)
+      return { ok: false, message: waitMessage(res.headers.get("Retry-After")) };
+    const body = await json(res);
+    if (res.status !== 200 || !Array.isArray(body?.schools)) return { ok: false, message: GENERIC };
+    const schools: School[] = [];
+    for (const s of body.schools as Record<string, unknown>[]) {
+      if (typeof s.id !== "string" || typeof s.name !== "string") continue;
+      schools.push({
+        id: s.id,
+        name: s.name,
+        town: typeof s.town === "string" ? s.town : null,
+        district: typeof s.district === "string" ? s.district : "",
+      });
+    }
+    return { ok: true, schools: schools.slice(0, 8) };
+  } catch {
+    return { ok: false, message: NO_SERVER };
   }
 }
 
@@ -292,7 +341,6 @@ export const APPROVE_ROLES = [
   "related_service_provider",
   "paraprofessional",
   "gen_ed_teacher",
-  "building_coordinator",
 ] as const;
 export type ApproveRole = (typeof APPROVE_ROLES)[number];
 
@@ -302,6 +350,9 @@ export interface Signup {
   displayName: string;
   createdAt: string;
   expiresAt: string;
+  via: "invite" | "school";
+  /** School sign-ups only: false means the email is not one the district expects (a hint). */
+  emailDomainMatched: boolean | null;
 }
 
 /** A request with the access token; one refresh and retry when the token has ended. */
@@ -316,7 +367,7 @@ async function authed(path: string, init: RequestInit): Promise<Response> {
   return res;
 }
 
-const adminError = (status: number, what: "invite" | "signup" = "signup"): string =>
+const adminError = (status: number, what: "invite" | "signup" | "listing" = "signup"): string =>
   status === 403
     ? "Only the director can do this."
     : status === 401
@@ -324,7 +375,9 @@ const adminError = (status: number, what: "invite" | "signup" = "signup"): strin
       : status === 409
         ? what === "invite"
           ? "There are too many open invite codes. Wait for one to be used or to expire."
-          : "Someone already has this email. Reject this sign-up or check Staff."
+          : what === "listing"
+            ? "The school list can't be opened until the district's first admin has been verified."
+            : "Someone already has this email. Reject this sign-up or check Staff."
         : status === 404
           ? "That sign-up is gone. It may already be handled."
           : status === 400
@@ -338,7 +391,7 @@ async function admin<T>(
   init: RequestInit,
   okStatus: number,
   read: (b: Record<string, unknown> | null) => T | null,
-  what: "invite" | "signup" = "signup",
+  what: "invite" | "signup" | "listing" = "signup",
 ): Promise<Made<T>> {
   try {
     const res = await authed(path, init);
@@ -381,6 +434,9 @@ export const listSignups = () =>
         displayName: str(r.display_name) ?? email,
         createdAt: str(r.created_at) ?? "",
         expiresAt: str(r.expires_at) ?? "",
+        via: r.via === "school" ? "school" : "invite",
+        emailDomainMatched:
+          typeof r.email_domain_matched === "boolean" ? r.email_domain_matched : null,
       });
     }
     return out;
@@ -391,7 +447,28 @@ export const approveSignup = (id: string, role: ApproveRole, endsOn: string) =>
     `/v0/staff/signups/${encodeURIComponent(id)}/approve`,
     { method: "POST", body: JSON.stringify({ role, endsOn }) },
     201,
-    (b) => ({ role: str(b?.role) ?? role }),
+    (b) => ({
+      role: str(b?.role) ?? role,
+      // School sign-ups only: shown once in a dialog, never stored.
+      setupCode: str(b?.setup_code),
+      setupCodeExpiresAt: str(b?.setup_code_expires_at),
+    }),
+  );
+
+/** Reject many at once; ids already gone are skipped by the server. */
+export const rejectSignups = (ids: string[]) =>
+  admin("/v0/staff/signups/reject", { method: "POST", body: JSON.stringify({ ids }) }, 200, (b) =>
+    typeof b?.rejected === "number" ? b.rejected : null,
+  );
+
+/** Opens or closes the school list for this district (director only). */
+export const setSchoolListing = (listed: boolean) =>
+  admin(
+    "/v0/staff/district/listing",
+    { method: "POST", body: JSON.stringify({ listed }) },
+    200,
+    (b) => (typeof b?.listed === "boolean" ? b.listed : null),
+    "listing",
   );
 
 export const rejectSignup = (id: string) =>

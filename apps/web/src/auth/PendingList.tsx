@@ -6,7 +6,6 @@ export const APPROVE_LABELS: Record<ApproveRole, string> = {
   related_service_provider: "Related-service provider",
   paraprofessional: "Paraprofessional",
   gen_ed_teacher: "General-education teacher",
-  building_coordinator: "Building coordinator",
 };
 
 /** June 30 of the school year that is running (or about to start in August). */
@@ -20,15 +19,25 @@ export interface PendingPerson {
   displayName: string;
   email: string;
   requestedAt: string;
+  /** School sign-ups only: false gets a gentle warning, never a block. */
+  emailDomainMatched?: boolean | null;
 }
 
 /** Each callback answers null when it worked, or the line to show when it did not. */
 export interface PendingActions {
   approve(id: string, role: ApproveRole, endsOn: string): Promise<string | null>;
   reject(id: string): Promise<string | null>;
+  rejectMany(ids: string[]): Promise<string | null>;
 }
 
-function Row({ p, act, done }: { p: PendingPerson; act: PendingActions; done: () => void }) {
+function Row(props: {
+  p: PendingPerson;
+  act: PendingActions;
+  done: () => void;
+  picked: boolean;
+  onPick: (on: boolean) => void;
+}) {
+  const { p, act, done } = props;
   const [role, setRole] = useState<ApproveRole | "">("");
   const [endsOn, setEndsOn] = useState(defaultEndsOn());
   const [rejecting, setRejecting] = useState(false);
@@ -43,8 +52,21 @@ function Row({ p, act, done }: { p: PendingPerson; act: PendingActions; done: ()
   };
   return (
     <li className="card">
-      <strong>{p.displayName}</strong>
+      <label>
+        <input
+          type="checkbox"
+          checked={props.picked}
+          onChange={(e) => props.onPick(e.target.checked)}
+        />{" "}
+        <strong>{p.displayName}</strong>
+      </label>
       <p className="meta">{p.email}</p>
+      {p.emailDomainMatched === false && (
+        <p className="meta" role="note">
+          This email isn&apos;t a district address. Check that you know this person before you
+          approve.
+        </p>
+      )}
       <label className="form">
         <span>Role</span>
         <select value={role} onChange={(e) => setRole(e.target.value as ApproveRole | "")}>
@@ -113,15 +135,69 @@ export function PendingList({
   actions: PendingActions;
   onChanged: () => void;
 }) {
+  const [picked, setPicked] = useState<string[]>([]);
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // Only people still on the list count, so a stale pick never rejects a stranger.
+  const chosen = picked.filter((id) => people.some((p) => p.id === id));
+  const rejectChosen = async () => {
+    setBusy(true);
+    const e = await actions.rejectMany(chosen);
+    setBusy(false);
+    setConfirming(false);
+    if (e === null) {
+      setPicked([]);
+      setError(null);
+      onChanged();
+    } else setError(e);
+  };
   return (
     <section>
       <h3 className="sec">{`Waiting for approval (${people.length})`}</h3>
+      {chosen.length > 0 && (
+        <div className="actions">
+          {confirming ? (
+            <>
+              <button
+                type="button"
+                className="danger"
+                disabled={busy}
+                onClick={() => void rejectChosen()}
+              >
+                {`Yes, reject ${chosen.length}`}
+              </button>
+              <button type="button" onClick={() => setConfirming(false)}>
+                Cancel
+              </button>
+            </>
+          ) : (
+            <button type="button" className="danger-ghost" onClick={() => setConfirming(true)}>
+              {`Reject selected (${chosen.length})`}
+            </button>
+          )}
+        </div>
+      )}
+      {error && (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      )}
       {people.length === 0 ? (
         <p className="empty">No one is waiting.</p>
       ) : (
         <ul className="pick">
           {people.map((p) => (
-            <Row key={p.id} p={p} act={actions} done={onChanged} />
+            <Row
+              key={p.id}
+              p={p}
+              act={actions}
+              done={onChanged}
+              picked={chosen.includes(p.id)}
+              onPick={(on) =>
+                setPicked(on ? [...chosen, p.id] : chosen.filter((id) => id !== p.id))
+              }
+            />
           ))}
         </ul>
       )}

@@ -1,18 +1,42 @@
 import { useCallback, useEffect, useState } from "react";
-import { approveSignup, createInvite, listSignups, rejectSignup } from "./client.ts";
+import {
+  approveSignup,
+  createInvite,
+  listSignups,
+  rejectSignup,
+  rejectSignups,
+  setSchoolListing,
+} from "./client.ts";
 import type { Signup } from "./client.ts";
 import { APPROVE_LABELS, PendingList } from "./PendingList.tsx";
 import type { ApproveRole } from "./client.ts";
 import type { PendingActions } from "./PendingList.tsx";
 
-const actions = (done: (line: string) => void): PendingActions => ({
+/** Shown once, then gone. Never stored beyond the dialog. */
+export interface SetupCode {
+  name: string;
+  code: string;
+  endsAt: string;
+}
+
+const actions = (
+  done: (line: string) => void,
+  setup: (id: string, code: string, endsAt: string) => void,
+): PendingActions => ({
   approve: async (id, role, endsOn) => {
     const r = await approveSignup(id, role, endsOn);
     if (!r.ok) return r.message;
-    done(
-      `Approved as ${APPROVE_LABELS[r.value.role as ApproveRole] ?? r.value.role}. They can sign in now.`,
-    );
+    const label = APPROVE_LABELS[r.value.role as ApproveRole] ?? r.value.role;
+    if (r.value.setupCode) {
+      // School sign-ups never use the password chosen at sign-up.
+      setup(id, r.value.setupCode, r.value.setupCodeExpiresAt ?? "");
+      done(`Approved as ${label}. Give them the setup code before they can sign in.`);
+    } else done(`Approved as ${label}. They can sign in now.`);
     return null;
+  },
+  rejectMany: async (ids) => {
+    const r = await rejectSignups(ids);
+    return r.ok ? null : r.message;
   },
   reject: async (id) => {
     const r = await rejectSignup(id);
@@ -26,6 +50,8 @@ export function AdminSignups() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [invite, setInvite] = useState<{ code: string; expiresAt: string } | null>(null);
+  const [setup, setSetup] = useState<SetupCode | null>(null);
+  const [listed, setListed] = useState<boolean | null>(null);
 
   const load = useCallback(async () => {
     const r = await listSignups();
@@ -44,8 +70,66 @@ export function AdminSignups() {
     else setError(r.message);
   };
 
+  const pickListing = async (on: boolean) => {
+    const r = await setSchoolListing(on);
+    if (r.ok) {
+      setListed(r.value);
+      setError(null);
+    } else setError(r.message);
+  };
+
+  // The setup code's end time comes from the server; say nothing about it if it cannot be read.
+  const ends = (iso: string) => {
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? "" : ` and ends ${d.toLocaleString()}`;
+  };
+
   return (
     <>
+      {setup && (
+        <section className="card" role="alertdialog" aria-labelledby="setup-title">
+          <h3 className="sec" id="setup-title">
+            Setup code for {setup.name}
+          </h3>
+          <p className="meta">
+            Confirm this is really {setup.name}, by phone or in person, before you hand over this
+            code. They&apos;ll use it on the &apos;I have a code&apos; screen to set their own
+            password. It works once{ends(setup.endsAt)}. It is shown only now.
+          </p>
+          <p className="name">{setup.code}</p>
+          <button type="button" onClick={() => setSetup(null)}>
+            Done, hide the code
+          </button>
+        </section>
+      )}
+      <section className="card">
+        <h3 className="sec">Let staff find our schools</h3>
+        <p className="meta">
+          When this is on, new staff can search for your schools when they sign up. You still
+          approve every person.
+        </p>
+        <div className="actions">
+          <button
+            type="button"
+            aria-pressed={listed === true}
+            onClick={() => void pickListing(true)}
+          >
+            Let staff find our schools when signing up
+          </button>
+          <button
+            type="button"
+            aria-pressed={listed === false}
+            onClick={() => void pickListing(false)}
+          >
+            Turn off school search
+          </button>
+        </div>
+        {listed !== null && (
+          <p className="saved" role="status">
+            {listed ? "School search is on." : "School search is off."}
+          </p>
+        )}
+      </section>
       <section className="card">
         <h3 className="sec">Invite a new staff member</h3>
         {invite ? (
@@ -84,8 +168,12 @@ export function AdminSignups() {
             displayName: p.displayName,
             email: p.email,
             requestedAt: p.createdAt,
+            emailDomainMatched: p.emailDomainMatched,
           }))}
-          actions={actions(setNotice)}
+          actions={actions(setNotice, (id, code, endsAt) => {
+            const person = people.find((x) => x.id === id);
+            setSetup({ name: person?.displayName ?? "this person", code, endsAt });
+          })}
           onChanged={() => void load()}
         />
       )}
