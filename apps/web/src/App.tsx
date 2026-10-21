@@ -17,6 +17,7 @@ import {
   setRole,
   subscribeRole,
 } from "./data/roles.ts";
+import { AtAGlance, MyStudents } from "./ui/Glance.tsx";
 import { Privacy, SignIn } from "./ui/SignIn.tsx";
 import { getVersion, getWorkspace, setDelegated, setServed, subscribe } from "./data/workspace.ts";
 
@@ -248,10 +249,18 @@ export function App() {
   const eg = /^#\/student\/([^/]+)\/goal\/([^/]+)\/edit$/.exec(hash);
   const delegate = isDelegateRole(role);
   // Paras and gen-ed teachers get Today and More, and the session screen reached from Today.
+  const glance = /^#\/glance\/([^/]+)$/.exec(hash);
   const delegateOk =
-    hash === "#/today" || hash === "#/more" || (role === "paraprofessional" && t?.[1] && t[2]);
+    hash === "#/today" ||
+    hash === "#/more" ||
+    (role === "gen_ed_teacher" && glance?.[1]) ||
+    (role === "paraprofessional" && t?.[1] && t[2]);
   const screen =
-    delegate && !delegateOk ? (
+    role === "gen_ed_teacher" && hash === "#/today" ? (
+      <MyStudents />
+    ) : role === "gen_ed_teacher" && glance?.[1] ? (
+      <AtAGlance studentId={decodeURIComponent(glance[1])} />
+    ) : delegate && !delegateOk ? (
       <Today />
     ) : t?.[1] && t[2] ? (
       <TrackGoal studentId={t[1]} goalId={t[2]} />
@@ -357,7 +366,7 @@ export function App() {
             aria-current={tab.id === active ? "page" : undefined}
           >
             <span aria-hidden="true">{tab.icon}</span>
-            {tab.title}
+            {role === "gen_ed_teacher" && tab.id === "today" ? "My students" : tab.title}
           </a>
         ))}
       </nav>
