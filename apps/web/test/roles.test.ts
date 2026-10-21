@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { displayName, scrub, students } from "../src/data/district.ts";
 import { agreeToPrivacy, can, isDelegateRole, needsPrivacy, setRole } from "../src/data/roles.ts";
 import { Today, shortGoal } from "../src/ui/Home.tsx";
+import { safeDecode } from "../src/data/hash.ts";
+import { AtAGlance, MyStudents } from "../src/ui/Glance.tsx";
 import { SignIn } from "../src/ui/SignIn.tsx";
 import {
   addGoal,
@@ -115,14 +117,32 @@ describe("practice roles", () => {
 });
 
 describe("delegate views", () => {
-  it("gives gen-ed teachers a first name only and scrubs the last name from goal text", () => {
-    setRole("gen_ed_teacher");
+  it("gives paras a first name only and scrubs the last name from goal text", () => {
+    setRole("case_manager");
+    setDelegated(students[0]!.goals[0]!.goal.id, true);
+    setRole("paraprofessional");
+    expect(students.length).toBeGreaterThan(0);
     for (const s of students) {
       expect(s.student.last_name).toBe("");
       const original = getWorkspace().students.find((x) => x.id === s.student.id)!;
       for (const g of s.goals) {
         expect(g.goal.statement.toLowerCase()).not.toContain(original.last_name.toLowerCase());
       }
+    }
+  });
+
+  it("gives gen-ed teachers the full name and grade but no ids or birth date", () => {
+    setRole("case_manager");
+    setDelegated(students[0]!.goals[0]!.goal.id, true);
+    setRole("gen_ed_teacher");
+    expect(students.length).toBeGreaterThan(0);
+    for (const s of students) {
+      const original = getWorkspace().students.find((x) => x.id === s.student.id)!;
+      expect(s.student.last_name).toBe(original.last_name);
+      expect(s.student.grade).toBe(original.grade);
+      expect(s.student.local_student_id).toBe("");
+      expect(s.student.state_student_id).toBe("");
+      expect(s.student.dob).toBe("");
     }
   });
 
@@ -176,5 +196,69 @@ describe("sign-in landing", () => {
     expect(html).toContain(">Sign in<");
     expect(html).not.toContain("Practice Director");
     expect(html).not.toContain("Case manager");
+  });
+});
+
+describe("gen-ed At a glance", () => {
+  const share = () => {
+    setRole("case_manager");
+    const first = students[0]!;
+    setDelegated(first.goals[0]!.goal.id, true);
+    setRole("gen_ed_teacher");
+    return students[0]!;
+  };
+
+  it("lists only shared students, with the empty-state wording when there are none", () => {
+    clearAll();
+    setRole("gen_ed_teacher");
+    expect(renderToString(createElement(MyStudents))).toContain(
+      "No students are assigned to you yet. Your case manager assigns students here.",
+    );
+    loadSample();
+    const s = share();
+    const html = renderToString(createElement(MyStudents));
+    expect(html).toContain(displayName(s.student));
+    expect(html).toContain(`#/glance/${s.student.id}`);
+    expect(students.every((x) => x.goals.length > 0)).toBe(true);
+  });
+
+  it("shows the whole goal read only, marks the unbuilt sections Planned, and offers no controls", () => {
+    const s = share();
+    const html = renderToString(createElement(AtAGlance, { studentId: s.student.id }));
+    expect(html).toContain("Read only.");
+    expect(html).toContain(
+      s.goals[0]!.goal.statement.replace(/&/g, "&amp;")
+        .replace(/'/g, "&#x27;")
+        .replace(/"/g, "&quot;"),
+    );
+    expect(html.match(/Planned/g)).toHaveLength(2);
+    for (const banned of [
+      "Start a session",
+      "Export",
+      "Print",
+      "Share",
+      "Draft",
+      "<button",
+      "<input",
+    ])
+      expect(html).not.toContain(banned);
+  });
+
+  it("survives a malformed percent escape in the address and encodes ids in links", () => {
+    expect(safeDecode("%E0%A4%A")).toBe("");
+    expect(safeDecode("%")).toBe("");
+    expect(safeDecode("a%20b")).toBe("a b");
+    const html = renderToString(createElement(AtAGlance, { studentId: safeDecode("%E0%A4%A") }));
+    expect(html).toContain("This student is no longer shared with you.");
+    share();
+    expect(renderToString(createElement(MyStudents))).toContain(
+      `#/glance/${encodeURIComponent(students[0]!.student.id)}`,
+    );
+  });
+
+  it("says a student is no longer shared, with no data", () => {
+    share();
+    const html = renderToString(createElement(AtAGlance, { studentId: "not-shared" }));
+    expect(html).toContain("This student is no longer shared with you.");
   });
 });
