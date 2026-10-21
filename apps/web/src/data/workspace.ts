@@ -484,20 +484,63 @@ export function importText(text: string, mode: "replace" | "add" = "replace"): I
     const n = ws.students.length;
     return { ok: true, message: `Loaded ${n} student${n === 1 ? "" : "s"}.` };
   }
-  const have = new Set(current.students.map((s) => s.id));
-  const students = ws.students.filter((s) => !have.has(s.id));
+  // Every record is taken only if its own id is not already here or earlier in the file, so a
+  // crafted file cannot create two records with the same id.
+  const fresh = <T>(
+    list: T[],
+    id: (r: T) => string,
+    taken: Iterable<string>,
+    ok: (r: T) => boolean,
+  ) => {
+    const seen = new Set(taken);
+    return list.filter((r) => {
+      const k = id(r);
+      if (seen.has(k) || !ok(r)) return false;
+      seen.add(k);
+      return true;
+    });
+  };
+  const students = fresh(
+    ws.students,
+    (r) => r.id,
+    current.students.map((r) => r.id),
+    () => true,
+  );
   const keepS = new Set(students.map((s) => s.id));
-  const ieps = ws.ieps.filter((i) => keepS.has(i.student_id));
+  const ieps = fresh(
+    ws.ieps,
+    (r) => r.id,
+    current.ieps.map((r) => r.id),
+    (r) => keepS.has(r.student_id),
+  );
   const keepI = new Set(ieps.map((i) => i.id));
-  const goals = ws.goals.filter((g) => keepI.has(g.iep_id));
+  const goals = fresh(
+    ws.goals,
+    (r) => r.id,
+    current.goals.map((r) => r.id),
+    (r) => keepI.has(r.iep_id),
+  );
   const keepG = new Set(goals.map((g) => g.id));
+  const plans = fresh(
+    ws.plans,
+    (r) => r.goal_id,
+    current.plans.map((r) => r.goal_id),
+    (r) => keepG.has(r.goal_id),
+  );
+  const keepP = new Set(plans.map((p) => p.goal_id));
+  const points = fresh(
+    ws.points,
+    (r) => r.id,
+    current.points.map((r) => r.id),
+    (r) => keepP.has(r.goal_id),
+  );
   if (students.length > 0)
     commit({
       students: [...current.students, ...students],
       ieps: [...current.ieps, ...ieps],
       goals: [...current.goals, ...goals],
-      plans: [...current.plans, ...ws.plans.filter((p) => keepG.has(p.goal_id))],
-      points: [...current.points, ...ws.points.filter((p) => keepG.has(p.goal_id))],
+      plans: [...current.plans, ...plans],
+      points: [...current.points, ...points],
       served: [...current.served, ...ws.served.filter((x) => keepS.has(x))],
       delegated: [...current.delegated, ...ws.delegated.filter((x) => keepG.has(x))],
     });
