@@ -2,7 +2,11 @@
 // CSP gate for CI: the built page must have no inline scripts, no inline event handlers, no
 // external script/style/font origins, and must carry the strict policy that serve.mjs sends.
 import { readFileSync, readdirSync } from "node:fs";
-import { CSP } from "./csp.mjs";
+import { apiOrigin, cspFor, metaFor } from "./csp.mjs";
+
+// The same build setting the build read; empty for the practice build.
+const origin = apiOrigin(process.env.VITE_GOALLINE_API_ORIGIN);
+const CSP = cspFor(origin);
 
 const dist = new URL("../dist/", import.meta.url);
 const html = readFileSync(new URL("index.html", dist), "utf8");
@@ -23,7 +27,7 @@ if (!CSP.includes("frame-ancestors 'none'") || /unsafe-/.test(CSP))
 
 // Meta policies cannot carry frame-ancestors, so the meta must match the header policy without it.
 const meta = html.match(/http-equiv="Content-Security-Policy"\s+content="([^"]*)"/)?.[1];
-const expectedMeta = CSP.replace(/;\s*frame-ancestors[^;]*/, "");
+const expectedMeta = metaFor(origin);
 if (meta !== expectedMeta) problems.push("CSP meta differs from the header policy");
 
 for (const f of readdirSync(new URL("assets/", dist))) {
