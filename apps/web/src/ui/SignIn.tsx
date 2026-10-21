@@ -7,10 +7,10 @@ export function SignIn() {
   if (step === "landing")
     return (
       <main id="main" className="signin landing">
-        <img className="landing-logo" src="icon.svg" alt="" width="96" height="96" />
+        <img className="landing-logo" src="icon.svg" alt="" width="160" height="160" />
         <h2 className="landing-name">GoalLine</h2>
         <section className="landing-notice" aria-label="Practice data">
-          <h3>Practice data</h3>
+          <h3>Practice data only. Not for real students.</h3>
           <p>Everything in this app is made up. No real student information.</p>
         </section>
         <button
@@ -37,7 +37,7 @@ function PracticePeople({ onBack }: { onBack: () => void }) {
         ‹ Back
       </button>
       <h2 className="page-title">Practice: sign in as a sample user</h2>
-      <p className="meta">Practice build with made-up students. Pick who is signing in.</p>
+      <p className="meta">Practice data only. Not for real students. Pick who is signing in.</p>
       <p className="form-warn" role="note">
         Practice data only: never enter real students. No account or password, and nothing leaves
         this browser. Hiding what a role cannot see is for display only.
