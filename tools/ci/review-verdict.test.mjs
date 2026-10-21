@@ -202,3 +202,11 @@ test("approval workflow: a pull request not aimed at the default branch is never
   assert.match(workflow, /\[ "\$base_ref" != "\$default_branch" \]/);
   assert.match(workflow, /Base is not the default branch: not evaluated/);
 });
+
+test("approval workflow: the trusted review is recognised by its file, not by its run name", () => {
+  assert.match(
+    workflow,
+    /startsWith\(github\.event\.workflow_run\.path, '\.github\/workflows\/claude-review-trusted\.yml'\)/,
+  );
+  assert.doesNotMatch(workflow, /workflow_run\.name == 'Claude PR review \(trusted\)'/);
+});
