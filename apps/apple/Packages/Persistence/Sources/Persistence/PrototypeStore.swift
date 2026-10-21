@@ -48,14 +48,35 @@ public final class PrototypeStore {
     /// The most a practice-data file may hold, so a wrong file is refused before it is parsed.
     public static let maxPracticeFileBytes = 4_000_000
 
-    /// What "Save practice data to a file" writes: the sessions recorded here, nothing else. The
-    /// `synthetic` flag and `app` name let the loader refuse any other file.
+    /// What "Save practice data to a file" writes: the sessions recorded here, the students typed in
+    /// by hand with their caseload links, and the edits made to students. The `synthetic` flag and
+    /// `app` name let the loader refuse any other file. Version 1 files hold sessions only and still
+    /// load; the student fields are absent there.
     private struct PracticeFile: Codable {
         var synthetic: Bool
         var app: String
         var version: Int
         var points: [DataPoint]
+        var students: [Student]?
+        var assignments: [CaseloadAssignment]?
+        var studentEdits: [Student]?
+
+        enum CodingKeys: String, CodingKey {
+            case synthetic, app, version, points, students, assignments
+            case studentEdits = "student_edits"
+        }
     }
+
+    /// What loading a practice-data file changed.
+    public struct PracticeImport: Equatable, Sendable {
+        public var sessions: Int
+        public var students: Int
+        /// Students whose name, grade or school the file changed.
+        public var edits: Int
+    }
+
+    /// The most students a practice-data file may add.
+    public static let maxImportedStudents = 500
 
     private static let practiceFileApp = "goalline-practice"
 
@@ -711,14 +732,29 @@ public final class PrototypeStore {
     /// How many sessions a saved file would hold, so a screen can leave Save off when it is none.
     public var exportableSessionCount: Int { exportablePoints.count }
 
-    /// Every session recorded here for students the signed-in person may see, newest first, as the
-    /// text of a practice-data file. Fake data only; the file says so.
+    /// Sessions, hand-added students and student edits a saved file would hold.
+    public var exportableItemCount: Int {
+        let visibleIDs = Set(visibleStudents.map(\.id))
+        return exportablePoints.count + addedStudents.filter { visibleIDs.contains($0.id) }.count
+            + studentEdits.values.filter { visibleIDs.contains($0.id) }.count
+    }
+
+    /// Every session recorded here for students the signed-in person may see, newest first, with the
+    /// students typed in by hand and the edits to students on that person's list, as the text of a
+    /// practice-data file. Fake data only; the file says so.
     public func exportPracticeData() throws -> Data {
         guard currentStaff != nil else { throw StoreError.notSignedIn }
         guard canExportFiles else { throw StoreError.notAllowed }
+        let visibleIDs = Set(visibleStudents.map(\.id))
+        let students = addedStudents.filter { visibleIDs.contains($0.id) }
+        let studentIDs = Set(students.map(\.id))
         let file = PracticeFile(
-            synthetic: true, app: Self.practiceFileApp, version: 1,
-            points: exportablePoints.sorted { $0.observedAt > $1.observedAt })
+            synthetic: true, app: Self.practiceFileApp, version: 2,
+            points: exportablePoints.sorted { $0.observedAt > $1.observedAt },
+            students: students,
+            assignments: addedAssignments.filter { studentIDs.contains($0.studentID) },
+            studentEdits: studentEdits.values.filter { visibleIDs.contains($0.id) }
+                .sorted { $0.id.uuidString < $1.id.uuidString })
         return try JSONEncoder.coreModels.encode(file)
     }
 
@@ -728,24 +764,120 @@ public final class PrototypeStore {
     /// sessions were new.
     @discardableResult
     public func importPracticeData(_ data: Data) throws -> Int {
-        guard currentStaff != nil else { throw StoreError.notSignedIn }
+        try importPractice(data).sessions
+    }
+
+    /// Like `importPracticeData`, and also adds the students in a version 2 file. Students already
+    /// here are skipped; a file never overwrites or removes one. New students keep their id, name,
+    /// grade and school and take the signed-in person's tenant; birth date and any other field is
+    /// dropped. The director and building coordinator keep the caseload links in the file for known
+    /// staff. Anyone else gets every new student on their own caseload and the file's links for
+    /// other people are ignored, so a file cannot hand students to someone else. An edit applies
+    /// only to a student the signed-in person can see; a file that edits anyone else is refused.
+    /// The file lands whole or not at all.
+    @discardableResult
+    public func importPractice(_ data: Data) throws -> PracticeImport {
+        guard let staff = currentStaff else { throw StoreError.notSignedIn }
         guard canExportFiles else { throw StoreError.notAllowed }
         guard data.count <= Self.maxPracticeFileBytes else { throw FileError.tooLarge }
         guard let file = try? JSONDecoder.coreModels.decode(PracticeFile.self, from: data),
-            file.synthetic, file.app == Self.practiceFileApp, file.version == 1
+            file.synthetic, file.app == Self.practiceFileApp, file.version == 1 || file.version == 2
         else { throw FileError.notAPracticeFile }
-        guard !file.points.isEmpty else { throw FileError.noSessions }
-        let known = Set(dataset.staff.map(\.id))
+        let incoming = file.students ?? []
+        let incomingLinks = file.assignments ?? []
+        let incomingEdits = file.studentEdits ?? []
+        if file.version == 1 && !(incoming.isEmpty && incomingLinks.isEmpty && incomingEdits.isEmpty) {
+            throw FileError.notAPracticeFile
+        }
+        guard !file.points.isEmpty || !incoming.isEmpty || !incomingEdits.isEmpty else {
+            throw FileError.noSessions
+        }
+        guard incoming.count <= Self.maxImportedStudents,
+            incomingLinks.count <= Self.maxImportedStudents * 4,
+            incomingEdits.count <= Self.maxImportedStudents * 2
+        else { throw FileError.notAPracticeFile }
+        if !incoming.isEmpty || !incomingEdits.isEmpty {
+            guard canManageStudents else { throw StoreError.notAllowed }
+        }
         // The same checks as a session delivered by the app, except the recorder: a file may hold
         // sessions another person recorded on this device, as long as they are in the district.
-        guard canRecordData else { throw StoreError.notAllowed }
+        if !file.points.isEmpty { guard canRecordData else { throw StoreError.notAllowed } }
+
+        let before = (addedStudents, addedAssignments, studentEdits, addedPoints)
+        var finished = false
+        defer {
+            if !finished { (addedStudents, addedAssignments, studentEdits, addedPoints) = before }
+        }
+
+        let staffIDs = Set(dataset.staff.map(\.id))
+        let schoolIDs = Set(dataset.schools.map(\.id))
+        let knownStudents = Set(allStudents.map(\.id))
+        var freshStudents: [Student] = []
+        var freshIDs = Set<UUID>()
+        for student in incoming where !knownStudents.contains(student.id) {
+            guard freshIDs.insert(student.id).inserted, student.tenantID == staff.tenantID,
+                schoolIDs.contains(student.schoolID),
+                let fields = try? Self.cleaned(
+                    firstName: student.firstName, lastName: student.lastName,
+                    preferredName: student.preferredName, grade: student.grade)
+            else { throw FileError.notAPracticeFile }
+            freshStudents.append(
+                Student(
+                    id: student.id, tenantID: staff.tenantID, schoolID: student.schoolID,
+                    firstName: fields.first, lastName: fields.last, preferredName: fields.preferred,
+                    grade: fields.grade))
+        }
+
+        let seesAll = staff.role == .spedDirector || staff.role == .buildingCoordinator
+        var linkIDs = Set((dataset.caseloadAssignments + addedAssignments).map(\.id))
+        var freshLinks: [CaseloadAssignment] = []
+        for link in incomingLinks where freshIDs.contains(link.studentID) {
+            guard link.relationship == .caseload, link.tenantID == staff.tenantID,
+                staffIDs.contains(link.staffID), staffIDs.contains(link.grantedBy),
+                seesAll || link.staffID == staff.id, linkIDs.insert(link.id).inserted
+            else { continue }
+            freshLinks.append(link)
+        }
+        if !seesAll {
+            for student in freshStudents
+            where !freshLinks.contains(where: { $0.studentID == student.id && $0.staffID == staff.id }) {
+                freshLinks.append(
+                    CaseloadAssignment(
+                        id: UUIDv7.make(), tenantID: staff.tenantID, staffID: staff.id,
+                        studentID: student.id, relationship: .caseload, grantedBy: staff.id,
+                        startDate: calendarToday()))
+            }
+        }
+        addedStudents.append(contentsOf: freshStudents)
+        addedAssignments.append(contentsOf: freshLinks)
+
+        var editCount = 0
+        for edit in incomingEdits {
+            guard let base = visibleStudents.first(where: { $0.id == edit.id }),
+                schoolIDs.contains(edit.schoolID),
+                let fields = try? Self.cleaned(
+                    firstName: edit.firstName, lastName: edit.lastName,
+                    preferredName: edit.preferredName, grade: edit.grade)
+            else { throw FileError.notAPracticeFile }
+            var changed = base
+            changed.firstName = fields.first
+            changed.lastName = fields.last
+            changed.preferredName = fields.preferred
+            changed.grade = fields.grade
+            changed.schoolID = edit.schoolID
+            if changed != base {
+                studentEdits[edit.id] = changed
+                editCount += 1
+            }
+        }
+
         let visible = Set(visibleStudents.map(\.id))
         var seen = Set(addedPoints.map(\.id))
         var fresh: [DataPoint] = []
         for point in file.points where !seen.contains(point.id) {
             guard let goal = dataset.goals.first(where: { $0.id == point.goalID }),
                 let owner = student(for: goal), visible.contains(owner.id),
-                point.tenantID == goal.tenantID, known.contains(point.collectorID)
+                point.tenantID == goal.tenantID, staffIDs.contains(point.collectorID)
             else { throw FileError.notAPracticeFile }
             guard let plan = plan(for: goal), plan.id == point.planID else {
                 throw FileError.notAPracticeFile
@@ -758,16 +890,20 @@ public final class PrototypeStore {
             seen.insert(point.id)
             fresh.append(point)
         }
-        guard !fresh.isEmpty else { return 0 }
-        let before = addedPoints
+        let result = PracticeImport(
+            sessions: fresh.count, students: freshStudents.count, edits: editCount)
+        guard result != PracticeImport(sessions: 0, students: 0, edits: 0) else {
+            finished = true
+            return result
+        }
         addedPoints.append(contentsOf: fresh)
         do {
             try write()
         } catch {
-            addedPoints = before
             throw StoreError.saveFailed
         }
-        return fresh.count
+        finished = true
+        return result
     }
 
     /// Stores the teacher's approved answer for a goal, replacing any earlier one.

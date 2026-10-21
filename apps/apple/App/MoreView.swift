@@ -36,11 +36,11 @@ struct MoreView: View {
                 Section {
                     Text(
                         "The file holds made-up data only. Load only files you saved from this app; "
-                            + "loading adds the sessions that are not already here."
+                            + "loading adds the sessions and students that are not already here."
                     )
                     .font(.footnote).foregroundStyle(Theme.muted)
                     Button("Save practice data to a file") { prepareExport() }
-                        .disabled(store.exportableSessionCount == 0)
+                        .disabled(store.exportableItemCount == 0)
                         .frame(minHeight: Spacing.minTapTarget, alignment: .leading)
                         .accessibilityIdentifier(AccessibilityID.savePracticeFile)
                     Button("Load from a file") { importing = true }
@@ -122,14 +122,27 @@ struct MoreView: View {
             return
         }
         do {
-            let added = try store.importPracticeData(data)
-            fileMessage = "Loaded \(added) session\(added == 1 ? "" : "s")."
+            let result = try store.importPractice(data)
+            var parts: [String] = []
+            if result.sessions > 0 {
+                parts.append("\(result.sessions) session\(result.sessions == 1 ? "" : "s")")
+            }
+            if result.students > 0 {
+                parts.append("\(result.students) student\(result.students == 1 ? "" : "s")")
+            }
+            if result.edits > 0 {
+                parts.append("\(result.edits) student change\(result.edits == 1 ? "" : "s")")
+            }
+            fileMessage =
+                parts.isEmpty
+                ? "Everything in that file was already here."
+                : "Loaded " + parts.joined(separator: ", ") + "."
         } catch PrototypeStore.FileError.tooLarge {
             fileMessage = "That file is too large."
         } catch PrototypeStore.FileError.noSessions {
-            fileMessage = "That file has no sessions."
+            fileMessage = "That file has nothing to load."
         } catch PrototypeStore.StoreError.saveFailed {
-            fileMessage = "The sessions could not be saved. Nothing was changed."
+            fileMessage = "The file could not be saved. Nothing was changed."
         } catch {
             fileMessage = "That file is not a practice-data export for the students you can see."
         }

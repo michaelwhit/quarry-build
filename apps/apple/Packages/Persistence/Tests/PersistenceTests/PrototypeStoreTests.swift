@@ -467,6 +467,75 @@ struct PrototypeStoreTests {
         }
     }
 
+    @Test("a version 2 file carries hand-added students and edits, and loads back once")
+    func practiceFileStudentsRoundTrip() throws {
+        let store = try makeStore()
+        store.signIn(as: try staff(store, .spedDirector))
+        let school = try #require(store.dataset.schools.first)
+        let added = try store.addStudent(
+            firstName: "Ava", lastName: "Stone", grade: "3", schoolID: school.id)
+        let district = try #require(store.visibleStudents.first { $0.id != added.id })
+        let edited = try store.updateStudent(
+            id: district.id, firstName: district.firstName, lastName: district.lastName,
+            preferredName: "Sunny", grade: district.grade, schoolID: district.schoolID)
+        #expect(store.exportableItemCount == 2)
+        let file = try store.exportPracticeData()
+
+        store.resetLocalData()
+        #expect(store.exportableItemCount == 0)
+        let first = try store.importPractice(file)
+        #expect(first == PrototypeStore.PracticeImport(sessions: 0, students: 1, edits: 1))
+        #expect(store.visibleStudents.contains { $0.id == added.id && $0.firstName == "Ava" })
+        #expect(store.visibleStudents.first { $0.id == district.id }?.preferredName == "Sunny")
+        #expect(edited.preferredName == "Sunny")
+
+        let again = try store.importPractice(file)
+        #expect(again == PrototypeStore.PracticeImport(sessions: 0, students: 0, edits: 0))
+        #expect(store.addedStudents.count == 1)
+    }
+
+    @Test("a case manager loading a file gets the students on their own caseload only")
+    func practiceFileStudentsStayWithTheLoader() throws {
+        let store = try makeStore()
+        let director = try staff(store, .spedDirector)
+        store.signIn(as: director)
+        let school = try #require(store.dataset.schools.first)
+        let added = try store.addStudent(
+            firstName: "Ava", lastName: "Stone", grade: "3", schoolID: school.id)
+        let file = try store.exportPracticeData()
+
+        store.resetLocalData()
+        let manager = try staff(store, .caseManager)
+        store.signIn(as: manager)
+        #expect(try store.importPractice(file).students == 1)
+        #expect(store.visibleStudents.contains { $0.id == added.id })
+        #expect(store.addedAssignments.allSatisfy { $0.staffID == manager.id })
+        store.signIn(as: director)
+        #expect(store.addedAssignments.filter { $0.staffID == director.id }.isEmpty)
+    }
+
+    @Test("a student in a version 1 file, or from another district, refuses the whole file")
+    func practiceFileStudentsRefused() throws {
+        let store = try makeStore()
+        let director = try staff(store, .spedDirector)
+        store.signIn(as: director)
+        let school = try #require(store.dataset.schools.first)
+        _ = try store.addStudent(firstName: "Ava", lastName: "Stone", grade: "3", schoolID: school.id)
+        let text = String(decoding: try store.exportPracticeData(), as: UTF8.self)
+        store.resetLocalData()
+
+        let asV1 = text.replacingOccurrences(of: "\"version\":2", with: "\"version\":1")
+        #expect(throws: PrototypeStore.FileError.notAPracticeFile) {
+            try store.importPractice(Data(asV1.utf8))
+        }
+        let foreign = text.replacingOccurrences(of: director.tenantID.uuidString, with: UUID().uuidString)
+        #expect(throws: PrototypeStore.FileError.notAPracticeFile) {
+            try store.importPractice(Data(foreign.utf8))
+        }
+        #expect(store.addedStudents.isEmpty)
+        #expect(store.addedAssignments.isEmpty)
+    }
+
     @Test("a file with one bad session loads nothing")
     func practiceFileAllOrNothing() throws {
         let store = try makeStore()
