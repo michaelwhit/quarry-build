@@ -18,7 +18,9 @@ import {
   subscribeRole,
 } from "./data/roles.ts";
 import { safeDecode } from "./data/hash.ts";
+import { canSeeOverdue } from "./data/overdue.ts";
 import { AtAGlance, MyStudents } from "./ui/Glance.tsx";
+import { Overdue } from "./ui/Overdue.tsx";
 import { Privacy, SignIn } from "./ui/SignIn.tsx";
 import { getVersion, getWorkspace, setDelegated, setServed, subscribe } from "./data/workspace.ts";
 
@@ -290,6 +292,12 @@ export function App() {
     <AtAGlance studentId={decode(glance[1])} />
   ) : delegate && !delegateOk ? (
     <Today />
+  ) : hash === "#/overdue" ? (
+    canSeeOverdue(role) ? (
+      <Overdue />
+    ) : (
+      <NotAllowed />
+    )
   ) : t?.[1] && t[2] ? (
     <TrackGoal studentId={t[1]} goalId={t[2]} />
   ) : hash.startsWith("#/track") ? (

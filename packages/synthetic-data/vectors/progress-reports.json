@@ -1,0 +1,193 @@
+{
+  "rule": "A progress report is overdue when it is not filed (state not filed_attested or verified_by_pdf) and today is on or after the first school day after its due date. Weekends and the calendar's no-school days (breaks, holidays, staff days) are never late days. days_overdue counts school days from first_overdue_day through today, both included, and is 0 when not overdue. Decided from the overdue progress reports spec: counting starts from the next school day.",
+  "open_questions": [],
+  "calendar": {
+    "school_year": "2026-27",
+    "no_school_days": [
+      "2026-09-07",
+      "2026-10-12",
+      "2026-11-09",
+      "2026-11-25",
+      "2026-11-26",
+      "2026-11-27",
+      "2026-12-21",
+      "2026-12-22",
+      "2026-12-23",
+      "2026-12-24",
+      "2026-12-25",
+      "2026-12-28",
+      "2026-12-29",
+      "2026-12-30",
+      "2026-12-31",
+      "2027-01-01",
+      "2027-01-04",
+      "2027-01-18",
+      "2027-02-15",
+      "2027-03-22",
+      "2027-03-23",
+      "2027-03-24",
+      "2027-03-25",
+      "2027-03-26",
+      "2027-05-31"
+    ],
+    "note": "Fake dates for the demo. The district's real 2026-27 calendar replaces them."
+  },
+  "state_labels": {
+    "not_started": "Not started",
+    "drafted": "Draft saved",
+    "approved": "Approved, ready to copy",
+    "copied": "Copied, not yet marked filed",
+    "filed_attested": null,
+    "verified_by_pdf": null
+  },
+  "next_school_day_cases": [
+    {
+      "name": "Friday to Monday",
+      "after": "2026-10-23",
+      "next": "2026-10-26"
+    },
+    {
+      "name": "the Nov 9 staff day is skipped",
+      "after": "2026-11-06",
+      "next": "2026-11-10"
+    },
+    {
+      "name": "Thanksgiving break",
+      "after": "2026-11-24",
+      "next": "2026-11-30"
+    },
+    {
+      "name": "winter break",
+      "after": "2026-12-18",
+      "next": "2027-01-05"
+    }
+  ],
+  "cases": [
+    {
+      "name": "due date itself is not overdue",
+      "state": "not_started",
+      "due_date": "2026-10-23",
+      "today": "2026-10-23",
+      "first_overdue_day": "2026-10-26",
+      "overdue": false,
+      "days_overdue": 0
+    },
+    {
+      "name": "the weekend after the due date is not overdue",
+      "state": "drafted",
+      "due_date": "2026-10-23",
+      "today": "2026-10-24",
+      "first_overdue_day": "2026-10-26",
+      "overdue": false,
+      "days_overdue": 0
+    },
+    {
+      "name": "first school day after the due date is day 1",
+      "state": "not_started",
+      "due_date": "2026-10-23",
+      "today": "2026-10-26",
+      "first_overdue_day": "2026-10-26",
+      "overdue": true,
+      "days_overdue": 1
+    },
+    {
+      "name": "phone demo day (Fri Oct 30) is day 5",
+      "state": "approved",
+      "due_date": "2026-10-23",
+      "today": "2026-10-30",
+      "first_overdue_day": "2026-10-26",
+      "overdue": true,
+      "days_overdue": 5
+    },
+    {
+      "name": "Nov 9 staff day does not count (Nov 16 demo)",
+      "state": "copied",
+      "due_date": "2026-10-23",
+      "today": "2026-11-16",
+      "first_overdue_day": "2026-10-26",
+      "overdue": true,
+      "days_overdue": 15
+    },
+    {
+      "name": "filed reports are never overdue",
+      "state": "filed_attested",
+      "due_date": "2026-10-23",
+      "today": "2026-11-16",
+      "first_overdue_day": "2026-10-26",
+      "overdue": false,
+      "days_overdue": 0
+    },
+    {
+      "name": "checked-against-PDF reports are never overdue",
+      "state": "verified_by_pdf",
+      "due_date": "2026-10-23",
+      "today": "2026-11-16",
+      "first_overdue_day": "2026-10-26",
+      "overdue": false,
+      "days_overdue": 0
+    },
+    {
+      "name": "before the due date",
+      "state": "not_started",
+      "due_date": "2026-10-23",
+      "today": "2026-10-20",
+      "first_overdue_day": "2026-10-26",
+      "overdue": false,
+      "days_overdue": 0
+    },
+    {
+      "name": "Thanksgiving break days do not count",
+      "state": "drafted",
+      "due_date": "2026-11-23",
+      "today": "2026-11-30",
+      "first_overdue_day": "2026-11-24",
+      "overdue": true,
+      "days_overdue": 2
+    },
+    {
+      "name": "a due date inside the break moves the first overdue day past it",
+      "state": "not_started",
+      "due_date": "2026-11-25",
+      "today": "2026-11-29",
+      "first_overdue_day": "2026-11-30",
+      "overdue": false,
+      "days_overdue": 0
+    },
+    {
+      "name": "a due date inside the break, first school day back is day 1",
+      "state": "not_started",
+      "due_date": "2026-11-25",
+      "today": "2026-11-30",
+      "first_overdue_day": "2026-11-30",
+      "overdue": true,
+      "days_overdue": 1
+    },
+    {
+      "name": "winter break pushes the first overdue day to Jan 5",
+      "state": "not_started",
+      "due_date": "2026-12-18",
+      "today": "2027-01-04",
+      "first_overdue_day": "2027-01-05",
+      "overdue": false,
+      "days_overdue": 0
+    },
+    {
+      "name": "students back Jan 5 is day 1",
+      "state": "not_started",
+      "due_date": "2026-12-18",
+      "today": "2027-01-05",
+      "first_overdue_day": "2027-01-05",
+      "overdue": true,
+      "days_overdue": 1
+    },
+    {
+      "name": "Q2 report due Jan 8 is not overdue in the Nov 16 demo",
+      "state": "not_started",
+      "due_date": "2027-01-08",
+      "today": "2026-11-16",
+      "first_overdue_day": "2027-01-11",
+      "overdue": false,
+      "days_overdue": 0
+    }
+  ]
+}
