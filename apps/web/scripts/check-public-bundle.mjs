@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // The public practice build must carry no sign-in server code. Run after `vite build` without
-// VITE_GOALLINE_API. Fails if any trace of the server routes or cookie/token handling is found.
+// VITE_GOALLINE_API_ORIGIN. Fails if any trace of the server routes or cookie/token handling is found.
 import { readFileSync, readdirSync } from "node:fs";
 
 const dist = new URL("../dist/", import.meta.url);

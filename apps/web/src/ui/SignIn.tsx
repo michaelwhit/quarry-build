@@ -1,5 +1,14 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { type RoleId, ROLES, agreeToPrivacy, roleById, setRole } from "../data/roles.ts";
+
+// Real sign-in exists only in a build made with a sign-in server address (VITE_GOALLINE_API_ORIGIN).
+// In every other build these are null, so the bundler drops the auth code and the practice picker is all there is.
+const AuthPanel = import.meta.env.VITE_GOALLINE_API_ORIGIN
+  ? lazy(() => import("../auth/AuthPanel.tsx").then((m) => ({ default: m.AuthPanel })))
+  : null;
+const SessionCheck = import.meta.env.VITE_GOALLINE_API_ORIGIN
+  ? lazy(() => import("../auth/AuthPanel.tsx").then((m) => ({ default: m.SessionCheck })))
+  : null;
 
 /** First screen when signed out: logo, name, slogan and one Sign in button. */
 export function SignIn() {
@@ -11,6 +20,11 @@ export function SignIn() {
         <h2 className="landing-name">GoalLine</h2>
         <p className="landing-slogan">Made by SPED staff for SPED staff</p>
         <p className="landing-affil">Not affiliated with any school district or state agency.</p>
+        {SessionCheck && (
+          <Suspense fallback={null}>
+            <SessionCheck />
+          </Suspense>
+        )}
         <button
           type="button"
           className="save signin-main"
@@ -23,6 +37,12 @@ export function SignIn() {
           See how it works
         </a>
       </main>
+    );
+  if (AuthPanel)
+    return (
+      <Suspense fallback={null}>
+        <AuthPanel onBack={() => setStep("landing")} />
+      </Suspense>
     );
   return <PracticePeople onBack={() => setStep("landing")} />;
 }
