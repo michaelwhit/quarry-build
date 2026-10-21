@@ -25,6 +25,9 @@ public struct SyntheticDataset: Codable, Sendable {
     public var goalDelegations: [GoalDelegation] = []
     public var dataPoints: [DataPoint]
     public var reportingPeriods: [ReportingPeriod]
+    /// Absent in older files, which then have no progress reports.
+    public var schoolCalendar: SchoolCalendar?
+    public var progressReports: [ProgressReport] = []
 
     enum CodingKeys: String, CodingKey {
         case synthetic, seed, tenant, schools, staff, students, ieps, goals
@@ -34,6 +37,8 @@ public struct SyntheticDataset: Codable, Sendable {
         case goalDelegations = "goal_delegations"
         case dataPoints = "data_points"
         case reportingPeriods = "reporting_periods"
+        case schoolCalendar = "school_calendar"
+        case progressReports = "progress_reports"
     }
 
     public init(from decoder: Decoder) throws {
@@ -53,6 +58,9 @@ public struct SyntheticDataset: Codable, Sendable {
             try c.decodeIfPresent([GoalDelegation].self, forKey: .goalDelegations) ?? []
         dataPoints = try c.decode([DataPoint].self, forKey: .dataPoints)
         reportingPeriods = try c.decode([ReportingPeriod].self, forKey: .reportingPeriods)
+        schoolCalendar = try c.decodeIfPresent(SchoolCalendar.self, forKey: .schoolCalendar)
+        progressReports =
+            try c.decodeIfPresent([ProgressReport].self, forKey: .progressReports) ?? []
     }
 
     /// Decodes a dataset and refuses anything not marked synthetic at both the file and the
