@@ -6,7 +6,7 @@ const read = (f: string) => readFileSync(new URL(f, dir), "utf8");
 
 describe("public tour page", () => {
   const html = read("index.html").replace(/\s+/g, " ");
-  const js = read("tour.js");
+  const js = read("tour.js") + read("boot.js");
 
   it("is a static, no-index page with no form, storage, network call or third-party request", () => {
     expect(html).toContain('name="robots" content="noindex, nofollow"');
@@ -42,8 +42,9 @@ describe("public tour page", () => {
   });
 
   it("has images with no embedded metadata", () => {
-    for (const f of readdirSync(dir)) {
-      if (!f.endsWith(".png")) continue;
+    const pngs = readdirSync(new URL("img/", dir)).map((f) => `img/${f}`);
+    expect(pngs.length).toBeGreaterThan(0);
+    for (const f of pngs) {
       const b = readFileSync(new URL(f, dir));
       const chunks: string[] = [];
       for (let i = 8; i < b.length; i += 12 + b.readUInt32BE(i))
@@ -53,6 +54,38 @@ describe("public tour page", () => {
       );
     }
     expect(read("goal-bank-preview.svg")).not.toMatch(/<metadata|c2pa|xmp/i);
+  });
+
+  it("keeps every picture small enough for a quick page", () => {
+    for (const f of readdirSync(new URL("img/", dir))) {
+      const size = readFileSync(new URL(`img/${f}`, dir)).length;
+      expect(size, f).toBeLessThan(250_000);
+    }
+  });
+
+  it("shows the exact device line and the web-app label, and no store, date or system claims", () => {
+    expect(html).toContain(
+      "Today this is the web app, which runs in a web browser. Mac and iPhone apps are planned.",
+    );
+    const text = html.replace(/<[^>]+>/g, " ").toLowerCase();
+    for (const word of [
+      "app store",
+      "download",
+      "google play",
+      "windows app",
+      "android",
+      "coming in",
+    ])
+      expect(text).not.toContain(word);
+    // Every picture is labelled, and every picture file the page names exists in both colours.
+    const labels = html.match(/Web app, practice data/g) ?? [];
+    const figures = html.match(/<figure class="shot/g) ?? [];
+    expect(labels.length).toBe(figures.length - 1); // the goal-bank drawing is labelled Preview
+    for (const m of html.matchAll(/src="(img\/[^"]+)"/g)) read(m[1] as string);
+  });
+
+  it("has no inline style or script and no data: images", () => {
+    expect(html).not.toMatch(/\sstyle\s*=|data:image/i);
   });
 
   it("pairs the slogan with the not-affiliated line wherever it appears", () => {

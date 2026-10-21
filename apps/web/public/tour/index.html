@@ -11,6 +11,7 @@
     <meta name="color-scheme" content="dark light" />
     <meta name="theme-color" content="#0B1220" />
     <link rel="icon" href="../icon.svg" type="image/svg+xml" />
+    <script src="boot.js"></script>
     <link rel="stylesheet" href="tour.css" />
     <title>GoalLine: see how it works</title>
   </head>
@@ -19,6 +20,22 @@
       <a class="link" href="../">Back</a>
       <a class="link" href="../">Sign in</a>
     </header>
+    <section class="device-bar" aria-label="Choose how to view the pictures">
+      <div class="switch" hidden>
+        <div role="group" aria-label="Device">
+          <button type="button" data-device="computer">Computer</button>
+          <button type="button" data-device="tablet">Tablet</button>
+          <button type="button" data-device="phone">Phone</button>
+        </div>
+        <div role="group" aria-label="Colors">
+          <button type="button" data-theme="light">Light</button>
+          <button type="button" data-theme="dark">Dark</button>
+        </div>
+      </div>
+      <p class="note truth">
+        Today this is the web app, which runs in a web browser. Mac and iPhone apps are planned.
+      </p>
+    </section>
     <main id="tour">
       <section class="panel intro" aria-label="About this preview">
         <img class="logo" src="../icon.svg" alt="" width="64" height="64" />
@@ -36,73 +53,239 @@
 
       <section class="panel" aria-labelledby="p1">
         <h2 id="p1">Record data</h2>
-        <figure class="phone">
-          <a href="record-data.png"
-            ><img
-              src="record-data.png"
-              width="390"
-              height="780"
-              alt="Practice screen for recording a session on a goal, with a large count button and a Save button"
-          /></a>
+        <figure class="shot computer" data-device="computer">
+          <figcaption class="dev">Computer view</figcaption>
+          <img
+            class="img-dark"
+            src="img/record-computer-dark.png"
+            width="1440"
+            height="900"
+            loading="lazy"
+            alt="Practice screen for recording a session on a goal, with a large count button and a Save session button"
+          />
+          <img
+            class="img-light"
+            src="img/record-computer-light.png"
+            width="1440"
+            height="900"
+            loading="lazy"
+            alt="Practice screen for recording a session on a goal, with a large count button and a Save session button"
+          />
+          <p class="pic-label">Web app, practice data</p>
+        </figure>
+        <figure class="shot tablet" data-device="tablet">
+          <figcaption class="dev">Tablet view</figcaption>
+          <img
+            class="img-dark"
+            src="img/record-tablet-dark.png"
+            width="820"
+            height="1180"
+            loading="lazy"
+            alt="Practice screen for recording a session on a goal, with a large count button and a Save session button"
+          />
+          <img
+            class="img-light"
+            src="img/record-tablet-light.png"
+            width="820"
+            height="1180"
+            loading="lazy"
+            alt="Practice screen for recording a session on a goal, with a large count button and a Save session button"
+          />
+          <p class="pic-label">Web app, practice data</p>
+        </figure>
+        <figure class="shot phone" data-device="phone">
+          <figcaption class="dev">Phone view</figcaption>
+          <img
+            class="img-dark"
+            src="img/record-phone-dark.png"
+            width="390"
+            height="844"
+            loading="lazy"
+            alt="Practice screen for recording a session on a goal, with a large count button and a Save session button"
+          />
+          <img
+            class="img-light"
+            src="img/record-phone-light.png"
+            width="390"
+            height="844"
+            loading="lazy"
+            alt="Practice screen for recording a session on a goal, with a large count button and a Save session button"
+          />
+          <p class="pic-label">Web app, practice data</p>
         </figure>
         <p class="caption">Teachers record data in seconds.</p>
       </section>
 
       <section class="panel" aria-labelledby="p2">
         <h2 id="p2">The graph</h2>
-        <figure class="wide">
-          <a href="graph.png"
-            ><img
-              src="graph.png"
-              width="900"
-              height="975"
-              alt="Practice goal with a line graph of sessions, a dashed goal line and a dotted trend line"
-          /></a>
-          <figcaption>Tap the picture to see it larger.</figcaption>
+        <figure class="shot computer" data-device="computer">
+          <figcaption class="dev">Computer view</figcaption>
+          <img
+            class="img-dark"
+            src="img/graph-computer-dark.png"
+            width="1440"
+            height="900"
+            loading="lazy"
+            alt="Practice goal with a line graph of sessions, a dashed goal line and a dotted trend line"
+          />
+          <img
+            class="img-light"
+            src="img/graph-computer-light.png"
+            width="1440"
+            height="900"
+            loading="lazy"
+            alt="Practice goal with a line graph of sessions, a dashed goal line and a dotted trend line"
+          />
+          <p class="pic-label">Web app, practice data</p>
+        </figure>
+        <figure class="shot tablet" data-device="tablet">
+          <figcaption class="dev">Tablet view</figcaption>
+          <img
+            class="img-dark"
+            src="img/graph-tablet-dark.png"
+            width="820"
+            height="1180"
+            loading="lazy"
+            alt="Practice goal with a line graph of sessions, a dashed goal line and a dotted trend line"
+          />
+          <img
+            class="img-light"
+            src="img/graph-tablet-light.png"
+            width="820"
+            height="1180"
+            loading="lazy"
+            alt="Practice goal with a line graph of sessions, a dashed goal line and a dotted trend line"
+          />
+          <p class="pic-label">Web app, practice data</p>
+        </figure>
+        <figure class="shot phone" data-device="phone">
+          <figcaption class="dev">Phone view</figcaption>
+          <img
+            class="img-dark"
+            src="img/graph-phone-dark.png"
+            width="390"
+            height="844"
+            loading="lazy"
+            alt="Practice goal with a line graph of sessions, a dashed goal line and a dotted trend line"
+          />
+          <img
+            class="img-light"
+            src="img/graph-phone-light.png"
+            width="390"
+            height="844"
+            loading="lazy"
+            alt="Practice goal with a line graph of sessions, a dashed goal line and a dotted trend line"
+          />
+          <p class="pic-label">Web app, practice data</p>
         </figure>
         <p class="caption">The graph builds itself from what was recorded.</p>
       </section>
 
       <section class="panel" aria-labelledby="p3">
         <h2 id="p3">Goal bank <span class="tag">Preview</span></h2>
-        <figure class="wide">
+        <figure class="shot wide" data-only>
           <img
             src="goal-bank-preview.svg"
             width="900"
             height="560"
             alt="Preview drawing of a goal bank with two lines of sample goal wording and Add buttons"
           />
-          <figcaption>A drawing of a screen that is planned, not a built screen.</figcaption>
+          <figcaption class="drawing">
+            A drawing of a screen that is planned, not a built screen.
+          </figcaption>
         </figure>
         <p class="caption">Start from sample goal wording.</p>
       </section>
 
       <section class="panel" aria-labelledby="p4">
         <h2 id="p4">Director overview</h2>
-        <figure class="wide">
-          <a href="director-overview.png"
-            ><img
-              src="director-overview.png"
-              width="900"
-              height="720"
-              alt="Practice home screen with the number of students and goals and how many are on track"
-          /></a>
+        <figure class="shot computer" data-device="computer">
+          <figcaption class="dev">Computer view</figcaption>
+          <img
+            class="img-dark"
+            src="img/director-computer-dark.png"
+            width="1440"
+            height="900"
+            loading="lazy"
+            alt="Practice home screen for the director with the number of students and goals and how many are on track"
+          />
+          <img
+            class="img-light"
+            src="img/director-computer-light.png"
+            width="1440"
+            height="900"
+            loading="lazy"
+            alt="Practice home screen for the director with the number of students and goals and how many are on track"
+          />
+          <p class="pic-label">Web app, practice data</p>
+        </figure>
+        <figure class="shot tablet" data-device="tablet">
+          <figcaption class="dev">Tablet view</figcaption>
+          <img
+            class="img-dark"
+            src="img/director-tablet-dark.png"
+            width="820"
+            height="1180"
+            loading="lazy"
+            alt="Practice home screen for the director with the number of students and goals and how many are on track"
+          />
+          <img
+            class="img-light"
+            src="img/director-tablet-light.png"
+            width="820"
+            height="1180"
+            loading="lazy"
+            alt="Practice home screen for the director with the number of students and goals and how many are on track"
+          />
+          <p class="pic-label">Web app, practice data</p>
+        </figure>
+        <figure class="shot phone" data-device="phone">
+          <figcaption class="dev">Phone view</figcaption>
+          <img
+            class="img-dark"
+            src="img/director-phone-dark.png"
+            width="390"
+            height="844"
+            loading="lazy"
+            alt="Practice home screen for the director with the number of students and goals and how many are on track"
+          />
+          <img
+            class="img-light"
+            src="img/director-phone-light.png"
+            width="390"
+            height="844"
+            loading="lazy"
+            alt="Practice home screen for the director with the number of students and goals and how many are on track"
+          />
+          <p class="pic-label">Web app, practice data</p>
         </figure>
         <p class="caption">The director sees every caseload in one place.</p>
       </section>
 
       <section class="panel" aria-labelledby="p5">
         <h2 id="p5">Paraprofessional view</h2>
-        <figure class="phone">
-          <a href="para-view.png"
-            ><img
-              src="para-view.png"
-              width="390"
-              height="780"
-              alt="Practice phone screen listing a few goals with first names only and a Start a session button"
-          /></a>
+        <figure class="shot phone" data-only data-device="phone">
+          <figcaption class="dev">Phone view</figcaption>
+          <img
+            class="img-dark"
+            src="img/para-phone-dark.png"
+            width="390"
+            height="844"
+            loading="lazy"
+            alt="Practice phone screen for a paraprofessional listing a few goals with first names only and Start a session buttons"
+          />
+          <img
+            class="img-light"
+            src="img/para-phone-light.png"
+            width="390"
+            height="844"
+            loading="lazy"
+            alt="Practice phone screen for a paraprofessional listing a few goals with first names only and Start a session buttons"
+          />
+          <p class="pic-label">Web app, practice data</p>
         </figure>
         <p class="caption">In this preview, paras see only the goals they were given.</p>
+        <p class="note">In this preview, paras use a phone.</p>
       </section>
 
       <section class="panel planned" aria-labelledby="p6">
