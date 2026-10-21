@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { STATUS_LABEL, type GoalStatus } from "./data/derive.ts";
 import { dataTotals, displayName, districtName, studentById, students } from "./data/district.ts";
 import { Chip } from "./ui/Chip.tsx";
@@ -37,6 +37,24 @@ function useRoute(): string {
     return () => window.removeEventListener("hashchange", on);
   }, []);
   return hash;
+}
+
+/** After a screen change, put keyboard and screen-reader focus on the new screen's heading and name the page. */
+function useAnnounceRoute(hash: string, signedIn: boolean): void {
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    if (document.querySelector('[role="dialog"]')) return;
+    const heading = document.querySelector<HTMLElement>("main h2");
+    document.title = heading?.textContent ? `${heading.textContent} · GoalLine` : "GoalLine";
+    if (heading) {
+      heading.tabIndex = -1;
+      heading.focus({ preventScroll: true });
+    }
+  }, [hash, signedIn]);
 }
 
 const TABS = [
@@ -280,6 +298,7 @@ export function App() {
   useSyncExternalStore(subscribe, getVersion);
   useSyncExternalStore(subscribeRole, getRoleVersion);
   const role = getRole();
+  useAnnounceRoute(hash, role !== null);
   const allow = (a: Parameters<typeof can>[1]) => can(role, a);
   const g = /^#\/student\/([^/]+)\/add-goal$/.exec(hash);
   const rp = /^#\/student\/([^/]+)\/report$/.exec(hash);
@@ -403,9 +422,9 @@ export function App() {
       )}
       {role && (
         <>
-          <div className="watermark" role="note">
+          <aside className="watermark" aria-label="Test data notice">
             TEST DATA · fake students only
-          </div>
+          </aside>
           <div className="watermark-bg" aria-hidden="true">
             <span>TEST DATA</span>
           </div>
