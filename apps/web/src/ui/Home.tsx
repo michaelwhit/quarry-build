@@ -134,8 +134,9 @@ export function shortGoal(text: string, max = 100): string {
   return `${(at > 40 ? cut.slice(0, at) : cut).trimEnd()}…`;
 }
 
-/** What paras and gen-ed teachers see: a card per shared goal and one button to start. */
+/** What paras and gen-ed teachers see: a card per shared goal. Paras get a button to start; gen-ed teachers read only. */
 function DelegateToday() {
+  const role = getRole();
   const rows = students.flatMap((s) => s.goals.map((g) => ({ s, g })));
   return (
     <>
@@ -155,9 +156,11 @@ function DelegateToday() {
                   <p>{g.goal.statement}</p>
                 </details>
               )}
-              <a className="btn save" href={`#/track/${s.student.id}/${g.goal.id}`}>
-                Start a session
-              </a>
+              {role === "paraprofessional" && (
+                <a className="btn save" href={`#/track/${s.student.id}/${g.goal.id}`}>
+                  Start a session
+                </a>
+              )}
             </li>
           ))}
         </ul>
@@ -252,7 +255,7 @@ export function More() {
             Loading and saving practice data is for the director role. Anyone can clear what is
             stored in this browser. Signing out keeps it.
           </p>
-          <div className="actions">
+          <div className="actions stack">
             {armed === "clear" ? (
               <>
                 <button type="button" className="save" onClick={() => (clearAll(), setArmed(null))}>
@@ -277,7 +280,7 @@ export function More() {
             {c.goals === 1 ? "" : "s"}, {points} data point{points === 1 ? "" : "s"}. Made up only.
             It stays in this browser and is never sent anywhere.
           </p>
-          <div className="actions">
+          <div className="actions stack">
             {armed === "sample" ? (
               <>
                 <button
@@ -318,7 +321,7 @@ export function More() {
             The file holds made-up data only. Load only files you saved from this app. If something
             is already here you choose whether to add the file's students or replace everything.
           </p>
-          <div className="actions">
+          <div className="actions stack">
             <button type="button" onClick={download} disabled={!hasData}>
               Save practice data to a file
             </button>
@@ -346,7 +349,7 @@ export function More() {
             </label>
           </div>
           {pending !== null && (
-            <div className="actions">
+            <div className="actions stack">
               <button
                 type="button"
                 className="save"
