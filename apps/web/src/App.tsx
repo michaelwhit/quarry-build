@@ -410,7 +410,8 @@ export function App() {
         ))}
       </nav>
       <footer>
-        Practice data only. What you add stays in this browser and is never sent anywhere.
+        Practice data only. Not for real students. What you add stays in this browser and is never
+        sent anywhere.
       </footer>
     </>
   );

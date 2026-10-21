@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { type RoleId, ROLES, agreeToPrivacy, roleById, setRole } from "../data/roles.ts";
 
-/** First screen when signed out: logo, name, the practice notice and one Sign in button. */
+/** First screen when signed out: logo, name, slogan and one Sign in button. */
 export function SignIn() {
   const [step, setStep] = useState<"landing" | "pick">("landing");
   if (step === "landing")
@@ -11,10 +11,6 @@ export function SignIn() {
         <h2 className="landing-name">GoalLine</h2>
         <p className="landing-slogan">Made by SPED staff for SPED staff</p>
         <p className="landing-affil">Not affiliated with any school district or state agency.</p>
-        <section className="landing-notice" aria-label="Practice data">
-          <h3>Practice data only. Not for real students.</h3>
-          <p>Everything in this app is made up. No real student information.</p>
-        </section>
         <button
           type="button"
           className="save signin-main"
