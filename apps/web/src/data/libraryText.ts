@@ -207,6 +207,10 @@ const normalized = (s: string) =>
     .filter(Boolean)
     .join(" ");
 
+/** True when the wording says "as needed" or a relative, which the rules do not allow. */
+export const vagueFrequency = (text: string) =>
+  VAGUE_FREQUENCIES.some((v) => normalized(text).includes(v));
+
 /** `today` is yyyy-mm-dd, passed in so tests do not depend on the clock. */
 export function checks(t: DraftTemplate, values: Record<string, string>, today: string): Check[] {
   const slots = formSlots(t);

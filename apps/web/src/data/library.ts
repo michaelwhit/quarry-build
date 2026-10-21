@@ -21,6 +21,12 @@ export interface GoalItem extends DraftTemplate {
   prompt_hierarchy: string[];
   task_steps: string[];
   baseline_guidance: string;
+  /** Smaller steps toward the goal, easiest first. */
+  objective_ladder: string[];
+  /** Ids of accommodations that usually go with this goal. */
+  related_accommodation_ids: string[];
+  /** Replacement-behavior wording must be tied to the student's behavior plan. */
+  requires_fba_bip?: boolean;
 }
 
 const m = (
@@ -66,6 +72,8 @@ export const goals: GoalItem[] = [
     prompt_hierarchy: [],
     task_steps: [],
     baseline_guidance: "Give three one-minute checks before writing the baseline.",
+    objective_ladder: ["Read 5 of 10 words", "Read 7 of 10 words", "Read 8 of 10 words"],
+    related_accommodation_ids: ["a-aloud"],
   },
   {
     id: "g-fluency",
@@ -95,6 +103,12 @@ export const goals: GoalItem[] = [
     prompt_hierarchy: [],
     task_steps: [],
     baseline_guidance: "Use the median of three one-minute readings.",
+    objective_ladder: [
+      "Read a short passage with prompting",
+      "Read a passage at half the target speed",
+      "Read at the target speed with help",
+    ],
+    related_accommodation_ids: ["a-time", "a-notes"],
   },
   {
     id: "g-sentence",
@@ -115,6 +129,12 @@ export const goals: GoalItem[] = [
     prompt_hierarchy: [],
     task_steps: [],
     baseline_guidance: "Collect three writing samples before writing the baseline.",
+    objective_ladder: [
+      "Write a sentence with help",
+      "Write a sentence from a picture",
+      "Write a sentence alone",
+    ],
+    related_accommodation_ids: ["a-organizer"],
   },
   {
     id: "g-addition",
@@ -138,6 +158,8 @@ export const goals: GoalItem[] = [
     prompt_hierarchy: [],
     task_steps: [],
     baseline_guidance: "Give a ten-problem check on three different days.",
+    objective_ladder: ["Add within 5", "Add within 10", "Add within 20"],
+    related_accommodation_ids: ["a-visual"],
   },
   {
     id: "g-request",
@@ -158,6 +180,8 @@ export const goals: GoalItem[] = [
     prompt_hierarchy: [],
     task_steps: [],
     baseline_guidance: "Note each time a break was needed and how it was asked for, over one week.",
+    objective_ladder: ["Ask after a model", "Ask after a gesture", "Ask alone"],
+    related_accommodation_ids: ["a-breaks"],
   },
   {
     id: "g-calm",
@@ -186,6 +210,13 @@ export const goals: GoalItem[] = [
     prompt_hierarchy: [],
     task_steps: [],
     baseline_guidance: "Record the next five episodes before writing the baseline.",
+    objective_ladder: [
+      "Use a strategy with a reminder",
+      "Use a strategy after a gesture",
+      "Use a strategy alone",
+    ],
+    related_accommodation_ids: ["a-breaks", "a-seat"],
+    requires_fba_bip: true,
   },
   {
     id: "g-routine",
@@ -206,6 +237,8 @@ export const goals: GoalItem[] = [
     prompt_hierarchy: [],
     task_steps: ["Hang up backpack", "Put lunch in bin", "Take out folder", "Sit at desk"],
     baseline_guidance: "Watch the routine on three days and mark each step done alone.",
+    objective_ladder: ["Complete 2 steps", "Complete 3 steps", "Complete all 4 steps"],
+    related_accommodation_ids: ["a-visual"],
   },
   {
     id: "g-help",
@@ -241,6 +274,8 @@ export const goals: GoalItem[] = [
     ],
     task_steps: [],
     baseline_guidance: "Note how much prompting is needed over five opportunities.",
+    objective_ladder: ["Ask after a model", "Ask after a gesture", "Ask alone"],
+    related_accommodation_ids: ["a-seat"],
   },
   {
     id: "g-multiply",
@@ -261,6 +296,8 @@ export const goals: GoalItem[] = [
     prompt_hierarchy: [],
     task_steps: [],
     baseline_guidance: "Give a timed page on three different days.",
+    objective_ladder: ["Facts through 2", "Facts through 5", "Facts through 10"],
+    related_accommodation_ids: ["a-calc"],
   },
   {
     id: "g-onTask",
@@ -281,6 +318,13 @@ export const goals: GoalItem[] = [
     prompt_hierarchy: [],
     task_steps: [],
     baseline_guidance: "Time three independent-work periods before writing the baseline.",
+    objective_ladder: [
+      "Stay on task for 3 minutes",
+      "Stay on task for 6 minutes",
+      "Stay on task for 10 minutes",
+    ],
+    related_accommodation_ids: ["a-breaks", "a-chunk", "a-seat"],
+    requires_fba_bip: true,
   },
   {
     id: "g-scissors",
@@ -309,6 +353,8 @@ export const goals: GoalItem[] = [
     prompt_hierarchy: [],
     task_steps: [],
     baseline_guidance: "Try five cuts on three different days.",
+    objective_ladder: ["Snip paper", "Cut a straight line with help", "Cut a straight line alone"],
+    related_accommodation_ids: [],
   },
   {
     id: "g-jobs",
@@ -329,6 +375,8 @@ export const goals: GoalItem[] = [
     prompt_hierarchy: [],
     task_steps: [],
     baseline_guidance: "Ask the student to name steps for a job of interest and note what is said.",
+    objective_ladder: ["Name one job", "Name one step with help", "Name three steps"],
+    related_accommodation_ids: ["a-notes"],
   },
 ];
 

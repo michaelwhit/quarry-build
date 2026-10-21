@@ -12,6 +12,7 @@ import {
 } from "../data/library.ts";
 import {
   checks,
+  vagueFrequency,
   formSlots,
   initialValues,
   isReady,
@@ -131,7 +132,17 @@ export function Libraries() {
           {shownAccs.length === 0 && <li className="empty">No accommodations match.</li>}
         </ul>
       )}
-      {openGoal && <GoalDetail key={openGoal.id} goal={openGoal} />}
+      {openGoal && (
+        <GoalDetail
+          key={openGoal.id}
+          goal={openGoal}
+          onOpenAccommodation={(id) => {
+            setTab("accommodations");
+            setQuery("");
+            setOpenId(id);
+          }}
+        />
+      )}
       {openAcc && <AccommodationDetail item={openAcc} />}
     </>
   );
@@ -140,7 +151,12 @@ export function Libraries() {
 function AccommodationDetail({ item }: { item: AccommodationItem }) {
   const [studentId, setStudentId] = useState("");
   const [message, setMessage] = useState("");
+  const [where, setWhere] = useState(item.location);
+  const [often, setOften] = useState(item.frequency);
+  const [length, setLength] = useState(item.duration);
   const role = getRole();
+  const vague = vagueFrequency(often);
+  const blank = !where.trim() || !often.trim() || !length.trim();
   const student = students.find((s) => s.student.id === studentId)?.student;
   const add = () => {
     if (!student) return;
@@ -149,9 +165,9 @@ function AccommodationDetail({ item }: { item: AccommodationItem }) {
         title: item.title,
         kind: item.kind,
         description: item.description,
-        location: item.location,
-        frequency: item.frequency,
-        duration: item.duration,
+        location: where.trim(),
+        frequency: often.trim(),
+        duration: length.trim(),
       });
       setMessage(`Added to ${displayName(student)}.`);
     } catch (err) {
@@ -191,8 +207,30 @@ function AccommodationDetail({ item }: { item: AccommodationItem }) {
               ))}
             </select>
           </label>
+          <label>
+            <span>Where</span>
+            <input value={where} maxLength={200} onChange={(e) => setWhere(e.target.value)} />
+          </label>
+          <label>
+            <span>How often</span>
+            <input value={often} maxLength={200} onChange={(e) => setOften(e.target.value)} />
+          </label>
+          <label>
+            <span>For how long</span>
+            <input value={length} maxLength={200} onChange={(e) => setLength(e.target.value)} />
+          </label>
+          {vague && (
+            <p className="form-error" role="alert">
+              "As needed" is not allowed. Say how many times and how often.
+            </p>
+          )}
           <div className="actions">
-            <button type="button" className="save" onClick={add} disabled={!student}>
+            <button
+              type="button"
+              className="save"
+              onClick={add}
+              disabled={!student || vague || blank}
+            >
               Add to student
             </button>
           </div>
@@ -239,17 +277,24 @@ export function StudentAccommodations({ studentId }: { studentId: string }) {
   );
 }
 
-function GoalDetail({ goal }: { goal: GoalItem }) {
+function GoalDetail({
+  goal,
+  onOpenAccommodation,
+}: {
+  goal: GoalItem;
+  onOpenAccommodation: (id: string) => void;
+}) {
   const [values, setValues] = useState<Record<string, string>>(() => initialValues(goal));
   const [studentId, setStudentId] = useState("");
   const [baseline, setBaseline] = useState("");
   const [message, setMessage] = useState("");
+  const [planConfirmed, setPlanConfirmed] = useState(false);
   const student = students.find((s) => s.student.id === studentId)?.student;
   const studentName = student ? displayName(student) : null;
   const today = todayIso();
   const slots = formSlots(goal);
   const list = checks(goal, values, today);
-  const ready = isReady(goal, values, today);
+  const ready = isReady(goal, values, today) && (!goal.requires_fba_bip || planConfirmed);
 
   const set = (name: string, v: string) => {
     setValues({ ...values, [name]: v });
@@ -303,6 +348,31 @@ function GoalDetail({ goal }: { goal: GoalItem }) {
       </p>
       <p className="meta">How it is met: {masteryLine(goal.mastery)}</p>
       <p className="meta">Baseline tip: {goal.baseline_guidance}</p>
+      {goal.objective_ladder.length > 0 && (
+        <div>
+          <strong>Steps toward the goal</strong>
+          <ol>
+            {goal.objective_ladder.map((o) => (
+              <li key={o}>{o}</li>
+            ))}
+          </ol>
+        </div>
+      )}
+      {goal.related_accommodation_ids.length > 0 && (
+        <div>
+          <strong>Often goes with</strong>
+          <div className="actions">
+            {goal.related_accommodation_ids.map((id) => {
+              const a = accommodations.find((x) => x.id === id);
+              return a ? (
+                <button key={id} type="button" onClick={() => onOpenAccommodation(id)}>
+                  {a.title}
+                </button>
+              ) : null;
+            })}
+          </div>
+        </div>
+      )}
       <form className="form" onSubmit={(e) => e.preventDefault()}>
         {slots.map((s) => (
           <label key={s.name}>
@@ -330,6 +400,17 @@ function GoalDetail({ goal }: { goal: GoalItem }) {
           <span>Baseline for this student (optional)</span>
           <input value={baseline} maxLength={200} onChange={(e) => setBaseline(e.target.value)} />
         </label>
+        {goal.requires_fba_bip && (
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={planConfirmed}
+              onChange={(e) => setPlanConfirmed(e.target.checked)}
+            />
+            This wording is about a behavior. I have confirmed the student has a current behavior
+            assessment and behavior plan that it matches.
+          </label>
+        )}
         <label>
           <span>Add to student</span>
           <select value={studentId} onChange={(e) => setStudentId(e.target.value)}>

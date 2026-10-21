@@ -9,6 +9,7 @@ import {
   preview,
   renderedText,
   segments,
+  vagueFrequency,
   slotNames,
 } from "../src/data/libraryText.ts";
 
@@ -104,5 +105,20 @@ describe("checks", () => {
       "At or above 80%, 3 times in a row, then a later check that it lasts",
     );
     expect(masteryLine(goal.mastery)).toContain("the [target wcpm] you choose");
+  });
+});
+
+describe("sample library links", () => {
+  it("ladders and related accommodations are real", () => {
+    const ids = new Set(accommodations.map((a) => a.id));
+    for (const g of goals) {
+      expect(g.objective_ladder.length, g.id).toBeGreaterThan(1);
+      for (const r of g.related_accommodation_ids) expect(ids.has(r), `${g.id} ${r}`).toBe(true);
+    }
+    expect(goals.some((g) => g.requires_fba_bip)).toBe(true);
+  });
+  it("refuses vague frequencies on accommodations", () => {
+    expect(vagueFrequency("As needed")).toBe(true);
+    expect(vagueFrequency("Up to 3 times a day")).toBe(false);
   });
 });
