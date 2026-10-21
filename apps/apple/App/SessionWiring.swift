@@ -59,7 +59,7 @@ extension PrototypeStore {
             switch error {
             case .saveFailed, .notSignedIn: throw error  // may work on retry
             case .notAllowed, .unknownPlan, .invalidDataPoint, .unknownSchool, .invalidStudent,
-                .invalidBatchEntry:
+                .invalidBatchEntry, .unknownGoal, .invalidGoal:
                 throw SessionDeliveryError()
             }
         }
