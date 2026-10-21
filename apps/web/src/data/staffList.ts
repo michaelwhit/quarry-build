@@ -56,7 +56,7 @@ export const ROLE_LINES: Record<string, string> = {
     "Works with the full records of their own caseload and can give data entry to a para.",
   related_service_provider: "Sees what they need for their service, for the students they serve.",
   paraprofessional: "Records data on the goals a teacher gives them. Nothing else.",
-  gen_ed_teacher: "Records data on the goals a case manager gives them. Nothing else.",
+  gen_ed_teacher: "Sees a read-only At a glance for the goals a case manager gives them.",
 };
 
 export const TEXT = {
@@ -144,6 +144,10 @@ export interface AccessRow {
   position: string;
   role: string;
 }
+
+// Before any real data: saving this list must write an audit row (who saved it, when) and the
+// director must acknowledge what it contains. The practice app does neither because nothing here
+// is real or leaves the browser.
 
 /** Everyone who may see student records: active staff with building and role name. */
 export const accessRoster = (today?: string): AccessRow[] =>

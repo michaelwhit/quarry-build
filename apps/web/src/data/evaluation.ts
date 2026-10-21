@@ -104,6 +104,8 @@ const WITHHELD: [string, string][] = [
   ["primary disability", "disability category"],
   ["eligible", "eligibility conclusion"],
   ["eligibility", "eligibility conclusion"],
+  ["ineligible", "eligibility conclusion"],
+  ["ineligibility", "eligibility conclusion"],
 ];
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

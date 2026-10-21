@@ -7,6 +7,7 @@ import { can, setRole } from "../src/data/roles.ts";
 import { clearAll, loadSample, useStorage } from "../src/data/workspace.ts";
 import {
   accessCsv,
+  ROLE_LINES,
   accessRoster,
   filterStaff,
   roleName,
@@ -55,6 +56,16 @@ describe("staff list", () => {
   it("names roles in plain words", () => {
     expect(roleName("related_service_provider")).toBe("SLP / psych");
     expect(roleName("paraprofessional")).toBe("Para");
+    expect(roleName("gen_ed_teacher")).toBe("General-education teacher");
+  });
+});
+
+describe("role lines", () => {
+  it("say gen-ed teachers only see a read-only At a glance", () => {
+    expect(ROLE_LINES.gen_ed_teacher).toBe(
+      "Sees a read-only At a glance for the goals a case manager gives them.",
+    );
+    expect(ROLE_LINES.gen_ed_teacher).not.toMatch(/record/i);
   });
 });
 
