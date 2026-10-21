@@ -1,15 +1,15 @@
 # Sets the commit status "Approval on head" on a pull request's current head commit.
 #
-# success: the newest run of the review workflow for that exact head succeeded (PASS), and, when the change
+# success: the review for that exact head succeeded (PASS), and, when the change
 #          touches a path listed in tools/ci/protected-paths.txt, owner-written lines also name the
 #          full head sha in both "Reviewed by Clawson, Verdict: approved on <sha>" and
 #          "Security review by Sable, relayed by Clawson, Verdict: approved on <sha>".
 # pending: something above is still missing.
-# failure: the newest run of the review workflow for the head failed (BLOCK, or it could not run).
+# failure: the review for the head failed (BLOCK, or it could not run).
 #
 # Only the event payload and the GitHub API are read. This workflow never checks out or runs pull
-# request code, and it does not use pull_request_target. The protected-path list is read from the
-# default branch, never from the pull request. Comment text is data: it is matched with jq and
+# request code, and it never uses the base-branch pull request trigger. The protected-path list is
+# read from the default branch, never from the pull request. Comment text is data: it is matched with jq and
 # grep and never reaches a shell. Approval lines count only when written by the repository owner;
 # the automated review counts only through the conclusion of its workflow run on the exact head.
 name: Approval on head
@@ -20,13 +20,13 @@ on:
   issue_comment:
     types: [created, edited]
   workflow_run:
-    workflows: ["Claude PR review"]
+    workflows: ["Claude PR review", "Claude PR review (trusted)"]
     types: [completed]
 
 permissions: {}
 
 concurrency:
-  group: approval-on-head-${{ github.event.workflow_run.pull_requests[0].number || github.event.issue.number }}
+  group: approval-on-head-${{ github.event.workflow_run.pull_requests[0].number || github.event.issue.number || github.event.workflow_run.display_title }}
   cancel-in-progress: true
 
 jobs:
@@ -34,7 +34,8 @@ jobs:
     # Comments on plain issues are ignored, and so are review runs with no same-repo pull request.
     if: >-
       (github.event_name == 'issue_comment' && github.event.issue.pull_request != null) ||
-      (github.event_name == 'workflow_run' && join(github.event.workflow_run.pull_requests.*.number, '') != '')
+      (github.event_name == 'workflow_run' && join(github.event.workflow_run.pull_requests.*.number, '') != '') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.name == 'Claude PR review (trusted)')
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -45,16 +46,24 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       REPO: ${{ github.repository }}
       PR: ${{ github.event.workflow_run.pull_requests[0].number || github.event.issue.number }}
+      RUN_TITLE: ${{ github.event.workflow_run.display_title }}
     steps:
       - name: Work out the approval state of the current head
         shell: bash
         run: |
           set -euo pipefail
           owner="${REPO%%/*}"
+          # A run of the trusted review has no pull request attached (it runs on the default branch);
+          # its name is "Review <pull request number> <full head sha>", so the pull request is that number.
+          if [ -z "$PR" ]; then
+            [[ "$RUN_TITLE" =~ ^Review\ ([0-9]+)\ [0-9a-f]{40}$ ]] || { echo "no pull request for this run"; exit 0; }
+            PR="${BASH_REMATCH[1]}"
+          fi
           pr_json=$(gh api "repos/$REPO/pulls/$PR")
           sha=$(jq -r '.head.sha' <<<"$pr_json")
           state=$(jq -r '.state' <<<"$pr_json")
           same_repo=$(jq -r '.head.repo.full_name == "'"$REPO"'"' <<<"$pr_json")
+          base_ref=$(jq -r '.base.ref' <<<"$pr_json")
           [ "$state" = "open" ] || { echo "PR is not open"; exit 0; }
 
           set_status() {
@@ -64,6 +73,13 @@ jobs:
 
           if [ "$same_repo" != "true" ]; then
             set_status pending "Pull request from a fork: not evaluated"
+            exit 0
+          fi
+
+          # A review counts only for a pull request that targets the default branch.
+          default_branch=$(gh api "repos/$REPO" --jq '.default_branch')
+          if [ "$base_ref" != "$default_branch" ]; then
+            set_status pending "Base is not the default branch: not evaluated"
             exit 0
           fi
 
@@ -84,7 +100,6 @@ jobs:
 
           # Paths that need the lead and security lines as well. The list comes from the default
           # branch; if it cannot be read, every change counts as protected.
-          default_branch=$(gh api "repos/$REPO" --jq '.default_branch')
           protected=$(gh api "repos/$REPO/contents/tools/ci/protected-paths.txt?ref=$default_branch" \
             --jq '.content' 2>/dev/null | base64 -d 2>/dev/null | grep -Ev '^[[:space:]]*(#|$)' || true)
           needs_sec=false
@@ -96,9 +111,28 @@ jobs:
             done <<<"$protected"
           fi
 
-          # Verdict from the review workflow's newest run for this exact head, never from comment text:
+          # Verdict, never read from comment text. Preferred source: the newest run of
+          # claude-review-trusted.yml for this exact pull request and head. That file is read from the
+          # default branch (workflow_run), and its run name is "Review <pull request number> <full head
+          # sha>", so a branch cannot create such a run: a branch's own copy of the file only ever runs
+          # as a pull_request event. The number keeps a review of the same head in another pull request
+          # (for example one aimed at a different base) from counting here.
           # success = PASS, failure = BLOCK (the job fails on BLOCK and when it could not run), and
           # anything else (cancelled, skipped, still running, no run) = no verdict yet.
+          # Until the old pull_request review file is removed, its newest run for the head is used
+          # when no trusted run exists.
+          # verdict-filter-trusted-begin
+          trusted_filter='
+            [.workflow_runs[]?
+              | select(.event == "workflow_run" and .display_title == ("Review " + $n + " " + $s)
+                  and ((.path // "") | split("@")[0]) == $p)]
+            | sort_by(.id) | last
+            | if . == null or .status != "completed" then "none"
+              elif .conclusion == "success" then "pass"
+              elif .conclusion == "failure" then "block"
+              else "none" end
+          '
+          # verdict-filter-trusted-end
           # verdict-filter-begin
           review_filter='
             [.workflow_runs[]?
@@ -110,8 +144,18 @@ jobs:
               else "none" end
           '
           # verdict-filter-end
-          runs=$(gh api "repos/$REPO/actions/workflows/claude-review.yml/runs?head_sha=$sha&event=pull_request&per_page=50")
-          verdict=$(jq -r --arg s "$sha" --arg p ".github/workflows/claude-review.yml" "$review_filter" <<<"$runs")
+          # Up to three pages of 100 runs, newest first, merged before the filter; no match fails closed.
+          trusted_runs='{"workflow_runs":[]}'
+          for page in 1 2 3; do
+            page_runs=$(gh api "repos/$REPO/actions/workflows/claude-review-trusted.yml/runs?event=workflow_run&per_page=100&page=$page")
+            trusted_runs=$(jq -s '{workflow_runs: (map(.workflow_runs // []) | add)}' <<<"$trusted_runs"$'\n'"$page_runs")
+            [ "$(jq '.workflow_runs | length' <<<"$page_runs")" -ge 100 ] || break
+          done
+          verdict=$(jq -r --arg n "$PR" --arg s "$sha" --arg p ".github/workflows/claude-review-trusted.yml" "$trusted_filter" <<<"$trusted_runs")
+          if [ "$verdict" = "none" ]; then
+            runs=$(gh api "repos/$REPO/actions/workflows/claude-review.yml/runs?head_sha=$sha&event=pull_request&per_page=50")
+            verdict=$(jq -r --arg s "$sha" --arg p ".github/workflows/claude-review.yml" "$review_filter" <<<"$runs")
+          fi
 
           echo "head=$sha lead=$lead_ok security_needed=$needs_sec security=$sec_ok review=$verdict"
 

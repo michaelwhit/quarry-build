@@ -1,0 +1,60 @@
+# Claude reviews every same-repo pull request through a direct Messages API call
+# (tools/ci/claude-review.mjs), using the repository secret ANTHROPIC_API_KEY.
+#
+# Triggered by workflow_run, so GitHub always reads this file from the default branch: a pull request
+# cannot edit it to reach the key or to make its own review succeed. No pull request code is checked
+# out; the script and README come from the default branch, and the diff is fetched through the API.
+# The run name carries the pull request number and the full head sha. The "Approval on head" workflow
+# accepts only a run of this file, started by the workflow_run event, whose name carries the number of
+# the pull request it is judging and its exact head sha, and whose conclusion is success (PASS) or
+# failure (BLOCK, or the review could not run). The job runs only when exactly one pull request is
+# attached to the head and that pull request targets the default branch, so a review of the same head
+# for a different base or a second pull request can never stand in for the real one.
+name: Claude PR review (trusted)
+
+run-name: Review ${{ github.event.workflow_run.pull_requests[0].number }} ${{ github.event.workflow_run.head_sha }}
+
+on:
+  workflow_run:
+    workflows: ["Review request"]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  review:
+    # Same-repo pull requests only: the triggering run must have succeeded and belong to a pull request
+    # from this repository. Fork pull requests get no secrets and must not spend API credit.
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      join(github.event.workflow_run.pull_requests.*.number, '') != '' &&
+      github.event.workflow_run.pull_requests[1] == null &&
+      github.event.workflow_run.pull_requests[0].base.ref == github.event.repository.default_branch &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: claude-review-trusted-${{ github.event.workflow_run.pull_requests[0].number }}
+      cancel-in-progress: true
+    steps:
+      # The default branch only. The script refuses to post unless the pull request's current head
+      # is the sha in the event.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      # The job fails when the verdict is BLOCK or the review could not run: the "Approval on head"
+      # check reads this run's conclusion, not the comment text.
+      - name: Review the diff and post the verdict comment
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node tools/ci/claude-review.mjs
