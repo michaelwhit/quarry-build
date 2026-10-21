@@ -30,6 +30,13 @@ struct RoleViewTests {
         }
     }
 
+    @Test("only the director sees the overdue progress reports")
+    func overdueFlag() {
+        for role in StaffRole.allCases {
+            #expect(RoleView(role: role).showsOverdueReports == (role == .spedDirector))
+        }
+    }
+
     @Test("a paraprofessional gets the short list, first names, and no drafting, approving, export or AI")
     func para() {
         let view = RoleView(role: .paraprofessional)
