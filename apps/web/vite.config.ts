@@ -1,15 +1,34 @@
 import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv, type Plugin } from "vite";
+import { apiOrigin, metaFor } from "./scripts/csp.mjs";
 
-export default defineConfig({
-  base: "./",
-  plugins: [react()],
-  resolve: {
-    alias: {
-      "@synthetic": fileURLToPath(new URL("../../packages/synthetic-data", import.meta.url)),
+/** Adds the one API origin from the build setting to connect-src in the page's policy. */
+function apiOriginPolicy(origin: string): Plugin {
+  return {
+    name: "goalline-api-origin-policy",
+    transformIndexHtml(html) {
+      if (origin === "") return html;
+      return html.replace(
+        /(http-equiv="Content-Security-Policy"\s+content=")[^"]*(")/,
+        `$1${metaFor(origin)}$2`,
+      );
     },
-  },
-  server: { fs: { allow: ["../.."] } },
-  build: { target: "es2023", sourcemap: false, assetsInlineLimit: 0 },
+  };
+}
+
+export default defineConfig(({ mode }) => {
+  // Empty for the practice build; a bare https origin when a sign-in server is wired in.
+  const origin = apiOrigin(loadEnv(mode, process.cwd(), "VITE_").VITE_GOALLINE_API_ORIGIN);
+  return {
+    base: "./",
+    plugins: [react(), apiOriginPolicy(origin)],
+    resolve: {
+      alias: {
+        "@synthetic": fileURLToPath(new URL("../../packages/synthetic-data", import.meta.url)),
+      },
+    },
+    server: { fs: { allow: ["../.."] } },
+    build: { target: "es2023", sourcemap: false, assetsInlineLimit: 0 },
+  };
 });
