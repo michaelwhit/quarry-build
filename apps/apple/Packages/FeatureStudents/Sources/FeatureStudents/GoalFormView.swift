@@ -24,6 +24,7 @@ public struct GoalFormView: View {
     @State private var promptLevelsText: String
     @State private var stepsText: String
     @State private var problem: String?
+    @State private var confirmingRemoval = false
 
     public init(mode: Mode, store: PrototypeStore, onSaved: @escaping (Goal) -> Void = { _ in }) {
         self.mode = mode
@@ -118,6 +119,12 @@ public struct GoalFormView: View {
                         Text("This build holds practice data only. Use made-up goals.")
                     }
                 }
+                if case .edit = mode {
+                    Section {
+                        Button("Delete goal", role: .destructive) { confirmingRemoval = true }
+                            .accessibilityIdentifier(AccessibilityID.removeGoal)
+                    }
+                }
                 if let problem {
                     Section {
                         Text(problem).foregroundStyle(Theme.warn)
@@ -127,6 +134,14 @@ public struct GoalFormView: View {
             }
             .formStyle(.grouped)
             .themedList()
+            .confirmationDialog(
+                "Delete this goal?", isPresented: $confirmingRemoval, titleVisibility: .visible
+            ) {
+                Button("Delete", role: .destructive, action: remove)
+                    .accessibilityIdentifier(AccessibilityID.removeConfirm)
+            } message: {
+                Text(removalMessage)
+            }
             .navigationTitle(title)
             #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
@@ -159,6 +174,23 @@ public struct GoalFormView: View {
             TextEditor(text: text)
                 .frame(minHeight: 96)
                 .accessibilityIdentifier(id)
+        }
+    }
+
+    private var removalMessage: String {
+        guard case .edit(let goal) = mode else { return "" }
+        let count = store.removalImpact(ofGoal: goal).dataPoints
+        return "This also deletes \(count) recorded \(count == 1 ? "entry" : "entries") "
+            + "from the practice data."
+    }
+
+    private func remove() {
+        guard case .edit(let goal) = mode else { return }
+        do {
+            try store.removeGoal(id: goal.id)
+            dismiss()
+        } catch {
+            problem = "Could not delete. Try again."
         }
     }
 

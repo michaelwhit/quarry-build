@@ -22,6 +22,7 @@ public struct StudentFormView: View {
     @State private var grade: String
     @State private var schoolID: UUID?
     @State private var problem: String?
+    @State private var confirmingRemoval = false
 
     public init(mode: Mode, onSaved: @escaping (Student) -> Void = { _ in }) {
         self.mode = mode
@@ -88,6 +89,12 @@ public struct StudentFormView: View {
                 } footer: {
                     Text("This build holds practice data only. Use made-up names.")
                 }
+                if case .edit = mode {
+                    Section {
+                        Button("Delete student", role: .destructive) { confirmingRemoval = true }
+                            .accessibilityIdentifier(AccessibilityID.removeStudent)
+                    }
+                }
                 if let problem {
                     Section {
                         Text(problem).foregroundStyle(Theme.warn)
@@ -97,6 +104,14 @@ public struct StudentFormView: View {
             }
             .formStyle(.grouped)
             .themedList()
+            .confirmationDialog(
+                removalTitle, isPresented: $confirmingRemoval, titleVisibility: .visible
+            ) {
+                Button("Delete", role: .destructive, action: remove)
+                    .accessibilityIdentifier(AccessibilityID.removeConfirm)
+            } message: {
+                Text(removalMessage)
+            }
             .navigationTitle(title)
             #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
@@ -115,6 +130,29 @@ public struct StudentFormView: View {
         #if os(macOS)
             .frame(minWidth: 380, minHeight: 420)
         #endif
+    }
+
+    private var removalTitle: String {
+        guard case .edit(let student) = mode else { return "" }
+        return "Delete \(store.displayName(for: student))?"
+    }
+
+    private var removalMessage: String {
+        guard case .edit(let student) = mode else { return "" }
+        let impact = store.removalImpact(ofStudent: student)
+        return "This also deletes \(impact.goals) \(impact.goals == 1 ? "goal" : "goals") and "
+            + "\(impact.dataPoints) recorded \(impact.dataPoints == 1 ? "entry" : "entries") "
+            + "from the practice data."
+    }
+
+    private func remove() {
+        guard case .edit(let student) = mode else { return }
+        do {
+            try store.removeStudent(id: student.id)
+            dismiss()
+        } catch {
+            problem = "Could not delete. Try again."
+        }
     }
 
     private func save() {
