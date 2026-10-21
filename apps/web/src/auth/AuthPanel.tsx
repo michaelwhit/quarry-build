@@ -3,7 +3,7 @@ import type { FormEvent } from "react";
 import { enrolConfirm, enrolStart, secondFactor, setPassword, signIn, signUp } from "./client.ts";
 import type { Confirm, Enrol, Me, Outcome } from "./client.ts";
 import { restore, begin } from "./session.ts";
-import { NO_SERVER, START_OVER } from "./messages.ts";
+import { NO_SERVER, START_OVER, recoveryLeftMessage } from "./messages.ts";
 
 const RULES =
   "At least 14 characters. A few unrelated words together work well. Not a common or breached password, and not your name, your email, or GoalLine.";
@@ -307,7 +307,7 @@ export function AuthPanel({ onBack }: { onBack: () => void }) {
         challenge={challenge}
         onSignedIn={(me, left) => {
           if (left !== undefined && left <= 3) {
-            setNotice({ me, lines: [`You have ${left} recovery codes left.`], after: null });
+            setNotice({ me, lines: [recoveryLeftMessage(left)], after: null });
             setMode("notice");
           } else begin(me);
         }}

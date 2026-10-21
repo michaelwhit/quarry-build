@@ -26,7 +26,7 @@ import { begin, currentPerson } from "../src/auth/session.ts";
 import { onSignOut, setRole } from "../src/data/roles.ts";
 import { AuthPanel, groupKey } from "../src/auth/AuthPanel.tsx";
 import { PendingList, defaultEndsOn } from "../src/auth/PendingList.tsx";
-import { errorMessage, waitMessage } from "../src/auth/messages.ts";
+import { errorMessage, recoveryLeftMessage, waitMessage } from "../src/auth/messages.ts";
 
 interface Call {
   path: string;
@@ -509,6 +509,14 @@ describe("second factor", () => {
   it("groups the setup key in fours", () => {
     expect(groupKey("ABCDEFGHJKLMNPQR")).toBe("ABCD EFGH JKLM NPQR");
     expect(groupKey("abcd efgh ij")).toBe("abcd efgh ij");
+  });
+});
+
+describe("recovery codes left", () => {
+  it("says one code, several codes, and what to do at none", () => {
+    expect(recoveryLeftMessage(3)).toBe("You have 3 recovery codes left.");
+    expect(recoveryLeftMessage(1)).toBe("You have 1 recovery code left.");
+    expect(recoveryLeftMessage(0)).toMatch(/no recovery codes left.*reset code/);
   });
 });
 
