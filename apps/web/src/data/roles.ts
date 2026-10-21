@@ -115,7 +115,13 @@ export function subscribeRole(l: () => void) {
   listeners.add(l);
   return () => listeners.delete(l);
 }
+let signOutHook: (() => void) | null = null;
+/** The private sign-in build registers here to end its server session; the practice build never does. */
+export function onSignOut(h: (() => void) | null) {
+  signOutHook = h;
+}
 export function setRole(next: RoleId | null) {
+  if (next === null && current !== null) signOutHook?.();
   current = next;
   version++;
   for (const l of listeners) l();
