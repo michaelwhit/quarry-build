@@ -114,7 +114,7 @@ public final class PrototypeStore {
     public private(set) var goalEdits: [UUID: Goal]
     public private(set) var planEdits: [UUID: MeasurementPlan]
     @ObservationIgnored private let stateURL: URL?
-    @ObservationIgnored private let calendarToday: @Sendable () -> LocalDate
+    @ObservationIgnored let calendarToday: @Sendable () -> LocalDate
 
     /// - Parameters:
     ///   - dataset: the synthetic district to browse.
