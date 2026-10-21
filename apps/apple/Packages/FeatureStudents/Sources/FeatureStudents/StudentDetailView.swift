@@ -9,6 +9,8 @@ public struct StudentDetailView<GoalDestination: View>: View {
     @Environment(PrototypeStore.self) private var store
 
     @State private var editing = false
+    @State private var addingGoal = false
+    @State private var editingGoal: Goal?
 
     private let student: Student
     private let goalDestination: (Goal) -> GoalDestination
@@ -41,6 +43,17 @@ public struct StudentDetailView<GoalDestination: View>: View {
                         GoalRow(goal: goal)
                     }
                     .accessibilityIdentifier(AccessibilityID.goalRow(goal.id))
+                    .contextMenu {
+                        if store.canManageGoals {
+                            Button("Edit goal", systemImage: "pencil") { editingGoal = goal }
+                        }
+                    }
+                    .swipeActions(edge: .trailing) {
+                        if store.canManageGoals {
+                            Button("Edit") { editingGoal = goal }
+                                .accessibilityIdentifier(AccessibilityID.editGoal)
+                        }
+                    }
                 }
             }
         }
@@ -48,6 +61,12 @@ public struct StudentDetailView<GoalDestination: View>: View {
         .themedList()
         .navigationTitle(store.displayName(for: student))
         .toolbar {
+            if store.canManageGoals {
+                ToolbarItem {
+                    Button("Add goal", systemImage: "plus") { addingGoal = true }
+                        .accessibilityIdentifier(AccessibilityID.addGoal)
+                }
+            }
             if store.canManageStudents {
                 ToolbarItem {
                     Button("Edit") { editing = true }
@@ -57,6 +76,12 @@ public struct StudentDetailView<GoalDestination: View>: View {
         }
         .sheet(isPresented: $editing) {
             StudentFormView(mode: .edit(student))
+        }
+        .sheet(isPresented: $addingGoal) {
+            GoalFormView(mode: .add(student), store: store)
+        }
+        .sheet(item: $editingGoal) { goal in
+            GoalFormView(mode: .edit(goal), store: store)
         }
     }
 }
