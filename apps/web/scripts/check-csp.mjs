@@ -2,10 +2,10 @@
 // CSP gate for CI: the built page must have no inline scripts, no inline event handlers, no
 // external script/style/font origins, and must carry the strict policy that serve.mjs sends.
 import { readFileSync, readdirSync } from "node:fs";
-import { apiOrigin, cspFor, metaFor } from "./csp.mjs";
+import { buildOrigin, cspFor, metaFor } from "./csp.mjs";
 
 // The same build setting the build read; empty for the practice build.
-const origin = apiOrigin(process.env.VITE_GOALLINE_API_ORIGIN);
+const origin = buildOrigin();
 const CSP = cspFor(origin);
 
 const dist = new URL("../dist/", import.meta.url);
