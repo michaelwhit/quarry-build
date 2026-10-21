@@ -270,12 +270,16 @@ describe("import add keeps ids unique", () => {
       goals: [{ ...ws.goals[0], iep_id: "new-iep" }, twin, twin],
       plans: [...ws.plans, { ...ws.plans[0], goal_id: "new-goal" }],
       points: [...ws.points, { ...ws.points[0], id: "new-point", goal_id: "new-goal" }],
+      served: ["new-student", "new-student"],
+      delegated: ["new-goal", "new-goal"],
     };
     expect(importText(JSON.stringify(crafted), "add").ok).toBe(true);
     const out = getWorkspace();
     expect(out.students).toHaveLength(2);
     expect(out.goals.map((g) => g.id).sort()).toEqual([ws.goals[0].id, "new-goal"].sort());
     expect(out.plans).toHaveLength(2);
+    expect(new Set(out.served).size).toBe(out.served.length);
+    expect(new Set(out.delegated).size).toBe(out.delegated.length);
     expect(out.points.map((p) => p.id).sort()).toEqual([ws.points[0].id, "new-point"].sort());
   });
 });

@@ -179,7 +179,7 @@ export function parse(text: string | null): Workspace | null {
     const points = keep(v["points"], validPoint).filter((p) => planGoals.has(p["goal_id"]));
     const ids = (list: unknown, allowed: Set<unknown>): string[] =>
       Array.isArray(list)
-        ? list.filter((x): x is string => typeof x === "string" && allowed.has(x))
+        ? [...new Set(list.filter((x): x is string => typeof x === "string" && allowed.has(x)))]
         : [];
     return {
       students,
@@ -541,8 +541,8 @@ export function importText(text: string, mode: "replace" | "add" = "replace"): I
       goals: [...current.goals, ...goals],
       plans: [...current.plans, ...plans],
       points: [...current.points, ...points],
-      served: [...current.served, ...ws.served.filter((x) => keepS.has(x))],
-      delegated: [...current.delegated, ...ws.delegated.filter((x) => keepG.has(x))],
+      served: [...new Set([...current.served, ...ws.served.filter((x) => keepS.has(x))])],
+      delegated: [...new Set([...current.delegated, ...ws.delegated.filter((x) => keepG.has(x))])],
     });
   const skipped = ws.students.length - students.length;
   return {
