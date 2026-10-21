@@ -24,6 +24,7 @@ import { canSeeOverdue } from "./data/overdue.ts";
 import { AtAGlance, MyStudents } from "./ui/Glance.tsx";
 import { Overdue } from "./ui/Overdue.tsx";
 import { Evaluation } from "./ui/Evaluation.tsx";
+import { AccessReview, StaffList } from "./ui/StaffList.tsx";
 import { Privacy, SignIn } from "./ui/SignIn.tsx";
 import { ProgressReport, canUseReports } from "./ui/ProgressReport.tsx";
 import { getVersion, getWorkspace, setDelegated, setServed, subscribe } from "./data/workspace.ts";
@@ -356,6 +357,18 @@ export function App() {
   ) : hash === "#/evaluation" ? (
     allow("evaluation") ? (
       <Evaluation />
+    ) : (
+      <NotAllowed />
+    )
+  ) : hash === "#/staff" ? (
+    allow("staffRoles") ? (
+      <StaffList />
+    ) : (
+      <NotAllowed />
+    )
+  ) : hash === "#/access-review" ? (
+    allow("staffRoles") ? (
+      <AccessReview />
     ) : (
       <NotAllowed />
     )

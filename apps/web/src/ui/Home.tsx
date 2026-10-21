@@ -44,6 +44,20 @@ const TILES: Tile[] = [
     icon: "📈",
     href: "#/caseload",
   },
+  {
+    title: "Staff and roles",
+    subtitle: "See roles and caseloads",
+    icon: "🧑‍🏫",
+    href: "#/staff",
+    needs: "staffRoles",
+  },
+  {
+    title: "Access review",
+    subtitle: "See who can open what",
+    icon: "🔐",
+    href: "#/access-review",
+    needs: "staffRoles",
+  },
 ];
 
 export function Home() {

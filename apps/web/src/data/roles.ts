@@ -61,7 +61,8 @@ export type Action =
   | "history"
   | "files"
   | "manageData"
-  | "evaluation";
+  | "evaluation"
+  | "staffRoles";
 
 const ALLOWED: Record<RoleId, readonly Action[]> = {
   sped_director: [
@@ -75,6 +76,7 @@ const ALLOWED: Record<RoleId, readonly Action[]> = {
     "files",
     "manageData",
     "evaluation",
+    "staffRoles",
   ],
   case_manager: [
     "addStudent",

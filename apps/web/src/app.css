@@ -909,3 +909,17 @@ h2.landing-name {
   width: 24px;
   height: 24px;
 }
+.chip-button {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 22px;
+}
+.chip-button[aria-pressed="true"] {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-color: var(--primary);
+  font-weight: 700;
+}
+.staff-search {
+  margin: 12px 0;
+}
