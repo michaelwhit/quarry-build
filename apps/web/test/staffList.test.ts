@@ -72,8 +72,8 @@ describe("role lines", () => {
 describe("who can see student records", () => {
   it("makes a quoted CSV and guards cells that start like formulas", () => {
     const csv = accessCsv([
-      { name: 'Ann "A" Lee', position: "Prairie Wind Elementary", role: "Case manager" },
-      { name: "=cmd", position: "+1", role: "@x" },
+      { id: "a", name: 'Ann "A" Lee', position: "Prairie Wind Elementary", role: "Case manager" },
+      { id: "b", name: "=cmd", position: "+1", role: "@x" },
     ]);
     expect(csv).toBe(
       [
@@ -83,6 +83,11 @@ describe("who can see student records", () => {
         "",
       ].join("\n"),
     );
+  });
+
+  it("gives every row its own id, even when two people share a name", () => {
+    const ids = accessRoster(TODAY).map((r) => r.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 
   it("has a row per active staff member and a header-only CSV for nobody", () => {

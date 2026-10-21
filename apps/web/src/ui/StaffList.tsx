@@ -88,7 +88,7 @@ export function AccessReview() {
       <p className="meta">{TEXT.rosterNote}</p>
       <ul className="cards" aria-label={TEXT.rosterTitle}>
         {rows.map((r) => (
-          <li key={r.name} className="card">
+          <li key={r.id} className="card">
             <div className="name">{r.name}</div>
             <div className="meta">
               {r.role} · {r.position}

@@ -140,6 +140,8 @@ export function filterStaff(rows: StaffRow[], filter: StaffFilter, search: strin
 }
 
 export interface AccessRow {
+  /** The staff id, so two people with the same name stay two rows. */
+  id: string;
   name: string;
   position: string;
   role: string;
@@ -151,7 +153,12 @@ export interface AccessRow {
 
 /** Everyone who may see student records: active staff with building and role name. */
 export const accessRoster = (today?: string): AccessRow[] =>
-  staffRows(today).map((r) => ({ name: r.name, position: r.position, role: roleName(r.role) }));
+  staffRows(today).map((r) => ({
+    id: r.id,
+    name: r.name,
+    position: r.position,
+    role: roleName(r.role),
+  }));
 
 /**
  * A CSV the director can save. Every field is quoted, and a field that starts like a spreadsheet
