@@ -42,6 +42,9 @@ beforeEach(() => {
 describe("period and numbers", () => {
   it("defaults to the period due next", () => {
     expect(defaultPeriod(new Date("2026-10-21T12:00:00Z")).id).toBe("q1");
+    // due day itself still counts as due (local time)
+    expect(defaultPeriod(new Date(2026, 9, 23, 22, 30)).id).toBe("q1");
+    expect(defaultPeriod(new Date(2026, 9, 24, 0, 5)).id).toBe("q2");
     expect(defaultPeriod(new Date("2026-11-01T12:00:00Z")).id).toBe("q2");
     expect(defaultPeriod(new Date("2027-06-01T12:00:00Z")).id).toBe("q2");
   });

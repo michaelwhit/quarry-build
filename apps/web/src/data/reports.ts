@@ -33,7 +33,12 @@ export const PERIODS: readonly Period[] = [
 ];
 
 export function defaultPeriod(now: Date = new Date()): Period {
-  const today = now.toISOString().slice(0, 10);
+  // The local calendar day, not the UTC one, so an evening visit does not jump a day ahead.
+  const today = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, "0"),
+    String(now.getDate()).padStart(2, "0"),
+  ].join("-");
   return PERIODS.find((p) => p.due >= today) ?? PERIODS[PERIODS.length - 1]!;
 }
 
@@ -312,6 +317,8 @@ export function markCopied(
   needed: readonly CopyPart[],
   ctx: Ctx,
 ) {
+  // The clipboard write is awaited before this runs, so work from the latest saved record.
+  rec = getRecord(rec.studentId, rec.periodId);
   if (rec.state !== "approved" && rec.state !== "copied") return;
   const prev = rec.goals[goalId];
   if (prev?.copied) return;
