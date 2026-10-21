@@ -27,6 +27,14 @@ const expectedMeta = CSP.replace(/;\s*frame-ancestors[^;]*/, "");
 if (meta !== expectedMeta) problems.push("CSP meta differs from the header policy");
 
 for (const f of readdirSync(new URL("assets/", dist))) {
+  if (f.endsWith(".css")) {
+    // The policy already refuses other origins; this keeps a stylesheet from ever carrying one.
+    const css = readFileSync(new URL(`assets/${f}`, dist), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+    if (/@import\b/i.test(css)) problems.push(`@import in assets/${f}`);
+    if (/url\(\s*["']?\s*(?:https?:)?\/\//i.test(css))
+      problems.push(`url() to another host in assets/${f}`);
+    continue;
+  }
   if (!f.endsWith(".js")) continue;
   const js = readFileSync(new URL(`assets/${f}`, dist), "utf8");
   if (/\beval\s*\(|new Function\s*\(/.test(js.replace(/\/\*[\s\S]*?\*\//g, "")))

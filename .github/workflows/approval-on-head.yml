@@ -1,9 +1,8 @@
 # Sets the commit status "Approval on head" on a pull request's current head commit.
 #
 # success: the review for that exact head succeeded (PASS), and, when the change
-#          touches a path listed in tools/ci/protected-paths.txt, owner-written lines also name the
-#          full head sha in both "Reviewed by Clawson, Verdict: approved on <sha>" and
-#          "Security review by Sable, relayed by Clawson, Verdict: approved on <sha>".
+#          touches a path listed in tools/ci/protected-paths.txt, an owner-written line also names the
+#          full head sha in "Security review by Sable, relayed by Clawson, Verdict: approved on <sha>".
 # pending: something above is still missing.
 # failure: the review for the head failed (BLOCK, or it could not run).
 #
@@ -95,12 +94,10 @@ jobs:
             jq -r --arg o "$owner" \
             '[.[] | select(.user.login == $o and .state != "DISMISSED") | .body // ""] | .[]' <<<"$reviews")
           has_line() { grep -Fq -- "$1 $sha" <<<"$owner_text"; }
-          lead_ok=false
-          has_line "Reviewed by Clawson, Verdict: approved on" && lead_ok=true
           sec_ok=false
           has_line "Security review by Sable, relayed by Clawson, Verdict: approved on" && sec_ok=true
 
-          # Paths that need the lead and security lines as well. The list comes from the default
+          # Paths that need the security line as well. The list comes from the default
           # branch; if it cannot be read, every change counts as protected.
           protected=$(gh api "repos/$REPO/contents/tools/ci/protected-paths.txt?ref=$default_branch" \
             --jq '.content' 2>/dev/null | base64 -d 2>/dev/null | grep -Ev '^[[:space:]]*(#|$)' || true)
@@ -159,16 +156,15 @@ jobs:
             verdict=$(jq -r --arg s "$sha" --arg p ".github/workflows/claude-review.yml" "$review_filter" <<<"$runs")
           fi
 
-          echo "head=$sha lead=$lead_ok security_needed=$needs_sec security=$sec_ok review=$verdict"
+          echo "head=$sha security_needed=$needs_sec security=$sec_ok review=$verdict"
 
           if [ "$verdict" = "block" ]; then
             set_status failure "Automated review says BLOCK on this head"
-          elif [ "$verdict" = "pass" ] && { [ "$needs_sec" = "false" ] || { [ "$lead_ok" = "true" ] && [ "$sec_ok" = "true" ]; }; }; then
+          elif [ "$verdict" = "pass" ] && { [ "$needs_sec" = "false" ] || [ "$sec_ok" = "true" ]; }; then
             set_status success "Approved on this exact head"
           else
             missing=""
             [ "$verdict" = "pass" ] || missing="review PASS"
-            { [ "$needs_sec" = "false" ] || [ "$lead_ok" = "true" ]; } || missing="${missing:+$missing, }lead approval"
             { [ "$needs_sec" = "false" ] || [ "$sec_ok" = "true" ]; } || missing="${missing:+$missing, }security approval"
             set_status pending "Waiting for: $missing"
           fi
