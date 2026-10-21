@@ -83,6 +83,10 @@ const ALLOWED: Record<RoleId, readonly Action[]> = {
 export const can = (role: RoleId | null, action: Action): boolean =>
   role !== null && ALLOWED[role].includes(action);
 
+/** Where a para or gen-ed teacher lands when the address is not one of theirs: gen-ed teachers have no session screen, so they start on My students. */
+export const delegateFallback = (role: RoleId | null): "my_students" | "today" =>
+  role === "gen_ed_teacher" ? "my_students" : "today";
+
 /** Paras and gen-ed teachers see only the goals shared with them, with fewer student details. */
 export const isDelegateRole = (role: RoleId | null): boolean =>
   role === "paraprofessional" || role === "gen_ed_teacher";
