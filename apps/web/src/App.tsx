@@ -301,7 +301,7 @@ export function App() {
       <a className="skip" href="#main">
         Skip to content
       </a>
-      {noticeSeen ? null : (
+      {noticeSeen || !role ? null : (
         <div className="notice-backdrop">
           <div className="notice" role="dialog" aria-modal="true" aria-labelledby="notice-title">
             <h2 id="notice-title">Practice data, no real students</h2>
@@ -316,12 +316,16 @@ export function App() {
           </div>
         </div>
       )}
-      <div className="watermark" role="note">
-        TEST DATA · fake students only
-      </div>
-      <div className="watermark-bg" aria-hidden="true">
-        <span>TEST DATA</span>
-      </div>
+      {role && (
+        <>
+          <div className="watermark" role="note">
+            TEST DATA · fake students only
+          </div>
+          <div className="watermark-bg" aria-hidden="true">
+            <span>TEST DATA</span>
+          </div>
+        </>
+      )}
       <header className="top">
         <h1>
           GoalLine

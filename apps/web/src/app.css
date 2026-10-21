@@ -792,12 +792,12 @@ h2.page-title {
   text-align: center;
 }
 .landing-logo {
-  width: 96px;
-  height: 96px;
+  width: 160px;
+  height: 160px;
 }
 .landing-name {
   margin: 16px 0 0;
-  font-size: 34px;
+  font-size: 48px;
   font-weight: 700;
 }
 .landing-notice {
@@ -839,7 +839,7 @@ h2.landing-name {
   text-transform: none;
   letter-spacing: 0;
   color: var(--text);
-  font-size: 34px;
+  font-size: 48px;
 }
 .landing .signin-main,
 .landing .tour-link {
