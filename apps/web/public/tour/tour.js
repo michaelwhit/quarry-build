@@ -1,5 +1,5 @@
 /* global document */
-// Next and Back, the Computer / Tablet / Phone switch and the Light / Dark toggle for the tour.
+// Next and Back, and the Computer / Tablet / Phone list for the tour. Colours follow the visitor's own setting.
 // The choices live only in this page: nothing is stored and nothing is sent anywhere. Without this
 // script the page is a plain scrolling list of the same panels with every size shown.
 (function () {
@@ -11,34 +11,13 @@
   var i = 0;
   var root = document.documentElement;
   steps.hidden = false;
-  var deviceButtons = Array.prototype.slice.call(document.querySelectorAll("button[data-device]"));
-  var themeButtons = Array.prototype.slice.call(document.querySelectorAll("button[data-theme]"));
-  document.querySelector(".switch").hidden = false;
-  function setDevice(d) {
-    root.setAttribute("data-device", d);
-    deviceButtons.forEach(function (b) {
-      b.setAttribute("aria-pressed", String(b.getAttribute("data-device") === d));
-    });
-  }
-  function setTheme(t) {
-    root.setAttribute("data-theme", t);
-    themeButtons.forEach(function (b) {
-      b.setAttribute("aria-pressed", String(b.getAttribute("data-theme") === t));
-    });
-  }
-  deviceButtons.forEach(function (b) {
-    b.addEventListener("click", function () {
-      setDevice(b.getAttribute("data-device"));
-    });
+  var pick = document.getElementById("device");
+  pick.parentNode.hidden = false;
+  pick.addEventListener("change", function () {
+    root.setAttribute("data-device", pick.value);
   });
-  themeButtons.forEach(function (b) {
-    b.addEventListener("click", function () {
-      setTheme(b.getAttribute("data-theme"));
-    });
-  });
-  // boot.js already chose the first view; this only marks the buttons.
-  setDevice(root.getAttribute("data-device"));
-  setTheme(root.getAttribute("data-theme"));
+  // boot.js already chose the first view; this only shows it in the list.
+  pick.value = root.getAttribute("data-device");
   function show(n) {
     i = Math.max(0, Math.min(panels.length - 1, n));
     panels.forEach(function (p, k) {
@@ -53,6 +32,48 @@
   });
   next.addEventListener("click", function () {
     show(i + 1);
+  });
+  // Each screen with prepared pictures: tap a numbered area to open the next prepared picture or
+  // read a one-line note. Every tap lands on a picture the page already holds.
+  panels.forEach(function (panel) {
+    var figs = Array.prototype.slice.call(panel.querySelectorAll(".shot[data-state]"));
+    var walk = panel.querySelector(".walk");
+    if (!figs.length || !walk) return;
+    var prompt = walk.querySelector(".prompt");
+    var prev = walk.querySelector(".prev");
+    var skip = walk.querySelector(".skip");
+    var current = figs[0].getAttribute("data-state");
+    var history = [];
+    function open(state) {
+      current = state;
+      var said = null;
+      figs.forEach(function (f) {
+        var on = f.getAttribute("data-state") === state;
+        f.classList.toggle("cur", on);
+        if (on && said === null) said = f.getAttribute("data-prompt");
+      });
+      prompt.textContent = said || "";
+      prev.hidden = history.length === 0;
+    }
+    walk.hidden = false;
+    open(current);
+    panel.addEventListener("click", function (e) {
+      var hot = e.target.closest ? e.target.closest(".hot") : null;
+      if (!hot) return;
+      var to = hot.getAttribute("data-go");
+      var say = hot.getAttribute("data-say");
+      if (to === "next") show(i + 1);
+      else if (to) {
+        history.push(current);
+        open(to);
+      } else if (say) prompt.textContent = say;
+    });
+    prev.addEventListener("click", function () {
+      if (history.length) open(history.pop());
+    });
+    skip.addEventListener("click", function () {
+      show(i + 1);
+    });
   });
   document.addEventListener("keydown", function (e) {
     if (e.key === "ArrowRight") show(i + 1);
