@@ -1,3 +1,4 @@
+/* global document */
 // Next and Back for the tour. Nothing is stored and nothing is sent anywhere. Without this script
 // the page is a plain scrolling list of the same panels.
 (function () {
