@@ -797,6 +797,8 @@ h2.page-title {
   max-width: 360px;
   margin: 0 auto;
   padding-top: 32px;
+  padding-bottom: 48px;
+  min-height: calc(100svh - 220px);
   text-align: center;
 }
 .landing-logo {
@@ -807,22 +809,6 @@ h2.page-title {
   margin: 16px 0 0;
   font-size: 48px;
   font-weight: 700;
-}
-.landing-notice {
-  margin-top: 32px;
-  padding: 12px 16px;
-  width: 100%;
-  border-radius: var(--radius);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  text-align: left;
-}
-.landing-notice h3 {
-  margin: 0 0 4px;
-  font-size: 15px;
-}
-.landing-notice p {
-  margin: 0;
 }
 .landing .signin-main {
   margin-top: 24px;
@@ -867,12 +853,13 @@ h2.landing-name {
 }
 
 .landing-slogan {
-  margin: 8px 0 0;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 .landing-affil {
-  margin: 4px 0 0;
+  margin: 2px 0 0;
   color: var(--text-muted);
-  font-size: 0.8rem;
+  font-size: 0.75rem;
 }

@@ -194,12 +194,12 @@ describe("shortGoal", () => {
 });
 
 describe("sign-in landing", () => {
-  it("opens on the logo, name, practice notice and one Sign in button, with no role choices", () => {
+  it("opens on the logo, name, slogan and one Sign in button, with no role choices and no practice card", () => {
     const html = renderToString(createElement(SignIn));
     expect(html).toContain("GoalLine");
     expect(html).toContain('src="icon.svg"');
-    expect(html).toContain("Everything in this app is made up. No real student information.");
-    expect(html).toContain("Practice data only. Not for real students.");
+    expect(html).not.toContain("Everything in this app is made up. No real student information.");
+    expect(html).not.toContain("landing-notice");
     expect(html).toContain("Made by SPED staff for SPED staff");
     expect(html).toContain("Not affiliated with any school district or state agency.");
     expect(html).toContain(">Sign in<");
