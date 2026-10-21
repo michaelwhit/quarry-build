@@ -81,12 +81,16 @@ header.top h1 {
   margin: 0;
   font-size: 1.15rem;
   flex: 1;
+  min-width: 0;
 }
 header.top .sub {
   color: var(--text-muted);
   font-size: 0.8rem;
   font-weight: 400;
   display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 button,
 .btn {
@@ -425,6 +429,9 @@ footer {
   color: var(--on-primary);
   border-color: var(--primary);
 }
+.actions.stack {
+  grid-template-columns: 1fr;
+}
 .actions button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -590,8 +597,9 @@ body {
   font-size: 0.8rem;
   margin: 0;
 }
+/* Dimmed by a dashed border and muted text, not by opacity, so the words keep 4.5:1 contrast. */
 .tile-card.planned {
-  opacity: 0.75;
+  border-style: dashed;
   color: var(--text-muted);
 }
 .tile-card.planned strong {

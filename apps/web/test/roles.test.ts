@@ -3,7 +3,7 @@ import { renderToString } from "react-dom/server";
 import { beforeEach, describe, expect, it } from "vitest";
 import { displayName, scrub, students } from "../src/data/district.ts";
 import { agreeToPrivacy, can, isDelegateRole, needsPrivacy, setRole } from "../src/data/roles.ts";
-import { shortGoal } from "../src/ui/Home.tsx";
+import { Today, shortGoal } from "../src/ui/Home.tsx";
 import { SignIn } from "../src/ui/SignIn.tsx";
 import {
   addGoal,
@@ -87,6 +87,17 @@ describe("practice roles", () => {
     setRole("case_manager");
     deleteGoal(gid);
     expect(getWorkspace().delegated).not.toContain(gid);
+  });
+
+  it("lets paras start a session on a shared goal but gen-ed teachers only read it", () => {
+    const gid = students[0]!.goals[0]!.goal.id;
+    setDelegated(gid, true);
+    setRole("paraprofessional");
+    expect(renderToString(createElement(Today))).toContain("Start a session");
+    setRole("gen_ed_teacher");
+    const html = renderToString(createElement(Today));
+    expect(html).toContain("Your goals today");
+    expect(html).not.toContain("Start a session");
   });
 
   it("limits actions by role", () => {

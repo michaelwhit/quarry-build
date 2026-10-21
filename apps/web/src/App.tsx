@@ -248,7 +248,8 @@ export function App() {
   const eg = /^#\/student\/([^/]+)\/goal\/([^/]+)\/edit$/.exec(hash);
   const delegate = isDelegateRole(role);
   // Paras and gen-ed teachers get Today and More, and the session screen reached from Today.
-  const delegateOk = hash === "#/today" || hash === "#/more" || (t?.[1] && t[2]);
+  const delegateOk =
+    hash === "#/today" || hash === "#/more" || (role === "paraprofessional" && t?.[1] && t[2]);
   const screen =
     delegate && !delegateOk ? (
       <Today />
@@ -329,10 +330,7 @@ export function App() {
       <header className="top">
         <h1>
           GoalLine
-          <span className="sub">
-            {districtName}
-            {role ? ` · ${roleById(role)?.person}` : ""}
-          </span>
+          <span className="sub">{role ? roleById(role)?.person : districtName}</span>
         </h1>
         <button type="button" onClick={theme.toggle}>
           {theme.label}
