@@ -22,6 +22,8 @@ import {
   serverFetch,
   useFetch,
 } from "../src/auth/client.ts";
+import { begin, currentPerson } from "../src/auth/session.ts";
+import { onSignOut, setRole } from "../src/data/roles.ts";
 import { AuthPanel, groupKey } from "../src/auth/AuthPanel.tsx";
 import { PendingList, defaultEndsOn } from "../src/auth/PendingList.tsx";
 import { errorMessage, waitMessage } from "../src/auth/messages.ts";
@@ -507,5 +509,77 @@ describe("second factor", () => {
   it("groups the setup key in fours", () => {
     expect(groupKey("ABCDEFGHJKLMNPQR")).toBe("ABCD EFGH JKLM NPQR");
     expect(groupKey("abcd efgh ij")).toBe("abcd efgh ij");
+  });
+});
+
+describe("the scheduled refresh", () => {
+  const T0 = Date.parse("2030-06-01T12:00:00Z");
+  const ends = (ms: number) => new Date(T0 + ms).toISOString();
+  const fresh = (ms: number) => ({ ...signedIn, access_expires_at: ends(ms) });
+  const person = {
+    id: "u1",
+    displayName: "Pat Case",
+    email: "pat@example.test",
+    role: "case_manager" as const,
+  };
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(T0);
+  });
+  afterEach(() => {
+    onSignOut(null);
+    setRole(null);
+    vi.useRealTimers();
+  });
+
+  async function start(refreshAnswer: () => Response) {
+    let answer = () => reply(200, fresh(600_000));
+    server({ "/v0/auth/web/refresh": () => answer() });
+    expect(await refresh()).toBe("ok");
+    begin(person);
+    answer = refreshAnswer;
+    return (next: () => Response) => (answer = next);
+  }
+
+  it("keeps the person signed in through a brief network failure", async () => {
+    const set = await start(() => {
+      throw new Error("offline");
+    });
+    await vi.advanceTimersByTimeAsync(540_000); // the refresh fires a minute before the end
+    expect(currentPerson()).not.toBeNull();
+    await vi.advanceTimersByTimeAsync(15_000); // a retry still cannot reach the server
+    expect(currentPerson()).not.toBeNull();
+    set(() => reply(200, fresh(1_200_000)));
+    await vi.advanceTimersByTimeAsync(15_000); // the next retry works
+    expect(currentPerson()).not.toBeNull();
+    expect(hasToken()).toBe(true);
+  });
+
+  it("keeps trying on a server error until the token itself runs out, then signs out", async () => {
+    await start(() => reply(500));
+    await vi.advanceTimersByTimeAsync(540_000);
+    expect(currentPerson()).not.toBeNull();
+    await vi.advanceTimersByTimeAsync(45_000);
+    expect(currentPerson()).not.toBeNull();
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(currentPerson()).toBeNull();
+    expect(hasToken()).toBe(false);
+  });
+
+  it("signs out at once when the server says the session is over", async () => {
+    await start(() => reply(401));
+    await vi.advanceTimersByTimeAsync(540_000);
+    expect(currentPerson()).toBeNull();
+    expect(hasToken()).toBe(false);
+  });
+
+  it("refuses an end time it cannot read, so the timer cannot loop", async () => {
+    server({
+      "/v0/auth/web/refresh": () => reply(200, { ...signedIn, access_expires_at: "soon" }),
+    });
+    expect(await refresh()).toBe("no_server");
+    expect(hasToken()).toBe(false);
+    expect(calls).toHaveLength(1);
   });
 });
