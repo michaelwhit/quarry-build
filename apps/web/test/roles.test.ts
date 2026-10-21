@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { displayName, scrub, students } from "../src/data/district.ts";
 import { agreeToPrivacy, can, isDelegateRole, needsPrivacy, setRole } from "../src/data/roles.ts";
 import { Today, shortGoal } from "../src/ui/Home.tsx";
+import { safeDecode } from "../src/data/hash.ts";
 import { AtAGlance, MyStudents } from "../src/ui/Glance.tsx";
 import { SignIn } from "../src/ui/SignIn.tsx";
 import {
@@ -241,6 +242,18 @@ describe("gen-ed At a glance", () => {
       "<input",
     ])
       expect(html).not.toContain(banned);
+  });
+
+  it("survives a malformed percent escape in the address and encodes ids in links", () => {
+    expect(safeDecode("%E0%A4%A")).toBe("");
+    expect(safeDecode("%")).toBe("");
+    expect(safeDecode("a%20b")).toBe("a b");
+    const html = renderToString(createElement(AtAGlance, { studentId: safeDecode("%E0%A4%A") }));
+    expect(html).toContain("This student is no longer shared with you.");
+    share();
+    expect(renderToString(createElement(MyStudents))).toContain(
+      `#/glance/${encodeURIComponent(students[0]!.student.id)}`,
+    );
   });
 
   it("says a student is no longer shared, with no data", () => {

@@ -28,7 +28,11 @@ export interface StudentView {
   lastDataAt: string | undefined;
 }
 
-/** What a role may see of a student: paras and gen-ed teachers get a trimmed identity. */
+/**
+ * What a role may see of a student. Decision (Sable's access review, 2026-10-20): gen-ed teachers
+ * see the full name and grade by design, since they already hold their class roster; paras see a
+ * first name only. Neither sees ids or the birth date.
+ */
 function maskFor(role: RoleId | null, s: Student): Student {
   if (role !== "paraprofessional" && role !== "gen_ed_teacher") return s;
   // Gen-ed teachers see the full name and grade (they already hold their class roster); paras

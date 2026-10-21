@@ -18,7 +18,7 @@ export function MyStudents() {
             .sort((a, b) => displayName(a.student).localeCompare(displayName(b.student)))
             .map((s) => (
               <li key={s.student.id}>
-                <a className="pick-btn" href={`#/glance/${s.student.id}`}>
+                <a className="pick-btn" href={`#/glance/${encodeURIComponent(s.student.id)}`}>
                   <strong>{displayName(s.student)}</strong>
                   <span className="meta">
                     {s.student.grade ? `Grade ${s.student.grade} · ` : ""}

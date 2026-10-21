@@ -17,6 +17,7 @@ import {
   setRole,
   subscribeRole,
 } from "./data/roles.ts";
+import { safeDecode } from "./data/hash.ts";
 import { AtAGlance, MyStudents } from "./ui/Glance.tsx";
 import { Privacy, SignIn } from "./ui/SignIn.tsx";
 import { getVersion, getWorkspace, setDelegated, setServed, subscribe } from "./data/workspace.ts";
@@ -259,7 +260,7 @@ export function App() {
     role === "gen_ed_teacher" && hash === "#/today" ? (
       <MyStudents />
     ) : role === "gen_ed_teacher" && glance?.[1] ? (
-      <AtAGlance studentId={decodeURIComponent(glance[1])} />
+      <AtAGlance studentId={safeDecode(glance[1])} />
     ) : delegate && !delegateOk ? (
       <Today />
     ) : t?.[1] && t[2] ? (
@@ -274,24 +275,24 @@ export function App() {
       )
     ) : es?.[1] ? (
       allow("editStudent") ? (
-        <AddStudent editId={decodeURIComponent(es[1])} />
+        <AddStudent editId={safeDecode(es[1])} />
       ) : (
         <NotAllowed />
       )
     ) : eg?.[1] && eg[2] ? (
       allow("editGoal") ? (
-        <AddGoal studentId={decodeURIComponent(eg[1])} editGoalId={decodeURIComponent(eg[2])} />
+        <AddGoal studentId={safeDecode(eg[1])} editGoalId={safeDecode(eg[2])} />
       ) : (
         <NotAllowed />
       )
     ) : g?.[1] ? (
       allow("editGoal") ? (
-        <AddGoal studentId={decodeURIComponent(g[1])} />
+        <AddGoal studentId={safeDecode(g[1])} />
       ) : (
         <NotAllowed />
       )
     ) : m?.[1] ? (
-      <StudentPage id={decodeURIComponent(m[1])} />
+      <StudentPage id={safeDecode(m[1])} />
     ) : hash === "#/caseload" ? (
       <Caseload />
     ) : hash === "#/today" ? (
