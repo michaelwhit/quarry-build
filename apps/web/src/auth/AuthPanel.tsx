@@ -270,7 +270,6 @@ function SchoolSignup({ onPending, onBack }: { onPending: () => void; onBack: ()
   const [school, setSchool] = useState<School | null>(null);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
-  const [password, setPw] = useState("");
   const [busy, setBusy] = useState(false);
   const [out, setOut] = useState<Outcome | null>(null);
 
@@ -302,9 +301,8 @@ function SchoolSignup({ onPending, onBack }: { onPending: () => void; onBack: ()
     e.preventDefault();
     if (busy || !school) return;
     setBusy(true);
-    const res = await signUpSchool(school.id, email, name, password);
+    const res = await signUpSchool(school.id, email, name);
     setBusy(false);
-    setPw("");
     // Every outcome after the checks is the same waiting screen.
     if (res.kind === "pending") onPending();
     else setOut(res);
@@ -368,14 +366,6 @@ function SchoolSignup({ onPending, onBack }: { onPending: () => void; onBack: ()
           type="email"
           autoComplete="username"
         />
-        <Field
-          label="New password"
-          value={password}
-          onChange={setPw}
-          type="password"
-          autoComplete="new-password"
-          hint={RULES}
-        />
         <Errors out={out} />
         <button type="submit" className="save signin-main" disabled={busy || !school}>
           {busy ? "One moment…" : "Request access"}
@@ -385,7 +375,7 @@ function SchoolSignup({ onPending, onBack }: { onPending: () => void; onBack: ()
   );
 }
 
-/** Email and password, the one-time-code screen, and sign-up with an invite code. */
+/** Email and password, the setup-code screen, and sign-up with an invite code. */
 export function AuthPanel({ onBack }: { onBack: () => void }) {
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
@@ -415,7 +405,7 @@ export function AuthPanel({ onBack }: { onBack: () => void }) {
         ? await signIn(email, password)
         : mode === "setpw"
           ? await setPassword(email, code, password)
-          : await signUp(code, email, name, password);
+          : await signUp(code, email, name);
     setBusy(false);
     setPw("");
     if (res.kind === "signed_in") begin(res.me);
@@ -476,7 +466,10 @@ export function AuthPanel({ onBack }: { onBack: () => void }) {
     return (
       <main id="main" className="signin">
         <h2 className="page-title">Thanks. Waiting for approval</h2>
-        <p>Your director will let you know when you can sign in.</p>
+        <p>
+          Your director will check your request. Once approved, they&apos;ll give you a setup code
+          in person. Use it to set your password and your authenticator.
+        </p>
         <button type="button" className="save signin-main" onClick={() => go("signin")}>
           Back to sign in
         </button>
@@ -489,7 +482,7 @@ export function AuthPanel({ onBack }: { onBack: () => void }) {
       : mode === "setpw"
         ? "Set your password"
         : "Sign up with an invite code";
-  const newPw = mode !== "signin";
+  const newPw = mode === "setpw";
   return (
     <main id="main" className="signin">
       <button type="button" onClick={onBack}>
@@ -510,7 +503,7 @@ export function AuthPanel({ onBack }: { onBack: () => void }) {
         )}
         {mode === "setpw" && (
           <Field
-            label="One-time code from your director"
+            label="Setup code from your director"
             value={code}
             onChange={setCode}
             autoComplete="one-time-code"
@@ -523,14 +516,16 @@ export function AuthPanel({ onBack }: { onBack: () => void }) {
           type="email"
           autoComplete="username"
         />
-        <Field
-          label={newPw ? "New password" : "Password"}
-          value={password}
-          onChange={setPw}
-          type="password"
-          autoComplete={newPw ? "new-password" : "current-password"}
-          hint={newPw ? RULES : undefined}
-        />
+        {mode !== "signup" && (
+          <Field
+            label={newPw ? "New password" : "Password"}
+            value={password}
+            onChange={setPw}
+            type="password"
+            autoComplete={newPw ? "new-password" : "current-password"}
+            hint={newPw ? RULES : undefined}
+          />
+        )}
         <Errors out={out} />
         <button type="submit" className="save signin-main" disabled={busy}>
           {busy ? "One moment…" : mode === "signup" ? "Request access" : title}
@@ -551,7 +546,7 @@ export function AuthPanel({ onBack }: { onBack: () => void }) {
       )}
       {mode !== "setpw" && (
         <button type="button" onClick={() => go("setpw")}>
-          I have a one-time code
+          I have a setup code
         </button>
       )}
     </main>

@@ -131,19 +131,18 @@ describe("password sign-in client", () => {
 
   it("sign-up answers pending with no session", async () => {
     server({ "/v0/auth/signup": () => reply(202, { status: "pending" }) });
-    expect(await signUp("INV", "a@example.test", "A B", "a long passphrase here")).toEqual({
+    expect(await signUp("INV", "a@example.test", "A B")).toEqual({
       kind: "pending",
     });
-    expect(JSON.parse(String(calls[0]!.init?.body))).toMatchObject({
-      code: "INV",
-      displayName: "A B",
-    });
+    const sentBody = JSON.parse(String(calls[0]!.init?.body)) as Record<string, unknown>;
+    expect(sentBody).toMatchObject({ code: "INV", displayName: "A B" });
+    expect(sentBody).not.toHaveProperty("password");
     expect(hasToken()).toBe(false);
   });
 
   it("sign-up answers pending the way the server does, 403 with status pending, and keeps no token", async () => {
     server({ "/v0/auth/signup": () => reply(403, { status: "pending" }) });
-    expect(await signUp("INV", "a@example.test", "A B", "a long passphrase here")).toEqual({
+    expect(await signUp("INV", "a@example.test", "A B")).toEqual({
       kind: "pending",
     });
     expect(hasToken()).toBe(false);
@@ -151,7 +150,7 @@ describe("password sign-in client", () => {
 
   it("a 403 without the pending status is an ordinary error", async () => {
     server({ "/v0/auth/signup": () => reply(403, { title: "forbidden" }) });
-    const out = await signUp("INV", "a@example.test", "A B", "a long passphrase here");
+    const out = await signUp("INV", "a@example.test", "A B");
     expect(out.kind).toBe("error");
   });
 
@@ -662,18 +661,19 @@ describe("school sign-up and the director's new routes", () => {
 
   it("signs up with a school id and no code, and every 202 is the same waiting answer", async () => {
     server({ "/v0/auth/signup": () => reply(202, { status: "pending" }) });
-    expect(await signUpSchool("sch1", "a@example.test", "A B", "a long passphrase here")).toEqual({
+    expect(await signUpSchool("sch1", "a@example.test", "A B")).toEqual({
       kind: "pending",
     });
     const body = sent();
     expect(body).toMatchObject({ schoolId: "sch1", email: "a@example.test", displayName: "A B" });
     expect(body).not.toHaveProperty("code");
+    expect(body).not.toHaveProperty("password");
     expect(hasToken()).toBe(false);
   });
 
   it("a school that is not taking sign-ups gets its own 401 line", async () => {
     server({ "/v0/auth/signup": () => reply(401) });
-    const out = await signUpSchool("sch1", "a@example.test", "A B", "pw");
+    const out = await signUpSchool("sch1", "a@example.test", "A B");
     expect((out as { message: string }).message).toBe(
       "That school isn't taking sign-ups. Ask your director for an invite code.",
     );
