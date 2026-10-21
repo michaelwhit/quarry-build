@@ -1,0 +1,17 @@
+# Fires the automated review. It holds no secrets, has no permissions and checks nothing out, so
+# a pull request may edit it freely and gain nothing: the review itself runs in claude-review-trusted.yml,
+# which is always read from the default branch (workflow_run).
+name: Review request
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions: {}
+
+jobs:
+  request:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - run: echo "review requested"
