@@ -159,7 +159,11 @@ subscribeRole(() => {
   if (!canSeeOverdue(getRole())) clearOverdue();
 });
 
-const isoToday = (): string => new Date().toISOString().slice(0, 10);
+/** The date on the clock where the person is, from local fields (not the UTC date). */
+export function isoToday(now: Date = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
 export const getPracticeDate = (): string | null => practiceDate;
 export function setPracticeDate(iso: string | null): void {
   practiceDate = iso;

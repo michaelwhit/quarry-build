@@ -7,6 +7,7 @@ import {
   canSeeOverdue,
   clearOverdue,
   homeLine,
+  isoToday,
   overdueCount,
   overdueList,
   recordListLoad,
@@ -87,6 +88,18 @@ describe("which reports are waiting", () => {
   it("has a calm empty state and Home line", () => {
     expect(homeLine("2026-10-20")).toBe("No progress reports overdue");
     expect(homeLine("2026-10-30")).toBe("6 progress reports overdue");
+  });
+});
+
+describe("today's date", () => {
+  it("is the local date, even late in the evening", () => {
+    // 9:30 pm local on Friday Oct 23: the UTC date is already Saturday, but the local day is Friday.
+    const lateEvening = new Date(2026, 9, 23, 21, 30);
+    expect(isoToday(lateEvening)).toBe("2026-10-23");
+    expect(overdueCount(isoToday(lateEvening))).toBe(0);
+    // Just after midnight local on Monday Oct 26.
+    expect(isoToday(new Date(2026, 9, 26, 0, 5))).toBe("2026-10-26");
+    expect(isoToday(new Date(2027, 0, 5, 23, 59))).toBe("2027-01-05");
   });
 });
 
