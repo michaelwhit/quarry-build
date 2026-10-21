@@ -35,8 +35,6 @@ export interface StudentView {
  */
 function maskFor(role: RoleId | null, s: Student): Student {
   if (role !== "paraprofessional" && role !== "gen_ed_teacher") return s;
-  // Gen-ed teachers see the full name and grade (they already hold their class roster); paras
-  // see a first name only. Neither sees ids or the birth date.
   if (role === "gen_ed_teacher")
     return { ...s, local_student_id: "", state_student_id: "", dob: "" };
   return {
