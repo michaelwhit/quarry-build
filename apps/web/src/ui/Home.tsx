@@ -4,6 +4,7 @@ import { can, getRole, isDelegateRole, roleById, setRole } from "../data/roles.t
 import { displayName, districtName, goalCounts, students } from "../data/district.ts";
 import { canSeeOverdue } from "../data/overdue.ts";
 import { OverdueHomeLine } from "./Overdue.tsx";
+import { ReportsDue } from "./ProgressReport.tsx";
 import { clearAll, exportText, getWorkspace, importText, loadSample } from "../data/workspace.ts";
 
 interface Tile {
@@ -203,6 +204,7 @@ export function Today() {
         </p>
       ) : (
         <>
+          <ReportsDue />
           <h3 className="sec">To do ({todo.length})</h3>
           {todo.length === 0 ? (
             <p className="empty">Every goal is caught up for its schedule.</p>
