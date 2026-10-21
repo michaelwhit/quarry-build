@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { setPassword, signIn, signUp } from "./client.ts";
-import type { Outcome } from "./client.ts";
+import { enrolConfirm, enrolStart, secondFactor, setPassword, signIn, signUp } from "./client.ts";
+import type { Confirm, Enrol, Me, Outcome } from "./client.ts";
 import { restore, begin } from "./session.ts";
-import { NO_SERVER } from "./messages.ts";
+import { NO_SERVER, START_OVER } from "./messages.ts";
 
 const RULES =
   "At least 14 characters. A few unrelated words together work well. Not a common or breached password, and not your name, your email, or GoalLine.";
 
-type Mode = "signin" | "setpw" | "signup" | "waiting";
+type Mode = "signin" | "setpw" | "signup" | "waiting" | "factor" | "enrol" | "notice";
 
 function Field(props: {
   label: string;
@@ -42,7 +42,7 @@ function Field(props: {
   );
 }
 
-function Errors({ out }: { out: Outcome | null }) {
+function Errors({ out }: { out: Outcome | Enrol | Confirm | null }) {
   if (out?.kind !== "error") return null;
   return (
     <div className="form-error" role="alert">
@@ -58,6 +58,201 @@ function Errors({ out }: { out: Outcome | null }) {
   );
 }
 
+/** Groups of four, for typing the setup key into an authenticator app by hand. */
+export const groupKey = (secret: string) =>
+  secret
+    .replace(/\s+/g, "")
+    .replace(/(.{4})/g, "$1 ")
+    .trim();
+
+/** The six-digit code from the authenticator app, or one recovery code. */
+function SecondFactor(props: {
+  challenge: string;
+  onSignedIn: (me: Me, recoveryLeft?: number) => void;
+  onStartOver: (message?: string | null) => void;
+}) {
+  const [useRecovery, setUseRecovery] = useState(false);
+  const [value, setValue] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [out, setOut] = useState<Outcome | null>(null);
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    const v = value.trim();
+    const res = await secondFactor(
+      props.challenge,
+      useRecovery ? { recoveryCode: v } : { code: v },
+    );
+    setBusy(false);
+    setValue("");
+    if (res.kind === "signed_in") props.onSignedIn(res.me, res.recoveryLeft);
+    else setOut(res);
+  };
+  return (
+    <main id="main" className="signin">
+      <h2 className="page-title">{useRecovery ? "Use a recovery code" : "Enter your code"}</h2>
+      <p>
+        {useRecovery
+          ? "Type one of the recovery codes you saved. Each works once."
+          : "Open your authenticator app and type the 6-digit code for GoalLine."}
+      </p>
+      <form className="form" onSubmit={(e) => void submit(e)}>
+        <label>
+          <span>{useRecovery ? "Recovery code" : "6-digit code"}</span>
+          <input
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            inputMode={useRecovery ? "text" : "numeric"}
+            autoComplete="one-time-code"
+            autoCapitalize="characters"
+            spellCheck={false}
+            required
+          />
+        </label>
+        <Errors out={out} />
+        <button type="submit" className="save signin-main" disabled={busy}>
+          {busy ? "One moment…" : "Sign in"}
+        </button>
+      </form>
+      <button
+        type="button"
+        onClick={() => {
+          setUseRecovery(!useRecovery);
+          setValue("");
+          setOut(null);
+        }}
+      >
+        {useRecovery ? "Use my authenticator app instead" : "Use a recovery code"}
+      </button>
+      <button type="button" onClick={() => props.onStartOver(null)}>
+        Start again from my password
+      </button>
+    </main>
+  );
+}
+
+/** First sign-in: set up the authenticator app, then save the recovery codes once. */
+function Enrolment(props: {
+  challenge: string;
+  onFinished: (me: Me | null, after: string | null) => void;
+  onStartOver: (message?: string | null) => void;
+}) {
+  const [key, setKey] = useState<Enrol | null>(null);
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [out, setOut] = useState<Confirm | null>(null);
+  const [saved, setSaved] = useState<{
+    codes: string[];
+    me: Me | null;
+    after: string | null;
+  } | null>(null);
+  useEffect(() => {
+    let live = true;
+    void enrolStart(props.challenge).then((r) => {
+      if (!live) return;
+      if (r.kind === "expired") props.onStartOver(START_OVER);
+      else setKey(r);
+    });
+    return () => {
+      live = false;
+    };
+    // The challenge never changes while this screen is open.
+  }, [props.challenge]);
+
+  if (saved)
+    return (
+      <main id="main" className="signin">
+        <h2 className="page-title">Save your recovery codes</h2>
+        <p>
+          Save these recovery codes somewhere safe. Each works once if you lose your phone. They are
+          shown only now.
+        </p>
+        <ul className="recovery-codes">
+          {saved.codes.map((c) => (
+            <li key={c}>
+              <code>{c}</code>
+            </li>
+          ))}
+        </ul>
+        <button
+          type="button"
+          className="save signin-main"
+          onClick={() => props.onFinished(saved.me, saved.after)}
+        >
+          I saved them
+        </button>
+      </main>
+    );
+
+  if (!key)
+    return (
+      <p className="meta" role="status">
+        Setting up your authenticator…
+      </p>
+    );
+  if (key.kind === "error")
+    return (
+      <main id="main" className="signin">
+        <Errors out={key} />
+        <button type="button" onClick={() => props.onStartOver(null)}>
+          Start again from my password
+        </button>
+      </main>
+    );
+  if (key.kind === "expired") return null;
+
+  const grouped = groupKey(key.secret);
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    const res = await enrolConfirm(props.challenge, code.trim());
+    setBusy(false);
+    setCode("");
+    if (res.kind === "codes") setSaved(res);
+    else setOut(res);
+  };
+  return (
+    <main id="main" className="signin">
+      <h2 className="page-title">Set up your authenticator app</h2>
+      <p>
+        Add GoalLine to Google Authenticator, Microsoft Authenticator or 1Password: choose to add an
+        account by typing a setup key, and type this one.
+      </p>
+      <p className="setup-key" aria-label="Setup key">
+        <code>{grouped}</code>
+      </p>
+      {key.otpauthUri.startsWith("otpauth://") && (
+        <p>
+          On a phone with an authenticator app, you can{" "}
+          <a href={key.otpauthUri}>open the setup link</a>.
+        </p>
+      )}
+      <form className="form" onSubmit={(e) => void submit(e)}>
+        <label>
+          <span>6-digit code from the app</span>
+          <input
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            spellCheck={false}
+            required
+          />
+        </label>
+        <Errors out={out} />
+        <button type="submit" className="save signin-main" disabled={busy}>
+          {busy ? "One moment…" : "Turn on and sign in"}
+        </button>
+      </form>
+      <button type="button" onClick={() => props.onStartOver(null)}>
+        Start again from my password
+      </button>
+    </main>
+  );
+}
+
 /** Email and password, the one-time-code screen, and sign-up with an invite code. */
 export function AuthPanel({ onBack }: { onBack: () => void }) {
   const [mode, setMode] = useState<Mode>("signin");
@@ -67,6 +262,11 @@ export function AuthPanel({ onBack }: { onBack: () => void }) {
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [out, setOut] = useState<Outcome | null>(null);
+  // Kept in memory only: the step-up challenge, and who is signed in while a notice is read.
+  const [challenge, setChallenge] = useState("");
+  const [notice, setNotice] = useState<{ me: Me; lines: string[]; after: string | null } | null>(
+    null,
+  );
 
   const go = (m: Mode) => {
     setMode(m);
@@ -88,8 +288,55 @@ export function AuthPanel({ onBack }: { onBack: () => void }) {
     setPw("");
     if (res.kind === "signed_in") begin(res.me);
     else if (res.kind === "pending") setMode("waiting");
-    else setOut(res);
+    else if (res.kind === "second_factor" || res.kind === "enrol") {
+      setChallenge(res.challenge);
+      setOut(null);
+      setMode(res.kind === "enrol" ? "enrol" : "factor");
+    } else setOut(res);
   };
+
+  const startOver = (message: string | null = null) => {
+    setChallenge("");
+    setMode("signin");
+    setOut(message ? { kind: "error", message, lines: [] } : null);
+  };
+
+  if (mode === "factor")
+    return (
+      <SecondFactor
+        challenge={challenge}
+        onSignedIn={(me, left) => {
+          if (left !== undefined && left <= 3) {
+            setNotice({ me, lines: [`You have ${left} recovery codes left.`], after: null });
+            setMode("notice");
+          } else begin(me);
+        }}
+        onStartOver={startOver}
+      />
+    );
+  if (mode === "enrol")
+    return (
+      <Enrolment
+        challenge={challenge}
+        onFinished={(me, after) => {
+          if (me) begin(me);
+          else startOver(after);
+        }}
+        onStartOver={startOver}
+      />
+    );
+  if (mode === "notice" && notice)
+    return (
+      <main id="main" className="signin">
+        <h2 className="page-title">Signed in</h2>
+        {notice.lines.map((l) => (
+          <p key={l}>{l}</p>
+        ))}
+        <button type="button" className="save signin-main" onClick={() => begin(notice.me)}>
+          Continue
+        </button>
+      </main>
+    );
 
   if (mode === "waiting")
     return (

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -8,6 +9,9 @@ import {
   listSignups,
   rejectSignup,
   forgetToken,
+  enrolConfirm,
+  enrolStart,
+  secondFactor,
   getMe,
   hasToken,
   refresh,
@@ -18,7 +22,7 @@ import {
   serverFetch,
   useFetch,
 } from "../src/auth/client.ts";
-import { AuthPanel } from "../src/auth/AuthPanel.tsx";
+import { AuthPanel, groupKey } from "../src/auth/AuthPanel.tsx";
 import { PendingList, defaultEndsOn } from "../src/auth/PendingList.tsx";
 import { errorMessage, waitMessage } from "../src/auth/messages.ts";
 
@@ -90,8 +94,10 @@ describe("password sign-in client", () => {
     expect(errorMessage("password", 409, null)).toContain("two other devices");
   });
 
-  it("cannot finish a second-factor or unknown status, and keeps no token", async () => {
-    server({ "/v0/auth/password": () => reply(200, { status: "second_factor", challenge: "c" }) });
+  it("cannot finish an unknown status, and keeps no token", async () => {
+    server({
+      "/v0/auth/password": () => reply(200, { status: "something_newer", challenge: "c" }),
+    });
     const out = await signIn("a@example.test", "pw");
     expect(out).toMatchObject({ kind: "error" });
     expect((out as { message: string }).message).toContain("can't finish signing in");
@@ -356,5 +362,150 @@ describe("the built-in fetch", () => {
     expect(seen[0]?.url).toBe("https://api.example.test/v0/me");
     expect(seen[0]?.init?.credentials).toBe("include");
     expect(seen[0]?.init?.method).toBe("GET");
+  });
+});
+
+describe("second factor", () => {
+  const body = (path: string) =>
+    JSON.parse(String(calls.find((c) => c.path === path)?.init?.body ?? "{}")) as Record<
+      string,
+      unknown
+    >;
+
+  it("password answers hand back a challenge to keep in memory, with no token", async () => {
+    server({ "/v0/auth/password": () => reply(200, { status: "second_factor", challenge: "c1" }) });
+    expect(await signIn("a@example.test", "pw")).toEqual({
+      kind: "second_factor",
+      challenge: "c1",
+    });
+    server({
+      "/v0/auth/password": () => reply(200, { status: "enrol_second_factor", challenge: "c2" }),
+    });
+    expect(await signIn("a@example.test", "pw")).toEqual({ kind: "enrol", challenge: "c2" });
+    expect(hasToken()).toBe(false);
+  });
+
+  it("a person with no authenticator yet is told to ask the director for a reset code", async () => {
+    server({
+      "/v0/auth/password": () => reply(403, { status: "second_factor_setup_needed" }),
+    });
+    const out = await signIn("a@example.test", "pw");
+    expect(out).toMatchObject({ kind: "error" });
+    expect(out.kind === "error" && out.message).toMatch(/reset code to set up your authenticator/);
+    expect(hasToken()).toBe(false);
+  });
+
+  it("long waits after too many wrong codes are given in hours", () => {
+    expect(waitMessage("3600")).toBe(
+      "Too many tries. Wait 1 hour and try again. Ask your director for a reset code to sign in sooner.",
+    );
+    expect(waitMessage("86400")).toContain("Wait 24 hours");
+    expect(waitMessage("3000")).toBe("Too many tries. Wait 50 minutes and try again.");
+  });
+
+  it("a challenge answer without a challenge string cannot finish", async () => {
+    server({ "/v0/auth/password": () => reply(200, { status: "second_factor" }) });
+    expect(await signIn("a@example.test", "pw")).toMatchObject({ kind: "error" });
+  });
+
+  it("signs in with a code or a recovery code, never both, and reports codes left", async () => {
+    server({
+      "/v0/auth/second-factor": () => reply(200, { ...signedIn, recovery_codes_left: 2 }),
+      "/v0/me": () => reply(200, me),
+    });
+    const out = await secondFactor("c1", { code: "123456" });
+    expect(out).toMatchObject({ kind: "signed_in", recoveryLeft: 2 });
+    const sent = body("/v0/auth/second-factor");
+    expect(sent).toMatchObject({ challenge: "c1", code: "123456", deviceId: deviceId() });
+    expect(sent).not.toHaveProperty("recoveryCode");
+    await secondFactor("c1", { recoveryCode: "ABCD-EFGH-JKLM-NPQR" });
+    const last = JSON.parse(
+      String(calls.filter((c) => c.path === "/v0/auth/second-factor")[1]?.init?.body),
+    );
+    expect(last).toMatchObject({ recoveryCode: "ABCD-EFGH-JKLM-NPQR" });
+    expect(last).not.toHaveProperty("code");
+    expect(calls[0]?.init?.headers).toMatchObject({ "X-GoalLine-Client": "web" });
+  });
+
+  it("says one thing for a wrong code, waits on 429 and names the device limit on 409", async () => {
+    server({ "/v0/auth/second-factor": () => reply(401) });
+    expect(await secondFactor("c", { code: "000000" })).toMatchObject({
+      message: "That code didn't work. Check the time on your phone, or use a recovery code.",
+    });
+    server({ "/v0/auth/second-factor": () => reply(429, undefined, { "Retry-After": "120" }) });
+    expect(await secondFactor("c", { code: "000000" })).toMatchObject({
+      message: "Too many tries. Wait 2 minutes and try again.",
+    });
+    server({ "/v0/auth/second-factor": () => reply(409) });
+    expect(await secondFactor("c", { code: "000000" })).toMatchObject({
+      message: expect.stringContaining("two other devices") as string,
+    });
+    expect(hasToken()).toBe(false);
+  });
+
+  it("enrol: returns the key and link, the same challenge each time, and 401 means start over", async () => {
+    server({
+      "/v0/auth/second-factor/enrol": () =>
+        reply(200, {
+          otpauth_uri: "otpauth://totp/GoalLine:a?secret=ABCDEFGHJKLMNPQR",
+          secret: "ABCDEFGHJKLMNPQR",
+        }),
+    });
+    expect(await enrolStart("c2")).toEqual({
+      kind: "key",
+      otpauthUri: "otpauth://totp/GoalLine:a?secret=ABCDEFGHJKLMNPQR",
+      secret: "ABCDEFGHJKLMNPQR",
+    });
+    expect(body("/v0/auth/second-factor/enrol")).toEqual({ challenge: "c2", deviceId: deviceId() });
+    server({ "/v0/auth/second-factor/enrol": () => reply(401) });
+    expect(await enrolStart("c2")).toEqual({ kind: "expired" });
+    server({ "/v0/auth/second-factor/enrol": () => reply(200, { secret: 5 }) });
+    expect(await enrolStart("c2")).toMatchObject({ kind: "error" });
+  });
+
+  it("enrol confirm returns the recovery codes once and signs in", async () => {
+    const codes = Array.from({ length: 10 }, (_, i) => `CODE-000${i}`);
+    server({
+      "/v0/auth/second-factor/enrol/confirm": () =>
+        reply(200, { ...signedIn, recovery_codes: codes }),
+      "/v0/me": () => reply(200, me),
+    });
+    const out = await enrolConfirm("c2", "123456");
+    expect(out).toMatchObject({ kind: "codes", after: null });
+    expect(out.kind === "codes" && out.codes).toEqual(codes);
+    expect(out.kind === "codes" && out.me?.role).toBe("case_manager");
+    expect(body("/v0/auth/second-factor/enrol/confirm")).toMatchObject({
+      challenge: "c2",
+      code: "123456",
+    });
+  });
+
+  it("enrol confirm 409 still shows the codes, then the device-limit line, with no session", async () => {
+    server({
+      "/v0/auth/second-factor/enrol/confirm": () => reply(409, { recovery_codes: ["AAAA-BBBB"] }),
+    });
+    const out = await enrolConfirm("c2", "123456");
+    expect(out).toMatchObject({ kind: "codes", codes: ["AAAA-BBBB"], me: null });
+    expect(out.kind === "codes" && out.after).toContain("two other devices");
+    expect(hasToken()).toBe(false);
+  });
+
+  it("enrol confirm: a wrong code is an error with no codes; a 200 without codes cannot finish", async () => {
+    server({ "/v0/auth/second-factor/enrol/confirm": () => reply(401) });
+    expect(await enrolConfirm("c2", "000000")).toMatchObject({ kind: "error" });
+    server({ "/v0/auth/second-factor/enrol/confirm": () => reply(200, signedIn) });
+    expect(await enrolConfirm("c2", "123456")).toMatchObject({ kind: "error" });
+  });
+
+  it("never writes a challenge, code or recovery code to browser storage", () => {
+    const src = readFileSync(new URL("../src/auth/AuthPanel.tsx", import.meta.url), "utf8");
+    expect(src).not.toMatch(/localStorage|sessionStorage|document\.cookie/);
+    // The setup key is never put on the clipboard.
+    expect(src).not.toMatch(/clipboard|Copy setup key/i);
+  });
+
+  it("groups the setup key in fours", () => {
+    expect(groupKey("ABCDEFGHJKLMNPQR")).toBe("ABCD EFGH JKLM NPQR");
+    expect(groupKey("abcd efgh ij")).toBe("abcd efgh ij");
   });
 });
