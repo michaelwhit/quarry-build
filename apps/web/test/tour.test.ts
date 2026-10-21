@@ -21,9 +21,7 @@ describe("public tour page", () => {
 
   it("carries the preview lines, the Planned label and no claims or names", () => {
     expect(html).toContain("Preview with practice data. Not for real students.");
-    expect(html).toContain("Not affiliated with any school district or state agency.");
-    expect(html).toContain("Contact details coming soon.");
-    expect(html).toContain("In this preview, each person sees only their part.");
+    expect(html).toContain("One tool for the whole special education team.");
     expect(html).toContain("Planned");
     const text = html.replace(/<[^>]+>/g, " ");
     // Terms are built from pieces so the list itself never spells a banned name out.
@@ -80,7 +78,7 @@ describe("public tour page", () => {
     // Every picture is labelled, and every picture file the page names exists in both colours.
     const labels = html.match(/Web app, practice data/g) ?? [];
     const figures = html.match(/<figure class="shot/g) ?? [];
-    expect(labels.length).toBe(figures.length - 1); // the goal-bank drawing is labelled Preview
+    expect(labels.length).toBe(figures.length - 3); // the three goal-bank drawings are labelled Preview
     for (const m of html.matchAll(/src="(img\/[^"]+)"/g)) read(m[1] as string);
   });
 
@@ -88,11 +86,62 @@ describe("public tour page", () => {
     expect(html).not.toMatch(/\sstyle\s*=|data:image/i);
   });
 
-  it("pairs the slogan with the not-affiliated line wherever it appears", () => {
+  it("keeps the page plain: one device list, no colour toggle, one footer, no slogan", () => {
     const flat = html.replace(/\s+/g, " ");
-    const slogan = '<p class="slogan">Made by SPED staff for SPED staff</p>';
-    const pair = `${slogan} <p class="note">Not affiliated with any school district or state agency.</p>`;
-    expect(flat.split(slogan)).toHaveLength(3);
-    expect(flat.split(pair)).toHaveLength(3);
+    expect(flat).toContain('<select id="device">');
+    expect(html).not.toMatch(/data-theme=|>Light<|>Dark</);
+    expect(html).not.toContain("Made by SPED staff");
+    expect(flat.split("Preview with practice data. Not for real students.")).toHaveLength(2);
+    expect(flat).toMatch(
+      /<footer class="foot">.*Preview with practice data.*Not affiliated.*<\/footer>/,
+    );
+    expect(html).not.toContain("Contact details");
+    expect(flat).toContain(
+      "Today this is the web app, which runs in a web browser. Mac and iPhone apps are planned.",
+    );
+    const js = read("tour.js") + read("boot.js");
+    expect(js).not.toMatch(/localStorage|sessionStorage|document\.cookie|fetch\(|XMLHttpRequest/);
+  });
+
+  it("guides with labelled tap areas that always land on a prepared picture", () => {
+    const css = read("hotspots.css");
+    const panels = html.split('<section class="panel"').slice(1);
+    let hotspots = 0;
+    for (const panel of panels) {
+      const states = new Set([...panel.matchAll(/data-state="([^"]+)"/g)].map((m) => m[1]));
+      for (const m of panel.matchAll(/<button type="button" class="hot ([^"]+)"([^>]*)>/g)) {
+        hotspots++;
+        const attrs = m[2] ?? "";
+        expect(attrs).toMatch(/aria-label="[^"]+"/);
+        const go = /data-go="([^"]+)"/.exec(attrs)?.[1];
+        const say = /data-say="([^"]+)"/.exec(attrs)?.[1];
+        expect(Boolean(go) !== Boolean(say)).toBe(true);
+        if (go && go !== "next") expect(states.has(go), go).toBe(true);
+        expect(css).toContain(`.${m[1]?.split(" ").at(-1)} {`);
+      }
+      if (panel.includes('class="hot')) expect(panel).toContain("Skip, show me the next screen");
+    }
+    expect(hotspots).toBeGreaterThan(10);
+    expect(html).toContain('<span class="lbl">');
+  });
+
+  it("keeps every tap area inside its picture and the motion off for reduced motion", () => {
+    for (const m of read("hotspots.css").matchAll(
+      /left: ([\d.]+)%; top: ([\d.]+)%; width: ([\d.]+)%; height: ([\d.]+)%/g,
+    )) {
+      const [x, y, w, h] = m.slice(1).map(Number) as [number, number, number, number];
+      expect(x + w).toBeLessThanOrEqual(100.05);
+      expect(y + h).toBeLessThanOrEqual(100.05);
+    }
+    const css = read("tour.css");
+    expect(css).toMatch(/@media \(prefers-reduced-motion: no-preference\)[^@]*animation: pulse/);
+    expect(css).toMatch(/min-height: 44px/);
+  });
+
+  it("opens the practice app in a new tab without passing anything along", () => {
+    expect(html).toContain(
+      '<a class="try" href="../" target="_blank" rel="noopener noreferrer" >Try the practice app</a >',
+    );
+    expect(html).not.toMatch(/href="\.\.\/[?#]/);
   });
 });

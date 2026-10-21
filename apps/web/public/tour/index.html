@@ -13,6 +13,7 @@
     <link rel="icon" href="../icon.svg" type="image/svg+xml" />
     <script src="boot.js"></script>
     <link rel="stylesheet" href="tour.css" />
+    <link rel="stylesheet" href="hotspots.css" />
     <title>GoalLine: see how it works</title>
   </head>
   <body>
@@ -20,270 +21,987 @@
       <a class="link" href="../">Back</a>
       <a class="link" href="../">Sign in</a>
     </header>
-    <section class="device-bar" aria-label="Choose how to view the pictures">
-      <div class="switch" hidden>
-        <div role="group" aria-label="Device">
-          <button type="button" data-device="computer">Computer</button>
-          <button type="button" data-device="tablet">Tablet</button>
-          <button type="button" data-device="phone">Phone</button>
-        </div>
-        <div role="group" aria-label="Colors">
-          <button type="button" data-theme="light">Light</button>
-          <button type="button" data-theme="dark">Dark</button>
-        </div>
-      </div>
-      <p class="note truth">
-        Today this is the web app, which runs in a web browser. Mac and iPhone apps are planned.
-      </p>
+    <section class="hero" aria-label="GoalLine">
+      <img class="logo" src="../icon.svg" alt="" width="48" height="48" />
+      <h1>GoalLine</h1>
+      <p class="line">One tool for the whole special education team.</p>
+      <label class="pick" hidden>
+        View on
+        <select id="device">
+          <option value="phone">Phone</option>
+          <option value="tablet">Tablet</option>
+          <option value="computer">Computer</option>
+        </select>
+      </label>
     </section>
     <main id="tour">
-      <section class="panel intro" aria-label="About this preview">
-        <img class="logo" src="../icon.svg" alt="" width="64" height="64" />
-        <h1>GoalLine</h1>
-        <p class="slogan">Made by SPED staff for SPED staff</p>
-        <p class="note">Not affiliated with any school district or state agency.</p>
-        <p>
-          GoalLine is one tool for the whole special education team. The teacher collects goal data,
-          the director sees where things stand, paras enter data on only their goals, and general ed
-          teachers will see what a student needs (planned). In this preview, each person sees only
-          their part.
-        </p>
-        <p class="note">Preview with practice data. Not for real students.</p>
-      </section>
-
       <section class="panel" aria-labelledby="p1">
         <h2 id="p1">Record data</h2>
-        <figure class="shot computer" data-device="computer">
+        <figure
+          class="shot computer cur"
+          data-device="computer"
+          data-state="record"
+          data-prompt="A session takes seconds. Tap the count, then Save."
+        >
           <figcaption class="dev">Computer view</figcaption>
-          <img
-            class="img-dark"
-            src="img/record-computer-dark.png"
-            width="1440"
-            height="900"
-            loading="lazy"
-            alt="Practice screen for recording a session on a goal, with a large count button and a Save session button"
-          />
-          <img
-            class="img-light"
-            src="img/record-computer-light.png"
-            width="1440"
-            height="900"
-            loading="lazy"
-            alt="Practice screen for recording a session on a goal, with a large count button and a Save session button"
-          />
+          <div class="pic">
+            <img
+              class="img-dark"
+              src="img/record-computer-dark.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt="Practice screen for recording a session on a goal, with a large count button and a Save session button"
+            /><img
+              class="img-light"
+              src="img/record-computer-light.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt="Practice screen for recording a session on a goal, with a large count button and a Save session button"
+            /><button
+              type="button"
+              class="hot h-record-computer-count"
+              data-go="record-count"
+              aria-label="Count a try. Opens the next picture."
+            >
+              <span class="n" aria-hidden="true">1</span
+              ><span class="lbl">Count a try</span></button
+            ><button
+              type="button"
+              class="hot h-record-computer-save"
+              data-go="next"
+              aria-label="Save session. Goes to the next screen."
+            >
+              <span class="n" aria-hidden="true">2</span><span class="lbl">Save session</span>
+            </button>
+          </div>
           <p class="pic-label">Web app, practice data</p>
         </figure>
-        <figure class="shot tablet" data-device="tablet">
+        <figure
+          class="shot tablet cur"
+          data-device="tablet"
+          data-state="record"
+          data-prompt="A session takes seconds. Tap the count, then Save."
+        >
           <figcaption class="dev">Tablet view</figcaption>
-          <img
-            class="img-dark"
-            src="img/record-tablet-dark.png"
-            width="820"
-            height="1180"
-            loading="lazy"
-            alt="Practice screen for recording a session on a goal, with a large count button and a Save session button"
-          />
-          <img
-            class="img-light"
-            src="img/record-tablet-light.png"
-            width="820"
-            height="1180"
-            loading="lazy"
-            alt="Practice screen for recording a session on a goal, with a large count button and a Save session button"
-          />
+          <div class="pic">
+            <img
+              class="img-dark"
+              src="img/record-tablet-dark.png"
+              width="820"
+              height="1180"
+              loading="lazy"
+              alt="Practice screen for recording a session on a goal, with a large count button and a Save session button"
+            /><img
+              class="img-light"
+              src="img/record-tablet-light.png"
+              width="820"
+              height="1180"
+              loading="lazy"
+              alt="Practice screen for recording a session on a goal, with a large count button and a Save session button"
+            /><button
+              type="button"
+              class="hot h-record-tablet-count"
+              data-go="record-count"
+              aria-label="Count a try. Opens the next picture."
+            >
+              <span class="n" aria-hidden="true">1</span
+              ><span class="lbl">Count a try</span></button
+            ><button
+              type="button"
+              class="hot h-record-tablet-save"
+              data-go="next"
+              aria-label="Save session. Goes to the next screen."
+            >
+              <span class="n" aria-hidden="true">2</span><span class="lbl">Save session</span>
+            </button>
+          </div>
           <p class="pic-label">Web app, practice data</p>
         </figure>
-        <figure class="shot phone" data-device="phone">
+        <figure
+          class="shot phone cur"
+          data-device="phone"
+          data-state="record"
+          data-prompt="A session takes seconds. Tap the count, then Save."
+        >
           <figcaption class="dev">Phone view</figcaption>
-          <img
-            class="img-dark"
-            src="img/record-phone-dark.png"
-            width="390"
-            height="844"
-            loading="lazy"
-            alt="Practice screen for recording a session on a goal, with a large count button and a Save session button"
-          />
-          <img
-            class="img-light"
-            src="img/record-phone-light.png"
-            width="390"
-            height="844"
-            loading="lazy"
-            alt="Practice screen for recording a session on a goal, with a large count button and a Save session button"
-          />
+          <div class="pic">
+            <img
+              class="img-dark"
+              src="img/record-phone-dark.png"
+              width="390"
+              height="844"
+              loading="lazy"
+              alt="Practice screen for recording a session on a goal, with a large count button and a Save session button"
+            /><img
+              class="img-light"
+              src="img/record-phone-light.png"
+              width="390"
+              height="844"
+              loading="lazy"
+              alt="Practice screen for recording a session on a goal, with a large count button and a Save session button"
+            /><button
+              type="button"
+              class="hot h-record-phone-count"
+              data-go="record-count"
+              aria-label="Count a try. Opens the next picture."
+            >
+              <span class="n" aria-hidden="true">1</span
+              ><span class="lbl">Count a try</span></button
+            ><button
+              type="button"
+              class="hot h-record-phone-save"
+              data-go="next"
+              aria-label="Save session. Goes to the next screen."
+            >
+              <span class="n" aria-hidden="true">2</span><span class="lbl">Save session</span>
+            </button>
+          </div>
           <p class="pic-label">Web app, practice data</p>
         </figure>
+        <figure
+          class="shot computer extra"
+          data-device="computer tablet"
+          data-state="record-count"
+          data-prompt="In this preview with practice data, each tap adds one to the count. Now tap Save."
+        >
+          <figcaption class="dev">Computer view (record count)</figcaption>
+          <div class="pic">
+            <img
+              class="img-dark"
+              src="img/record-count-computer-dark.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt='The same screen after three taps, showing "3 so far"'
+            /><img
+              class="img-light"
+              src="img/record-count-computer-light.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt='The same screen after three taps, showing "3 so far"'
+            /><button
+              type="button"
+              class="hot h-record-count-computer-save"
+              data-go="next"
+              aria-label="Save session. Goes to the next screen."
+            >
+              <span class="n" aria-hidden="true">1</span><span class="lbl">Save session</span>
+            </button>
+          </div>
+          <p class="pic-label">Web app, practice data</p>
+        </figure>
+        <figure
+          class="shot phone extra"
+          data-device="phone"
+          data-state="record-count"
+          data-prompt="In this preview with practice data, each tap adds one to the count. Now tap Save."
+        >
+          <figcaption class="dev">Phone view (record count)</figcaption>
+          <div class="pic">
+            <img
+              class="img-dark"
+              src="img/record-count-phone-dark.png"
+              width="390"
+              height="844"
+              loading="lazy"
+              alt='The same screen after three taps, showing "3 so far"'
+            /><img
+              class="img-light"
+              src="img/record-count-phone-light.png"
+              width="390"
+              height="844"
+              loading="lazy"
+              alt='The same screen after three taps, showing "3 so far"'
+            /><button
+              type="button"
+              class="hot h-record-count-phone-save"
+              data-go="next"
+              aria-label="Save session. Goes to the next screen."
+            >
+              <span class="n" aria-hidden="true">1</span><span class="lbl">Save session</span>
+            </button>
+          </div>
+          <p class="pic-label">Web app, practice data</p>
+        </figure>
+        <div class="walk" hidden>
+          <p class="prompt" role="status" aria-live="polite"></p>
+          <p class="walk-links">
+            <button type="button" class="prev" hidden>Previous picture</button>
+            <button type="button" class="skip">Skip, show me the next screen</button>
+          </p>
+        </div>
         <p class="caption">Teachers record data in seconds.</p>
       </section>
 
       <section class="panel" aria-labelledby="p2">
         <h2 id="p2">The graph</h2>
-        <figure class="shot computer" data-device="computer">
+        <figure
+          class="shot computer cur"
+          data-device="computer"
+          data-state="graph"
+          data-prompt="Three lines tell the story. Tap the graph to see what they mean."
+        >
           <figcaption class="dev">Computer view</figcaption>
-          <img
-            class="img-dark"
-            src="img/graph-computer-dark.png"
-            width="1440"
-            height="900"
-            loading="lazy"
-            alt="Practice goal with a line graph of sessions, a dashed goal line and a dotted trend line"
-          />
-          <img
-            class="img-light"
-            src="img/graph-computer-light.png"
-            width="1440"
-            height="900"
-            loading="lazy"
-            alt="Practice goal with a line graph of sessions, a dashed goal line and a dotted trend line"
-          />
+          <div class="pic">
+            <img
+              class="img-dark"
+              src="img/graph-computer-dark.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt="Practice goal with a line graph of sessions, a dashed goal line and a dotted trend line"
+            /><img
+              class="img-light"
+              src="img/graph-computer-light.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt="Practice goal with a line graph of sessions, a dashed goal line and a dotted trend line"
+            /><button
+              type="button"
+              class="hot h-graph-computer-graph"
+              data-say="Each dot is a session. The dashed line is the goal. The dotted line shows where it is heading."
+              aria-label="The graph. Each dot is a session. The dashed line is the goal. The dotted line shows where it is heading."
+            >
+              <span class="n" aria-hidden="true">1</span><span class="lbl">The graph</span>
+            </button>
+          </div>
           <p class="pic-label">Web app, practice data</p>
         </figure>
-        <figure class="shot tablet" data-device="tablet">
+        <figure
+          class="shot tablet cur"
+          data-device="tablet"
+          data-state="graph"
+          data-prompt="Three lines tell the story. Tap the graph to see what they mean."
+        >
           <figcaption class="dev">Tablet view</figcaption>
-          <img
-            class="img-dark"
-            src="img/graph-tablet-dark.png"
-            width="820"
-            height="1180"
-            loading="lazy"
-            alt="Practice goal with a line graph of sessions, a dashed goal line and a dotted trend line"
-          />
-          <img
-            class="img-light"
-            src="img/graph-tablet-light.png"
-            width="820"
-            height="1180"
-            loading="lazy"
-            alt="Practice goal with a line graph of sessions, a dashed goal line and a dotted trend line"
-          />
+          <div class="pic">
+            <img
+              class="img-dark"
+              src="img/graph-tablet-dark.png"
+              width="820"
+              height="1180"
+              loading="lazy"
+              alt="Practice goal with a line graph of sessions, a dashed goal line and a dotted trend line"
+            /><img
+              class="img-light"
+              src="img/graph-tablet-light.png"
+              width="820"
+              height="1180"
+              loading="lazy"
+              alt="Practice goal with a line graph of sessions, a dashed goal line and a dotted trend line"
+            /><button
+              type="button"
+              class="hot h-graph-tablet-graph"
+              data-say="Each dot is a session. The dashed line is the goal. The dotted line shows where it is heading."
+              aria-label="The graph. Each dot is a session. The dashed line is the goal. The dotted line shows where it is heading."
+            >
+              <span class="n" aria-hidden="true">1</span><span class="lbl">The graph</span></button
+            ><button
+              type="button"
+              class="hot h-graph-tablet-table"
+              data-go="graph-table"
+              aria-label="Data table. Opens the next picture."
+            >
+              <span class="n" aria-hidden="true">2</span><span class="lbl">Data table</span>
+            </button>
+          </div>
           <p class="pic-label">Web app, practice data</p>
         </figure>
-        <figure class="shot phone" data-device="phone">
+        <figure
+          class="shot phone cur"
+          data-device="phone"
+          data-state="graph"
+          data-prompt="Three lines tell the story. Tap the graph to see what they mean."
+        >
           <figcaption class="dev">Phone view</figcaption>
-          <img
-            class="img-dark"
-            src="img/graph-phone-dark.png"
-            width="390"
-            height="844"
-            loading="lazy"
-            alt="Practice goal with a line graph of sessions, a dashed goal line and a dotted trend line"
-          />
-          <img
-            class="img-light"
-            src="img/graph-phone-light.png"
-            width="390"
-            height="844"
-            loading="lazy"
-            alt="Practice goal with a line graph of sessions, a dashed goal line and a dotted trend line"
-          />
+          <div class="pic">
+            <img
+              class="img-dark"
+              src="img/graph-phone-dark.png"
+              width="390"
+              height="844"
+              loading="lazy"
+              alt="Practice goal with a line graph of sessions, a dashed goal line and a dotted trend line"
+            /><img
+              class="img-light"
+              src="img/graph-phone-light.png"
+              width="390"
+              height="844"
+              loading="lazy"
+              alt="Practice goal with a line graph of sessions, a dashed goal line and a dotted trend line"
+            /><button
+              type="button"
+              class="hot h-graph-phone-graph"
+              data-say="Each dot is a session. The dashed line is the goal. The dotted line shows where it is heading."
+              aria-label="The graph. Each dot is a session. The dashed line is the goal. The dotted line shows where it is heading."
+            >
+              <span class="n" aria-hidden="true">1</span><span class="lbl">The graph</span>
+            </button>
+          </div>
           <p class="pic-label">Web app, practice data</p>
         </figure>
+        <figure
+          class="shot computer extra"
+          data-device="computer tablet"
+          data-state="graph-table"
+          data-prompt="The table lists each date and the count recorded."
+        >
+          <figcaption class="dev">Computer view (graph table)</figcaption>
+          <div class="pic">
+            <img
+              class="img-dark"
+              src="img/graph-table-computer-dark.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt="The graph with its data table open, listing each date and the count recorded"
+            /><img
+              class="img-light"
+              src="img/graph-table-computer-light.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt="The graph with its data table open, listing each date and the count recorded"
+            /><button
+              type="button"
+              class="hot h-graph-table-computer-table"
+              data-say="Each row is one session."
+              aria-label="The table. Each row is one session."
+            >
+              <span class="n" aria-hidden="true">1</span><span class="lbl">The table</span>
+            </button>
+          </div>
+          <p class="pic-label">Web app, practice data</p>
+        </figure>
+        <figure
+          class="shot phone extra"
+          data-device="phone"
+          data-state="graph-table"
+          data-prompt="The table lists each date and the count recorded."
+        >
+          <figcaption class="dev">Phone view (graph table)</figcaption>
+          <div class="pic">
+            <img
+              class="img-dark"
+              src="img/graph-table-phone-dark.png"
+              width="390"
+              height="844"
+              loading="lazy"
+              alt="The graph with its data table open, listing each date and the count recorded"
+            /><img
+              class="img-light"
+              src="img/graph-table-phone-light.png"
+              width="390"
+              height="844"
+              loading="lazy"
+              alt="The graph with its data table open, listing each date and the count recorded"
+            /><button
+              type="button"
+              class="hot h-graph-table-phone-table"
+              data-say="Each row is one session."
+              aria-label="The table. Each row is one session."
+            >
+              <span class="n" aria-hidden="true">1</span><span class="lbl">The table</span>
+            </button>
+          </div>
+          <p class="pic-label">Web app, practice data</p>
+        </figure>
+        <div class="walk" hidden>
+          <p class="prompt" role="status" aria-live="polite"></p>
+          <p class="walk-links">
+            <button type="button" class="prev" hidden>Previous picture</button>
+            <button type="button" class="skip">Skip, show me the next screen</button>
+          </p>
+        </div>
         <p class="caption">The graph builds itself from what was recorded.</p>
       </section>
 
       <section class="panel" aria-labelledby="p3">
         <h2 id="p3">Goal bank <span class="tag">Preview</span></h2>
-        <figure class="shot wide" data-only>
-          <img
-            src="goal-bank-preview.svg"
-            width="900"
-            height="560"
-            alt="Preview drawing of a goal bank with two lines of sample goal wording and Add buttons"
-          />
+        <figure
+          class="shot wide cur"
+          data-only
+          data-state="goal-bank"
+          data-prompt="Pick a goal and add it. This is a drawing of a planned screen. Tap the first goal."
+        >
+          <div class="pic">
+            <img
+              src="goal-bank-preview.svg"
+              width="900"
+              height="560"
+              alt="Preview drawing of a goal bank with two lines of sample goal wording and Add buttons"
+            /><button
+              type="button"
+              class="hot right h-goal-bank-goal"
+              data-go="goal-bank-open"
+              aria-label="A goal. Opens the next picture."
+            >
+              <span class="n" aria-hidden="true">1</span><span class="lbl">A goal</span>
+            </button>
+          </div>
           <figcaption class="drawing">
             A drawing of a screen that is planned, not a built screen.
           </figcaption>
         </figure>
+        <figure
+          class="shot wide extra"
+          data-only
+          data-state="goal-bank-open"
+          data-prompt="The whole sample goal wording and its measures. Tap Add."
+        >
+          <div class="pic">
+            <img
+              src="goal-bank-preview-3b.svg"
+              width="900"
+              height="560"
+              alt="Preview drawing of a goal bank with one sample goal opened to show the whole goal wording and its measures"
+            /><button
+              type="button"
+              class="hot h-goal-bank-open-add"
+              data-go="goal-bank-added"
+              aria-label="Add. Opens the next picture."
+            >
+              <span class="n" aria-hidden="true">1</span><span class="lbl">Add</span>
+            </button>
+          </div>
+          <figcaption class="drawing">
+            A drawing of a screen that is planned, not a built screen.
+          </figcaption>
+        </figure>
+        <figure
+          class="shot wide extra"
+          data-only
+          data-state="goal-bank-added"
+          data-prompt="Added to a practice student's goals. Preview drawing."
+        >
+          <div class="pic">
+            <img
+              src="goal-bank-preview-3c.svg"
+              width="900"
+              height="560"
+              alt="Preview drawing of a goal bank after a goal was added, with a note that it was added to a practice student"
+            />
+          </div>
+          <figcaption class="drawing">
+            A drawing of a screen that is planned, not a built screen.
+          </figcaption>
+        </figure>
+        <div class="walk" hidden>
+          <p class="prompt" role="status" aria-live="polite"></p>
+          <p class="walk-links">
+            <button type="button" class="prev" hidden>Previous picture</button>
+            <button type="button" class="skip">Skip, show me the next screen</button>
+          </p>
+        </div>
         <p class="caption">Start from sample goal wording.</p>
       </section>
 
       <section class="panel" aria-labelledby="p4">
         <h2 id="p4">Director overview</h2>
-        <figure class="shot computer" data-device="computer">
+        <figure
+          class="shot computer cur"
+          data-device="computer"
+          data-state="director"
+          data-prompt="In this preview, the director sees what needs a look first. Tap Caseload."
+        >
           <figcaption class="dev">Computer view</figcaption>
-          <img
-            class="img-dark"
-            src="img/director-computer-dark.png"
-            width="1440"
-            height="900"
-            loading="lazy"
-            alt="Practice home screen for the director with the number of students and goals and how many are on track"
-          />
-          <img
-            class="img-light"
-            src="img/director-computer-light.png"
-            width="1440"
-            height="900"
-            loading="lazy"
-            alt="Practice home screen for the director with the number of students and goals and how many are on track"
-          />
+          <div class="pic">
+            <img
+              class="img-dark"
+              src="img/director-computer-dark.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt="Practice home screen for the director with the number of students and goals and how many are on track"
+            /><img
+              class="img-light"
+              src="img/director-computer-light.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt="Practice home screen for the director with the number of students and goals and how many are on track"
+            /><button
+              type="button"
+              class="hot h-director-computer-numbers"
+              data-say="These numbers add up the practice students and goals."
+              aria-label="The numbers. These numbers add up the practice students and goals."
+            >
+              <span class="n" aria-hidden="true">1</span
+              ><span class="lbl">The numbers</span></button
+            ><button
+              type="button"
+              class="hot h-director-computer-caseload-tab"
+              data-go="caseload"
+              aria-label="Caseload. Opens the next picture."
+            >
+              <span class="n" aria-hidden="true">2</span><span class="lbl">Caseload</span></button
+            ><button
+              type="button"
+              class="hot tab h-director-computer-tab-home"
+              data-say="This is Home."
+              aria-label="Home tab. This is Home."
+            >
+              <span class="lbl">Home</span></button
+            ><button
+              type="button"
+              class="hot tab h-director-computer-tab-today"
+              data-say="Not in this tour."
+              aria-label="Today tab. Not in this tour."
+            >
+              <span class="lbl">Today</span></button
+            ><button
+              type="button"
+              class="hot tab h-director-computer-tab-caseload"
+              data-go="caseload"
+              aria-label="Caseload tab. Opens the next picture."
+            >
+              <span class="lbl">Caseload</span></button
+            ><button
+              type="button"
+              class="hot tab h-director-computer-tab-libraries"
+              data-say="Not in this tour."
+              aria-label="Libraries tab. Not in this tour."
+            >
+              <span class="lbl">Libraries</span></button
+            ><button
+              type="button"
+              class="hot tab h-director-computer-tab-more"
+              data-say="Not in this tour."
+              aria-label="More tab. Not in this tour."
+            >
+              <span class="lbl">More</span>
+            </button>
+          </div>
           <p class="pic-label">Web app, practice data</p>
         </figure>
-        <figure class="shot tablet" data-device="tablet">
+        <figure
+          class="shot tablet cur"
+          data-device="tablet"
+          data-state="director"
+          data-prompt="In this preview, the director sees what needs a look first. Tap Caseload."
+        >
           <figcaption class="dev">Tablet view</figcaption>
-          <img
-            class="img-dark"
-            src="img/director-tablet-dark.png"
-            width="820"
-            height="1180"
-            loading="lazy"
-            alt="Practice home screen for the director with the number of students and goals and how many are on track"
-          />
-          <img
-            class="img-light"
-            src="img/director-tablet-light.png"
-            width="820"
-            height="1180"
-            loading="lazy"
-            alt="Practice home screen for the director with the number of students and goals and how many are on track"
-          />
+          <div class="pic">
+            <img
+              class="img-dark"
+              src="img/director-tablet-dark.png"
+              width="820"
+              height="1180"
+              loading="lazy"
+              alt="Practice home screen for the director with the number of students and goals and how many are on track"
+            /><img
+              class="img-light"
+              src="img/director-tablet-light.png"
+              width="820"
+              height="1180"
+              loading="lazy"
+              alt="Practice home screen for the director with the number of students and goals and how many are on track"
+            /><button
+              type="button"
+              class="hot h-director-tablet-numbers"
+              data-say="These numbers add up the practice students and goals."
+              aria-label="The numbers. These numbers add up the practice students and goals."
+            >
+              <span class="n" aria-hidden="true">1</span
+              ><span class="lbl">The numbers</span></button
+            ><button
+              type="button"
+              class="hot h-director-tablet-caseload-tab"
+              data-go="caseload"
+              aria-label="Caseload. Opens the next picture."
+            >
+              <span class="n" aria-hidden="true">2</span><span class="lbl">Caseload</span></button
+            ><button
+              type="button"
+              class="hot tab h-director-tablet-tab-home"
+              data-say="This is Home."
+              aria-label="Home tab. This is Home."
+            >
+              <span class="lbl">Home</span></button
+            ><button
+              type="button"
+              class="hot tab h-director-tablet-tab-today"
+              data-say="Not in this tour."
+              aria-label="Today tab. Not in this tour."
+            >
+              <span class="lbl">Today</span></button
+            ><button
+              type="button"
+              class="hot tab h-director-tablet-tab-caseload"
+              data-go="caseload"
+              aria-label="Caseload tab. Opens the next picture."
+            >
+              <span class="lbl">Caseload</span></button
+            ><button
+              type="button"
+              class="hot tab h-director-tablet-tab-libraries"
+              data-say="Not in this tour."
+              aria-label="Libraries tab. Not in this tour."
+            >
+              <span class="lbl">Libraries</span></button
+            ><button
+              type="button"
+              class="hot tab h-director-tablet-tab-more"
+              data-say="Not in this tour."
+              aria-label="More tab. Not in this tour."
+            >
+              <span class="lbl">More</span>
+            </button>
+          </div>
           <p class="pic-label">Web app, practice data</p>
         </figure>
-        <figure class="shot phone" data-device="phone">
+        <figure
+          class="shot phone cur"
+          data-device="phone"
+          data-state="director"
+          data-prompt="In this preview, the director sees what needs a look first. Tap Caseload."
+        >
           <figcaption class="dev">Phone view</figcaption>
-          <img
-            class="img-dark"
-            src="img/director-phone-dark.png"
-            width="390"
-            height="844"
-            loading="lazy"
-            alt="Practice home screen for the director with the number of students and goals and how many are on track"
-          />
-          <img
-            class="img-light"
-            src="img/director-phone-light.png"
-            width="390"
-            height="844"
-            loading="lazy"
-            alt="Practice home screen for the director with the number of students and goals and how many are on track"
-          />
+          <div class="pic">
+            <img
+              class="img-dark"
+              src="img/director-phone-dark.png"
+              width="390"
+              height="844"
+              loading="lazy"
+              alt="Practice home screen for the director with the number of students and goals and how many are on track"
+            /><img
+              class="img-light"
+              src="img/director-phone-light.png"
+              width="390"
+              height="844"
+              loading="lazy"
+              alt="Practice home screen for the director with the number of students and goals and how many are on track"
+            /><button
+              type="button"
+              class="hot h-director-phone-numbers"
+              data-say="These numbers add up the practice students and goals."
+              aria-label="The numbers. These numbers add up the practice students and goals."
+            >
+              <span class="n" aria-hidden="true">1</span
+              ><span class="lbl">The numbers</span></button
+            ><button
+              type="button"
+              class="hot h-director-phone-caseload-tab"
+              data-go="caseload"
+              aria-label="Caseload. Opens the next picture."
+            >
+              <span class="n" aria-hidden="true">2</span><span class="lbl">Caseload</span></button
+            ><button
+              type="button"
+              class="hot tab h-director-phone-tab-home"
+              data-say="This is Home."
+              aria-label="Home tab. This is Home."
+            >
+              <span class="lbl">Home</span></button
+            ><button
+              type="button"
+              class="hot tab h-director-phone-tab-today"
+              data-say="Not in this tour."
+              aria-label="Today tab. Not in this tour."
+            >
+              <span class="lbl">Today</span></button
+            ><button
+              type="button"
+              class="hot tab h-director-phone-tab-caseload"
+              data-go="caseload"
+              aria-label="Caseload tab. Opens the next picture."
+            >
+              <span class="lbl">Caseload</span></button
+            ><button
+              type="button"
+              class="hot tab h-director-phone-tab-libraries"
+              data-say="Not in this tour."
+              aria-label="Libraries tab. Not in this tour."
+            >
+              <span class="lbl">Libraries</span></button
+            ><button
+              type="button"
+              class="hot tab h-director-phone-tab-more"
+              data-say="Not in this tour."
+              aria-label="More tab. Not in this tour."
+            >
+              <span class="lbl">More</span>
+            </button>
+          </div>
           <p class="pic-label">Web app, practice data</p>
         </figure>
+        <figure
+          class="shot computer extra"
+          data-device="computer tablet"
+          data-state="caseload"
+          data-prompt="Each student shows a first name and last initial, a grade and a small graph."
+        >
+          <figcaption class="dev">Computer view (caseload)</figcaption>
+          <div class="pic">
+            <img
+              class="img-dark"
+              src="img/caseload-computer-dark.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt="Practice caseload list with each student's first name and last initial, grade, and a small graph"
+            /><img
+              class="img-light"
+              src="img/caseload-computer-light.png"
+              width="1440"
+              height="900"
+              loading="lazy"
+              alt="Practice caseload list with each student's first name and last initial, grade, and a small graph"
+            /><button
+              type="button"
+              class="hot h-caseload-computer-first-card"
+              data-say="Each student shows a first name and last initial, a grade and a small graph."
+              aria-label="A student. Each student shows a first name and last initial, a grade and a small graph."
+            >
+              <span class="n" aria-hidden="true">1</span><span class="lbl">A student</span></button
+            ><button
+              type="button"
+              class="hot tab h-caseload-computer-tab-home"
+              data-go="director"
+              aria-label="Home tab. Opens the next picture."
+            >
+              <span class="lbl">Home</span></button
+            ><button
+              type="button"
+              class="hot tab h-caseload-computer-tab-today"
+              data-say="Not in this tour."
+              aria-label="Today tab. Not in this tour."
+            >
+              <span class="lbl">Today</span></button
+            ><button
+              type="button"
+              class="hot tab h-caseload-computer-tab-caseload"
+              data-say="This is the caseload."
+              aria-label="Caseload tab. This is the caseload."
+            >
+              <span class="lbl">Caseload</span></button
+            ><button
+              type="button"
+              class="hot tab h-caseload-computer-tab-libraries"
+              data-say="Not in this tour."
+              aria-label="Libraries tab. Not in this tour."
+            >
+              <span class="lbl">Libraries</span></button
+            ><button
+              type="button"
+              class="hot tab h-caseload-computer-tab-more"
+              data-say="Not in this tour."
+              aria-label="More tab. Not in this tour."
+            >
+              <span class="lbl">More</span>
+            </button>
+          </div>
+          <p class="pic-label">Web app, practice data</p>
+        </figure>
+        <figure
+          class="shot phone extra"
+          data-device="phone"
+          data-state="caseload"
+          data-prompt="Each student shows a first name and last initial, a grade and a small graph."
+        >
+          <figcaption class="dev">Phone view (caseload)</figcaption>
+          <div class="pic">
+            <img
+              class="img-dark"
+              src="img/caseload-phone-dark.png"
+              width="390"
+              height="844"
+              loading="lazy"
+              alt="Practice caseload list with each student's first name and last initial, grade, and a small graph"
+            /><img
+              class="img-light"
+              src="img/caseload-phone-light.png"
+              width="390"
+              height="844"
+              loading="lazy"
+              alt="Practice caseload list with each student's first name and last initial, grade, and a small graph"
+            /><button
+              type="button"
+              class="hot h-caseload-phone-first-card"
+              data-say="Each student shows a first name and last initial, a grade and a small graph."
+              aria-label="A student. Each student shows a first name and last initial, a grade and a small graph."
+            >
+              <span class="n" aria-hidden="true">1</span><span class="lbl">A student</span></button
+            ><button
+              type="button"
+              class="hot tab h-caseload-phone-tab-home"
+              data-go="director"
+              aria-label="Home tab. Opens the next picture."
+            >
+              <span class="lbl">Home</span></button
+            ><button
+              type="button"
+              class="hot tab h-caseload-phone-tab-today"
+              data-say="Not in this tour."
+              aria-label="Today tab. Not in this tour."
+            >
+              <span class="lbl">Today</span></button
+            ><button
+              type="button"
+              class="hot tab h-caseload-phone-tab-caseload"
+              data-say="This is the caseload."
+              aria-label="Caseload tab. This is the caseload."
+            >
+              <span class="lbl">Caseload</span></button
+            ><button
+              type="button"
+              class="hot tab h-caseload-phone-tab-libraries"
+              data-say="Not in this tour."
+              aria-label="Libraries tab. Not in this tour."
+            >
+              <span class="lbl">Libraries</span></button
+            ><button
+              type="button"
+              class="hot tab h-caseload-phone-tab-more"
+              data-say="Not in this tour."
+              aria-label="More tab. Not in this tour."
+            >
+              <span class="lbl">More</span>
+            </button>
+          </div>
+          <p class="pic-label">Web app, practice data</p>
+        </figure>
+        <div class="walk" hidden>
+          <p class="prompt" role="status" aria-live="polite"></p>
+          <p class="walk-links">
+            <button type="button" class="prev" hidden>Previous picture</button>
+            <button type="button" class="skip">Skip, show me the next screen</button>
+          </p>
+        </div>
         <p class="caption">The director sees every caseload in one place.</p>
       </section>
 
       <section class="panel" aria-labelledby="p5">
         <h2 id="p5">Paraprofessional view</h2>
-        <figure class="shot phone" data-only data-device="phone">
+        <figure
+          class="shot phone cur"
+          data-device="phone"
+          data-only
+          data-state="para"
+          data-prompt="In this preview, paras see only their goals. Tap a goal."
+        >
           <figcaption class="dev">Phone view</figcaption>
-          <img
-            class="img-dark"
-            src="img/para-phone-dark.png"
-            width="390"
-            height="844"
-            loading="lazy"
-            alt="Practice phone screen for a paraprofessional listing a few goals with first names only and Start a session buttons"
-          />
-          <img
-            class="img-light"
-            src="img/para-phone-light.png"
-            width="390"
-            height="844"
-            loading="lazy"
-            alt="Practice phone screen for a paraprofessional listing a few goals with first names only and Start a session buttons"
-          />
+          <div class="pic">
+            <img
+              class="img-dark"
+              src="img/para-phone-dark.png"
+              width="390"
+              height="844"
+              loading="lazy"
+              alt="Practice phone screen for a paraprofessional listing a few goals with first names only and Start a session buttons"
+            /><img
+              class="img-light"
+              src="img/para-phone-light.png"
+              width="390"
+              height="844"
+              loading="lazy"
+              alt="Practice phone screen for a paraprofessional listing a few goals with first names only and Start a session buttons"
+            /><button
+              type="button"
+              class="hot h-para-phone-goal-card"
+              data-go="para-full"
+              aria-label="A goal. Opens the next picture."
+            >
+              <span class="n" aria-hidden="true">1</span><span class="lbl">A goal</span></button
+            ><button
+              type="button"
+              class="hot h-para-phone-start"
+              data-go="para-record"
+              aria-label="Start a session. Opens the next picture."
+            >
+              <span class="n" aria-hidden="true">2</span
+              ><span class="lbl">Start a session</span></button
+            ><button
+              type="button"
+              class="hot h-para-phone-tabs"
+              data-say="In this preview, a para sees two tabs: Today and More."
+              aria-label="The tabs. In this preview, a para sees two tabs: Today and More."
+            >
+              <span class="n" aria-hidden="true">3</span><span class="lbl">The tabs</span>
+            </button>
+          </div>
           <p class="pic-label">Web app, practice data</p>
         </figure>
+        <figure
+          class="shot phone extra"
+          data-device="phone"
+          data-only
+          data-state="para-full"
+          data-prompt="The whole goal is shown. Tap Start a session."
+        >
+          <figcaption class="dev">Phone view (para full)</figcaption>
+          <div class="pic">
+            <img
+              class="img-dark"
+              src="img/para-full-phone-dark.png"
+              width="390"
+              height="844"
+              loading="lazy"
+              alt="The same list with one goal opened to show the whole goal text"
+            /><img
+              class="img-light"
+              src="img/para-full-phone-light.png"
+              width="390"
+              height="844"
+              loading="lazy"
+              alt="The same list with one goal opened to show the whole goal text"
+            /><button
+              type="button"
+              class="hot h-para-full-phone-start"
+              data-go="para-record"
+              aria-label="Start a session. Opens the next picture."
+            >
+              <span class="n" aria-hidden="true">1</span><span class="lbl">Start a session</span>
+            </button>
+          </div>
+          <p class="pic-label">Web app, practice data</p>
+        </figure>
+        <figure
+          class="shot phone extra"
+          data-device="phone"
+          data-only
+          data-state="para-record"
+          data-prompt="In this preview, this is where a para records a session."
+        >
+          <figcaption class="dev">Phone view (para record)</figcaption>
+          <div class="pic">
+            <img
+              class="img-dark"
+              src="img/para-record-phone-dark.png"
+              width="390"
+              height="844"
+              loading="lazy"
+              alt="The recording screen for one goal with a Start timer button"
+            /><img
+              class="img-light"
+              src="img/para-record-phone-light.png"
+              width="390"
+              height="844"
+              loading="lazy"
+              alt="The recording screen for one goal with a Start timer button"
+            /><button
+              type="button"
+              class="hot h-para-record-phone-timer"
+              data-say="In this preview, the para records the session here."
+              aria-label="Timer. In this preview, the para records the session here."
+            >
+              <span class="n" aria-hidden="true">1</span><span class="lbl">Timer</span>
+            </button>
+          </div>
+          <p class="pic-label">Web app, practice data</p>
+        </figure>
+        <div class="walk" hidden>
+          <p class="prompt" role="status" aria-live="polite"></p>
+          <p class="walk-links">
+            <button type="button" class="prev" hidden>Previous picture</button>
+            <button type="button" class="skip">Skip, show me the next screen</button>
+          </p>
+        </div>
         <p class="caption">In this preview, paras see only the goals they were given.</p>
         <p class="note">In this preview, paras use a phone.</p>
       </section>
@@ -300,6 +1018,14 @@
           </li>
         </ul>
         <p class="note">Planned items are not built.</p>
+        <p>
+          <a class="try" href="../" target="_blank" rel="noopener noreferrer"
+            >Try the practice app</a
+          >
+        </p>
+        <p class="note">
+          Opens the practice app in a new tab. It has its own practice-data notice.
+        </p>
       </section>
 
       <nav class="steps" aria-label="Tour steps" hidden>
@@ -307,12 +1033,16 @@
         <span id="count" aria-live="polite"></span>
         <button type="button" id="next">Next</button>
       </nav>
-
-      <p class="note">Preview with practice data. Not for real students.</p>
-      <p class="slogan">Made by SPED staff for SPED staff</p>
-      <p class="note">Not affiliated with any school district or state agency.</p>
-      <p class="contact">Contact details coming soon.</p>
     </main>
+    <footer class="foot">
+      <p class="note">
+        Today this is the web app, which runs in a web browser. Mac and iPhone apps are planned.
+      </p>
+      <p class="note">
+        Preview with practice data. Not for real students. Not affiliated with any school district
+        or state agency.
+      </p>
+    </footer>
     <script src="tour.js"></script>
   </body>
 </html>
