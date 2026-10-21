@@ -11,4 +11,4 @@ Builds run on hosted CI.
 Pull requests get an automated code review. A passing review is a quality gate, not a trust gate: it
 can be wrong or talked around by text in a change, so paths that touch security (see
 `tools/ci/protected-paths.txt`) also need a named human approval on the exact head. The review
-runs from the default branch's copy of its workflow, so a change cannot alter how it is reviewed.
+runs only from the default branch's copy of its workflow, and no other review file exists, so a change cannot alter how it is reviewed.

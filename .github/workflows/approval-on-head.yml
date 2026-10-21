@@ -19,7 +19,7 @@ on:
   issue_comment:
     types: [created, edited]
   workflow_run:
-    workflows: ["Claude PR review", "Claude PR review (trusted)"]
+    workflows: ["Claude PR review (trusted)"]
     types: [completed]
 
 permissions: {}
@@ -125,8 +125,6 @@ jobs:
           # (for example one aimed at a different base) from counting here.
           # success = PASS, failure = BLOCK (the job fails on BLOCK and when it could not run), and
           # anything else (cancelled, skipped, still running, no run) = no verdict yet.
-          # Until the old pull_request review file is removed, its newest run for the head is used
-          # when no trusted run exists.
           # verdict-filter-trusted-begin
           trusted_filter='
             [.workflow_runs[]?
@@ -139,17 +137,6 @@ jobs:
               else "none" end
           '
           # verdict-filter-trusted-end
-          # verdict-filter-begin
-          review_filter='
-            [.workflow_runs[]?
-              | select(.head_sha == $s and .event == "pull_request" and ((.path // "") | split("@")[0]) == $p)]
-            | sort_by(.id) | last
-            | if . == null or .status != "completed" then "none"
-              elif .conclusion == "success" then "pass"
-              elif .conclusion == "failure" then "block"
-              else "none" end
-          '
-          # verdict-filter-end
           # Up to three pages of 100 runs, newest first, merged before the filter; no match fails closed.
           trusted_runs='{"workflow_runs":[]}'
           for page in 1 2 3; do
@@ -158,10 +145,6 @@ jobs:
             [ "$(jq '.workflow_runs | length' <<<"$page_runs")" -ge 100 ] || break
           done
           verdict=$(jq -r --arg n "$PR" --arg s "$sha" --arg p ".github/workflows/claude-review-trusted.yml" "$trusted_filter" <<<"$trusted_runs")
-          if [ "$verdict" = "none" ]; then
-            runs=$(gh api "repos/$REPO/actions/workflows/claude-review.yml/runs?head_sha=$sha&event=pull_request&per_page=50")
-            verdict=$(jq -r --arg s "$sha" --arg p ".github/workflows/claude-review.yml" "$review_filter" <<<"$runs")
-          fi
 
           echo "head=$sha security_needed=$needs_sec security=$sec_ok review=$verdict"
 
