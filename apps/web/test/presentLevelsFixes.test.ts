@@ -196,3 +196,41 @@ describe("fixes after the second review of 26a", () => {
     expect(scoreProblems({ ...base, testedOn: "2024-02-29" }, TODAY)).toEqual([]);
   });
 });
+
+describe("printed label is compared as a whole label", () => {
+  const relabel = async (descriptor: string, edit: string) => {
+    addScore({ descriptor, value: "88" });
+    addStatement({});
+    await draftSlot(getPl(SID), READ, "Maria", [], mockDrafter, ctx);
+    setSlotText(getPl(SID), READ, edit, ctx);
+    return checkSlot(READ, getPl(SID).slots[READ], getPl(SID), TODAY).some(
+      (p) => p.severity === "red" && /Do not use a different label/.test(p.text),
+    );
+  };
+  it("flags a longer label when the report printed Average", async () => {
+    expect(await relabel("Average", "Maria scored 88, which is below average.")).toBe(true);
+  });
+  it("flags low average and above average for Average", async () => {
+    expect(await relabel("Average", "Maria scored 88, low average.")).toBe(true);
+    resetPlForTests();
+    expect(await relabel("Average", "Maria scored 88, above average.")).toBe(true);
+  });
+  it("flags Average when the report printed a longer label", async () => {
+    expect(await relabel("Below Average", "Maria scored 88, which is average.")).toBe(true);
+    resetPlForTests();
+    expect(await relabel("Low Average", "Maria scored 88 (average).")).toBe(true);
+  });
+  it("accepts the exact printed label, in any case", async () => {
+    expect(await relabel("Average", "Maria scored 88, which is Average.")).toBe(false);
+    resetPlForTests();
+    expect(await relabel("Below Average", "Maria scored 88, below average.")).toBe(false);
+  });
+  it("matches a label that is not a standard band as a whole phrase", async () => {
+    expect(await relabel("Moderately Low", "Maria scored 88, which is low.")).toBe(true);
+    resetPlForTests();
+    expect(await relabel("Moderately Low", "Maria scored 88, moderately low.")).toBe(false);
+  });
+  it("does not treat 88 as present inside 88.5", async () => {
+    expect(await relabel("Average", "Maria scored 88.5, below average.")).toBe(false);
+  });
+});

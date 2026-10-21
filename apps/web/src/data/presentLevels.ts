@@ -583,9 +583,14 @@ export function checkSlot(
       });
     for (const s of ev.scores.filter(usable)) {
       const d = s.descriptor.trim().toLowerCase();
-      if (!d || !new RegExp(`(?<![\\d.])${escapeRe(s.value.trim())}(?![\\d])`).test(text)) continue;
+      if (!d || !new RegExp(`(?<![\\d.])${escapeRe(s.value.trim())}(?![\\d]|\\.\\d)`).test(text))
+        continue;
+      // Compare whole labels. "average" must not be found inside "below average" or "low average".
       const said = (text.match(BAND_RE) ?? []).map((b) => b.toLowerCase());
-      if (said.length > 0 && !text.toLowerCase().includes(d))
+      const usesPrinted = BANDS.includes(d)
+        ? said.includes(d)
+        : new RegExp(`(?<![\\p{L}])${escapeRe(d)}(?![\\p{L}])`, "iu").test(text);
+      if (said.length > 0 && !usesPrinted)
         out.push({
           severity: "red",
           text: `${s.measure}: the report calls this "${s.descriptor.trim()}". Do not use a different label.`,
