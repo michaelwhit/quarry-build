@@ -213,6 +213,9 @@ test("approval workflow: the trusted review is recognised by its file, not by it
 
 test("approval workflow: a protected path needs the security line on the full head sha, and the review PASS", () => {
   assert.match(workflow, /Security review by Sable, relayed by Clawson, Verdict: approved on/);
-  assert.match(workflow, /\[ "\$verdict" = "pass" \] && \{ \[ "\$needs_sec" = "false" \] \|\| \[ "\$sec_ok" = "true" \]; \}/);
+  assert.match(
+    workflow,
+    /\[ "\$verdict" = "pass" \] && \{ \[ "\$needs_sec" = "false" \] \|\| \[ "\$sec_ok" = "true" \]; \}/,
+  );
   assert.doesNotMatch(workflow, /lead_ok/);
 });
