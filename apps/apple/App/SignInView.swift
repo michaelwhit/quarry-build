@@ -59,6 +59,11 @@ struct SignInView: View {
                                             .foregroundStyle(Theme.ink)
                                         Text(staff.role.title).font(.footnote)
                                             .foregroundStyle(Theme.muted)
+                                        Text(
+                                            RoleCapabilities.proposedDefaults(for: staff.role)
+                                                .whatYouWillSee
+                                        )
+                                        .font(.footnote).foregroundStyle(Theme.muted)
                                     }
                                     Spacer()
                                     Image(systemName: "chevron.right").foregroundStyle(Theme.muted)

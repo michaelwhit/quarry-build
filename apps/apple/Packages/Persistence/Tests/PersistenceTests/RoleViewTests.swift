@@ -49,6 +49,23 @@ struct RoleViewTests {
         #expect(RoleView(role: .caseManager).caseloadTitle == "Caseload")
     }
 
+    @Test("the sign-in list describes each role from its capabilities")
+    func whatYouWillSee() {
+        let director = RoleCapabilities.proposedDefaults(for: .spedDirector).whatYouWillSee
+        #expect(director.hasPrefix("Every student in the district."))
+        #expect(director.contains("manage staff and roles"))
+        #expect(!director.contains("iPhone only"))
+        let para = RoleCapabilities.proposedDefaults(for: .paraprofessional).whatYouWillSee
+        #expect(para == "Only the goals given to you, with first names. You can record data. Works on iPhone only.")
+        let genEd = RoleCapabilities.proposedDefaults(for: .genEdTeacher).whatYouWillSee
+        #expect(genEd == "The goals given to you. You can record data.")
+        let support = RoleCapabilities.proposedDefaults(for: .vendorSupport).whatYouWillSee
+        #expect(support == "No student information.")
+        for role in StaffRole.allCases {
+            #expect(!RoleCapabilities.proposedDefaults(for: role).whatYouWillSee.isEmpty)
+        }
+    }
+
     @Test("IT admins and vendor support see no student screens")
     func support() {
         for role in [StaffRole.districtITAdmin, .vendorSupport] {
