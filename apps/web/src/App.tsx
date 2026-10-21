@@ -2,7 +2,8 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { STATUS_LABEL, type GoalStatus } from "./data/derive.ts";
 import { dataTotals, displayName, districtName, studentById, students } from "./data/district.ts";
 import { Chip } from "./ui/Chip.tsx";
-import { Home, More, PlannedScreen, Today } from "./ui/Home.tsx";
+import { Home, More, Today } from "./ui/Home.tsx";
+import { Libraries, StudentAccommodations } from "./ui/Libraries.tsx";
 import { GoalPanel } from "./ui/GoalPanel.tsx";
 import { Graph, Sparkline } from "./ui/Graph.tsx";
 import { AddGoal, AddStudent, ImportStudents } from "./ui/Forms.tsx";
@@ -215,6 +216,7 @@ function StudentPage({ id }: { id: string }) {
           Served by an SLP or school psychologist (they can see this student)
         </label>
       )}
+      <StudentAccommodations studentId={s.student.id} />
       {s.goals.length === 0 && <p className="empty">No goals yet.</p>}
       {s.goals.map(({ goal, plan, series, progress }) => (
         <section className="goal" key={goal.id} aria-label={`${goal.area} goal`}>
@@ -336,10 +338,7 @@ export function App() {
   ) : hash === "#/today" ? (
     <Today />
   ) : hash === "#/libraries" ? (
-    <PlannedScreen
-      title="Libraries"
-      text="The goal and accommodation libraries are not on the web yet."
-    />
+    <Libraries />
   ) : hash === "#/more" ? (
     <More />
   ) : (

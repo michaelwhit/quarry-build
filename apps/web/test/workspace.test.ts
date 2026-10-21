@@ -6,7 +6,9 @@ import {
   type StorageLike,
   addGoal,
   addPoint,
+  addAccommodation,
   addStudent,
+  removeAccommodation,
   addStudents,
   clearAll,
   deleteGoal,
@@ -151,6 +153,7 @@ describe("reading stored data back", () => {
       goals: [],
       plans: [],
       points: [],
+      accommodations: [],
       served: [],
       delegated: [],
     });
@@ -329,5 +332,40 @@ describe("addStudents", () => {
       ]),
     ).toThrow(/Entry 2/);
     expect(getWorkspace().students).toHaveLength(0);
+  });
+});
+
+describe("accommodations on a student", () => {
+  const acc = {
+    title: "Extra time",
+    kind: "accommodation",
+    description: "More time on tests.",
+    location: "In class",
+    frequency: "On tests",
+    duration: "For this plan",
+  };
+  beforeEach(() => {
+    useStorage(fakeStorage());
+    clearAll();
+  });
+  it("adds once, removes, and goes with the student", () => {
+    const sid = addStudent({ firstName: "Ava", lastName: "Stone", grade: "3" });
+    const aid = addAccommodation(sid, acc);
+    expect(getWorkspace().accommodations).toHaveLength(1);
+    expect(() => addAccommodation(sid, acc)).toThrow(/already/);
+    removeAccommodation(aid);
+    expect(getWorkspace().accommodations).toHaveLength(0);
+    addAccommodation(sid, acc);
+    deleteStudent(sid);
+    expect(getWorkspace().accommodations).toHaveLength(0);
+  });
+  it("survives a save and load, and drops ones with no student", () => {
+    const sid = addStudent({ firstName: "Ava", lastName: "Stone", grade: "3" });
+    addAccommodation(sid, acc);
+    const text = exportText();
+    expect(parse(text)?.accommodations).toHaveLength(1);
+    const broken = JSON.parse(text);
+    broken.accommodations.push({ ...broken.accommodations[0], id: "x", student_id: "gone" });
+    expect(parse(JSON.stringify(broken))?.accommodations).toHaveLength(1);
   });
 });
