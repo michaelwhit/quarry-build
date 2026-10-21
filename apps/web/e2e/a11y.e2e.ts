@@ -47,11 +47,19 @@ test.describe("desktop widths", () => {
       await page.setViewportSize({ width, height: 900 });
       await signIn(page, "director");
       for (const name of ["Home", "Today", "Caseload", "Libraries", "More"]) {
-        await tabBar(page).getByRole("link", { name }).click();
-        expect(
-          await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
-          name,
-        ).toBe(true);
+        const link = tabBar(page).getByRole("link", { name });
+        await link.click();
+        // Measure the screen that was just opened, not the previous one.
+        await expect(link).toHaveAttribute("aria-current", "page");
+        await expect(
+          page.getByRole("main").getByRole("heading", { level: 2 }).first(),
+        ).toBeVisible();
+        await expect
+          .poll(
+            () => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+            { message: name },
+          )
+          .toBe(true);
       }
     });
   }
