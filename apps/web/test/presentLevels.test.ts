@@ -1,3 +1,9 @@
+import { createElement } from "react";
+import { renderToString } from "react-dom/server";
+import { PresentLevels, canUsePresentLevels } from "../src/ui/PresentLevels.tsx";
+import { setRole } from "../src/data/roles.ts";
+import { students } from "../src/data/district.ts";
+import { loadSample } from "../src/data/workspace.ts";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   type Drafter,
@@ -282,5 +288,24 @@ describe("checks and approval", () => {
     saveScore(getPl(SID), { ...s, descriptor: "Average" }, ctx);
     confirmEvidence(getPl(SID), s.id, ctx, TODAY);
     expect(basisOf(slotEvidence(getPl(SID), "plaafp.reading_literacy"))).not.toBe(a);
+  });
+});
+
+describe("present levels screen", () => {
+  it("opens for staff who draft, with the draft-only wording, and is closed to others", () => {
+    setRole("sped_director");
+    loadSample();
+    const id = students[0]!.student.id;
+    const html = renderToString(createElement(PresentLevels, { studentId: id }));
+    expect(html).toContain("Draft only.");
+    expect(html).toContain("Practice only.");
+    expect(html).toContain("Approve this section");
+    expect(html).not.toMatch(/accepted by|SRS/);
+    expect(canUsePresentLevels("paraprofessional")).toBe(false);
+    expect(canUsePresentLevels("gen_ed_teacher")).toBe(false);
+    setRole("paraprofessional");
+    expect(renderToString(createElement(PresentLevels, { studentId: id }))).toContain(
+      "Not available for this role",
+    );
   });
 });

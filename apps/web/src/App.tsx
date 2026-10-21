@@ -25,6 +25,7 @@ import { canSeeOverdue } from "./data/overdue.ts";
 import { AtAGlance, MyStudents } from "./ui/Glance.tsx";
 import { Overdue } from "./ui/Overdue.tsx";
 import { Evaluation } from "./ui/Evaluation.tsx";
+import { PresentLevels, canUsePresentLevels } from "./ui/PresentLevels.tsx";
 import { AccessReview, StaffList } from "./ui/StaffList.tsx";
 import { Privacy, SignIn } from "./ui/SignIn.tsx";
 import { ProgressReport, canUseReports } from "./ui/ProgressReport.tsx";
@@ -229,6 +230,11 @@ function StudentPage({ id }: { id: string }) {
             Progress report
           </a>
         )}{" "}
+        {canUsePresentLevels(role) && (
+          <a className="btn" href={`#/student/${s.student.id}/present-levels`}>
+            Present levels
+          </a>
+        )}{" "}
         {can(role, "editStudent") && (
           <a className="btn" href={`#/student/${s.student.id}/edit`}>
             Edit student
@@ -303,6 +309,7 @@ export function App() {
   const allow = (a: Parameters<typeof can>[1]) => can(role, a);
   const g = /^#\/student\/([^/]+)\/add-goal$/.exec(hash);
   const rp = /^#\/student\/([^/]+)\/report$/.exec(hash);
+  const pl = /^#\/student\/([^/]+)\/present-levels$/.exec(hash);
   const es = /^#\/student\/([^/]+)\/edit$/.exec(hash);
   const eg = /^#\/student\/([^/]+)\/goal\/([^/]+)\/edit$/.exec(hash);
   const delegate = isDelegateRole(role);
@@ -313,9 +320,16 @@ export function App() {
     hash === "#/more" ||
     (role === "gen_ed_teacher" && glance?.[1]) ||
     (role === "paraprofessional" && t?.[1] && t[2]);
-  const brokenAddress = [rp?.[1], glance?.[1], es?.[1], eg?.[1], eg?.[2], g?.[1], m?.[1]].some(
-    (x) => x !== undefined && safeDecode(x) === null,
-  );
+  const brokenAddress = [
+    pl?.[1],
+    rp?.[1],
+    glance?.[1],
+    es?.[1],
+    eg?.[1],
+    eg?.[2],
+    g?.[1],
+    m?.[1],
+  ].some((x) => x !== undefined && safeDecode(x) === null);
   const screen = brokenAddress ? (
     <UnknownStudent />
   ) : role === "gen_ed_teacher" && hash === "#/today" ? (
@@ -368,6 +382,8 @@ export function App() {
     ) : (
       <NotAllowed />
     )
+  ) : pl?.[1] ? (
+    <PresentLevels studentId={decode(pl[1])} />
   ) : rp?.[1] ? (
     <ProgressReport studentId={decode(rp[1])} />
   ) : m?.[1] ? (
