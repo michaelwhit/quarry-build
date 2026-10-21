@@ -865,3 +865,14 @@ h2.landing-name {
   padding: 8px 0;
   border-bottom: 1px solid var(--border);
 }
+
+.landing-slogan {
+  margin: 8px 0 0;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.landing-affil {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
