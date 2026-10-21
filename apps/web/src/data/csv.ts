@@ -10,6 +10,8 @@ export const MAX_FILE_BYTES = 1_000_000;
 export interface CsvTable {
   headers: string[];
   rows: string[][];
+  /** The line of the file where each row starts (the header is line 1), when known. */
+  lines?: number[];
 }
 
 export type ParseResult = { ok: true; table: CsvTable } | { ok: false; message: string };
@@ -24,6 +26,10 @@ export function parseCsv(input: string): ParseResult {
   let field = "";
   let inQuotes = false;
   let wasQuoted = false;
+  // Physical line of the file (1 for the first) where each record starts, for row numbers.
+  const starts: number[] = [];
+  let line = 1;
+  let startLine = 1;
 
   const endField = (): string | null => {
     if (field.length > MAX_FIELD)
@@ -36,7 +42,10 @@ export function parseCsv(input: string): ParseResult {
   const endRow = (): string | null => {
     const bad = endField();
     if (bad) return bad;
-    if (!(row.length === 1 && row[0] === "")) records.push(row);
+    if (!(row.length === 1 && row[0] === "")) {
+      records.push(row);
+      starts.push(startLine);
+    }
     row = [];
     return records.length > MAX_ROWS + 1
       ? `The file has more than ${MAX_ROWS} students. Split it and import in parts.`
@@ -54,6 +63,7 @@ export function parseCsv(input: string): ParseResult {
         } else inQuotes = false;
       } else {
         field += ch;
+        if (ch === "\n" || (ch === "\r" && text[i + 1] !== "\n")) line++;
         if (field.length > MAX_FIELD)
           bad = `A cell is longer than ${MAX_FIELD} characters. Check that this is the right file.`;
       }
@@ -63,7 +73,9 @@ export function parseCsv(input: string): ParseResult {
     } else if (ch === ",") bad = endField();
     else if (ch === "\n" || ch === "\r") {
       if (ch === "\r" && text[i + 1] === "\n") i++;
+      line++;
       bad = endRow();
+      startLine = line;
     } else field += ch;
     if (bad) return fail(bad);
   }
@@ -77,7 +89,7 @@ export function parseCsv(input: string): ParseResult {
   if (!head) return fail("The file is empty.");
   const headers = head.map((h) => h.trim());
   const rows = records.slice(1).map((r) => headers.map((_, i) => (r[i] ?? "").trim()));
-  return { ok: true, table: { headers, rows } };
+  return { ok: true, table: { headers, rows, lines: starts.slice(1) } };
 }
 
 export type ImportField = "firstName" | "lastName" | "preferredName" | "grade";
@@ -134,7 +146,7 @@ export type RowStatus =
   { kind: "ready" } | { kind: "duplicate" } | { kind: "problem"; why: string };
 
 export interface PlannedRow {
-  /** Row number as a spreadsheet shows it, counting the header as row 1. */
+  /** Line of the file where the row starts, counting the header as line 1. */
   line: number;
   firstName: string;
   lastName: string;
@@ -184,7 +196,7 @@ export function planImport(
       else seen.add(key);
     }
     return {
-      line: i + 2,
+      line: table.lines?.[i] ?? i + 2,
       firstName,
       lastName,
       preferredName,

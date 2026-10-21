@@ -460,17 +460,23 @@ export function ImportStudents() {
       setError("That file is larger than 1 MB. Check that it is the right file.");
       return;
     }
-    void file.text().then((text) => {
-      const result = parseCsv(text);
-      if (!result.ok) {
+    void file
+      .text()
+      .then((text) => {
+        const result = parseCsv(text);
+        if (!result.ok) {
+          setTable(null);
+          setError(result.message);
+          return;
+        }
+        setTable(result.table);
+        setFileName(file.name);
+        setMapping(detectMapping(result.table.headers));
+      })
+      .catch(() => {
         setTable(null);
-        setError(result.message);
-        return;
-      }
-      setTable(result.table);
-      setFileName(file.name);
-      setMapping(detectMapping(result.table.headers));
-    });
+        setError("That file could not be read. Try saving it again as a CSV file.");
+      });
   };
 
   const confirm = () => {
@@ -570,7 +576,7 @@ export function ImportStudents() {
                     {`${r.firstName} ${r.lastName}`.trim() || "(no name)"}
                     <span className="meta">
                       {" "}
-                      Grade {r.grade || "?"} · row {r.line}
+                      Grade {r.grade || "?"} · line {r.line}
                     </span>
                   </span>
                   <span className={r.status.kind === "problem" ? "form-error" : "meta"}>

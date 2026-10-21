@@ -33,6 +33,7 @@ describe("parseCsv", () => {
         ["Ava", "Stone"],
         ["Ben", "Reed"],
       ],
+      lines: [2, 3],
     });
   });
   it("handles quotes, a byte-order mark and Windows line endings", () => {
@@ -100,5 +101,26 @@ describe("planImport", () => {
   it("flags names that are too long", () => {
     const plan = planFor(`First,Last,Grade\n${"a".repeat(41)},Stone,3\n`);
     expect(plan[0]?.status.kind).toBe("problem");
+  });
+});
+
+describe("line numbers", () => {
+  it("counts the file's own lines after blank rows and multi-line cells", () => {
+    const text = 'first,last,grade\n\nAnn,Lee,3\n"Bo\nb",Kay,4\r\n\r\nCy,Ng,5\n';
+    const parsed = parseCsv(text);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.table.lines).toEqual([3, 4, 7]);
+    const plan = planImport(parsed.table, detectMapping(parsed.table.headers), []);
+    expect(plan.map((r) => r.line)).toEqual([3, 4, 7]);
+  });
+
+  it("falls back to simple numbering for a table built by hand", () => {
+    const plan = planImport(
+      { headers: ["first", "last", "grade"], rows: [["A", "B", "1"]] },
+      { firstName: 0, lastName: 1, grade: 2 },
+      [],
+    );
+    expect(plan[0]!.line).toBe(2);
   });
 });

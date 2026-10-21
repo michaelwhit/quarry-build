@@ -245,10 +245,12 @@ describe("gen-ed At a glance", () => {
   });
 
   it("survives a malformed percent escape in the address and encodes ids in links", () => {
-    expect(safeDecode("%E0%A4%A")).toBe("");
-    expect(safeDecode("%")).toBe("");
+    expect(safeDecode("%E0%A4%A")).toBeNull();
+    expect(safeDecode("%")).toBeNull();
     expect(safeDecode("a%20b")).toBe("a b");
-    const html = renderToString(createElement(AtAGlance, { studentId: safeDecode("%E0%A4%A") }));
+    const html = renderToString(
+      createElement(AtAGlance, { studentId: safeDecode("%E0%A4%A") ?? "" }),
+    );
     expect(html).toContain("This student is no longer shared with you.");
     share();
     expect(renderToString(createElement(MyStudents))).toContain(

@@ -141,6 +141,21 @@ function Caseload() {
   );
 }
 
+const decode = (part: string) => safeDecode(part) ?? "";
+
+/** A student address that cannot be read: the same screen as a student who is not there. */
+function UnknownStudent() {
+  return (
+    <>
+      <h2 className="page-title">Student not found</h2>
+      <p className="empty">This student is not here, or the address is broken.</p>
+      <a className="btn" href="#/">
+        ← Home
+      </a>
+    </>
+  );
+}
+
 function NotAllowed() {
   return (
     <>
@@ -264,63 +279,67 @@ export function App() {
     hash === "#/more" ||
     (role === "gen_ed_teacher" && glance?.[1]) ||
     (role === "paraprofessional" && t?.[1] && t[2]);
-  const screen =
-    role === "gen_ed_teacher" && hash === "#/today" ? (
-      <MyStudents />
-    ) : role === "gen_ed_teacher" && glance?.[1] ? (
-      <AtAGlance studentId={safeDecode(glance[1])} />
-    ) : delegate && !delegateOk ? (
-      <Today />
-    ) : t?.[1] && t[2] ? (
-      <TrackGoal studentId={t[1]} goalId={t[2]} />
-    ) : hash.startsWith("#/track") ? (
-      <TrackPicker />
-    ) : hash === "#/add-student" ? (
-      allow("addStudent") ? (
-        <AddStudent />
-      ) : (
-        <NotAllowed />
-      )
-    ) : hash === "#/import-students" ? (
-      allow("addStudent") ? (
-        <ImportStudents />
-      ) : (
-        <NotAllowed />
-      )
-    ) : es?.[1] ? (
-      allow("editStudent") ? (
-        <AddStudent editId={safeDecode(es[1])} />
-      ) : (
-        <NotAllowed />
-      )
-    ) : eg?.[1] && eg[2] ? (
-      allow("editGoal") ? (
-        <AddGoal studentId={safeDecode(eg[1])} editGoalId={safeDecode(eg[2])} />
-      ) : (
-        <NotAllowed />
-      )
-    ) : g?.[1] ? (
-      allow("editGoal") ? (
-        <AddGoal studentId={safeDecode(g[1])} />
-      ) : (
-        <NotAllowed />
-      )
-    ) : m?.[1] ? (
-      <StudentPage id={safeDecode(m[1])} />
-    ) : hash === "#/caseload" ? (
-      <Caseload />
-    ) : hash === "#/today" ? (
-      <Today />
-    ) : hash === "#/libraries" ? (
-      <PlannedScreen
-        title="Libraries"
-        text="The goal and accommodation libraries are not on the web yet."
-      />
-    ) : hash === "#/more" ? (
-      <More />
+  const brokenAddress = [glance?.[1], es?.[1], eg?.[1], eg?.[2], g?.[1], m?.[1]].some(
+    (x) => x !== undefined && safeDecode(x) === null,
+  );
+  const screen = brokenAddress ? (
+    <UnknownStudent />
+  ) : role === "gen_ed_teacher" && hash === "#/today" ? (
+    <MyStudents />
+  ) : role === "gen_ed_teacher" && glance?.[1] ? (
+    <AtAGlance studentId={decode(glance[1])} />
+  ) : delegate && !delegateOk ? (
+    <Today />
+  ) : t?.[1] && t[2] ? (
+    <TrackGoal studentId={t[1]} goalId={t[2]} />
+  ) : hash.startsWith("#/track") ? (
+    <TrackPicker />
+  ) : hash === "#/add-student" ? (
+    allow("addStudent") ? (
+      <AddStudent />
     ) : (
-      <Home />
-    );
+      <NotAllowed />
+    )
+  ) : hash === "#/import-students" ? (
+    allow("addStudent") ? (
+      <ImportStudents />
+    ) : (
+      <NotAllowed />
+    )
+  ) : es?.[1] ? (
+    allow("editStudent") ? (
+      <AddStudent editId={decode(es[1])} />
+    ) : (
+      <NotAllowed />
+    )
+  ) : eg?.[1] && eg[2] ? (
+    allow("editGoal") ? (
+      <AddGoal studentId={decode(eg[1])} editGoalId={decode(eg[2])} />
+    ) : (
+      <NotAllowed />
+    )
+  ) : g?.[1] ? (
+    allow("editGoal") ? (
+      <AddGoal studentId={decode(g[1])} />
+    ) : (
+      <NotAllowed />
+    )
+  ) : m?.[1] ? (
+    <StudentPage id={decode(m[1])} />
+  ) : hash === "#/caseload" ? (
+    <Caseload />
+  ) : hash === "#/today" ? (
+    <Today />
+  ) : hash === "#/libraries" ? (
+    <PlannedScreen
+      title="Libraries"
+      text="The goal and accommodation libraries are not on the web yet."
+    />
+  ) : hash === "#/more" ? (
+    <More />
+  ) : (
+    <Home />
+  );
   return (
     <>
       <a className="skip" href="#main">
