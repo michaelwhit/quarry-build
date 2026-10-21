@@ -100,6 +100,11 @@ struct HomeView: View {
                         .font(.caption.weight(.bold)).foregroundStyle(Theme.accent)
                     Text("Home").font(.largeTitle.weight(.heavy)).foregroundStyle(Theme.ink)
                 }
+                if store.roleView.showsOverdueReports {
+                    OverdueHomeLine(
+                        count: store.overdueCount(today: PrototypeStore.systemToday()),
+                        open: { open(.overdue) })
+                }
                 numbers(summary)
                 LazyVGrid(
                     columns: [GridItem(.adaptive(minimum: 160), spacing: Spacing.medium)],
