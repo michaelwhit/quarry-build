@@ -88,14 +88,21 @@ jobs:
           reviews=$(gh api --paginate "repos/$REPO/pulls/$PR/reviews" | jq -s 'add // []')
           files=$(gh api --paginate "repos/$REPO/pulls/$PR/files" --jq '.[].filename')
 
-          # Text written by the repository owner (comments and review bodies) that can hold an approval.
-          owner_text=$(jq -r --arg o "$owner" \
-            '[.[] | select(.user.login == $o) | .body // ""] | .[]' <<<"$comments"
+          # Text written by the repository owner that can hold an approval: issue comments, and review
+          # bodies that are plain comments or approvals (not requested changes, dismissed or pending).
+          # An approval counts only as a whole line, exactly "<phrase> <full head sha>": a quoted line,
+          # a line with a prefix or extra words, or another sha does not match.
+          # approval-lines-begin
+          owner_text=$(
+            jq -r --arg o "$owner" '.[] | select(.user.login == $o) | .body // ""' <<<"$comments"
             jq -r --arg o "$owner" \
-            '[.[] | select(.user.login == $o and .state != "DISMISSED") | .body // ""] | .[]' <<<"$reviews")
-          has_line() { grep -Fq -- "$1 $sha" <<<"$owner_text"; }
+              '.[] | select(.user.login == $o and (.state == "COMMENTED" or .state == "APPROVED")) | .body // ""' <<<"$reviews"
+          )
+          owner_lines=$(printf '%s\n' "$owner_text" | tr -d '\r' | sed -E 's/[[:space:]]+$//')
+          has_line() { grep -Fxq -- "$1 $sha" <<<"$owner_lines"; }
           sec_ok=false
           has_line "Security review by Sable, relayed by Clawson, Verdict: approved on" && sec_ok=true
+          # approval-lines-end
 
           # Paths that need the security line as well. The list comes from the default
           # branch; if it cannot be read, every change counts as protected.
