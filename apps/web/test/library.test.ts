@@ -122,3 +122,38 @@ describe("sample library links", () => {
     expect(vagueFrequency("Up to 3 times a day")).toBe(false);
   });
 });
+
+describe("typed targets", () => {
+  it("masteryLine uses the typed number, and the placeholder only while it is empty", () => {
+    const g =
+      goals.find((x) => x.id === "g-wcpm") ?? goals.find((x) => x.target_value === "from_slot");
+    expect(g).toBeDefined();
+    const slot = g!.mastery.threshold_from_slot as string;
+    expect(masteryLine(g!.mastery)).toContain(`[`);
+    expect(masteryLine(g!.mastery, { [slot]: "90" })).toContain("90");
+    expect(masteryLine(g!.mastery, { [slot]: "90" })).not.toContain("[");
+    expect(masteryLine(g!.mastery, { [slot]: "  " })).toContain("[");
+  });
+  it("every goal that takes its target from a blank names a blank that exists and is checked", () => {
+    for (const g of goals.filter((x) => x.target_value === "from_slot")) {
+      const slot = g.target_slot ?? "";
+      expect(
+        g.slots.some((s) => s.name === slot && s.kind === "number"),
+        g.id,
+      ).toBe(true);
+      expect(g.mastery.threshold_from_slot, g.id).toBe(slot);
+    }
+  });
+  it("stay on task takes its minutes from the blank and refuses bad numbers", () => {
+    const g = goals.find((x) => x.id === "g-onTask")!;
+    expect(g.target_value).toBe("from_slot");
+    expect(g.target_slot).toBe("minutes");
+    const base = { ...initialValues(g), date: "2027-03-01" };
+    const crit = (v: Record<string, string>) =>
+      checks(g, v, TODAY).find((c) => c.id === "criterion")!;
+    expect(crit({ ...base, minutes: "12" }).pass).toBe(true);
+    expect(masteryLine(g.mastery, { minutes: "12" })).toContain("12 minutes");
+    for (const bad of ["", "0", "-3", "ten", "10%"])
+      expect(crit({ ...base, minutes: bad }).pass).toBe(false);
+  });
+});

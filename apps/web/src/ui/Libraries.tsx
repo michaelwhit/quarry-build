@@ -143,7 +143,7 @@ export function Libraries() {
           }}
         />
       )}
-      {openAcc && <AccommodationDetail item={openAcc} />}
+      {openAcc && <AccommodationDetail key={openAcc.id} item={openAcc} />}
     </>
   );
 }
@@ -312,7 +312,7 @@ function GoalDetail({
         area: goal.area,
         statement: renderedText(goal, values, studentName),
         baseline,
-        criteria: masteryLine(goal.mastery),
+        criteria: masteryLine(goal.mastery, values),
         type: goal.type,
         unit: goal.unit,
         targetValue,
@@ -346,7 +346,7 @@ function GoalDetail({
           ),
         )}
       </p>
-      <p className="meta">How it is met: {masteryLine(goal.mastery)}</p>
+      <p className="meta">How it is met: {masteryLine(goal.mastery, values)}</p>
       <p className="meta">Baseline tip: {goal.baseline_guidance}</p>
       {goal.objective_ladder.length > 0 && (
         <div>
