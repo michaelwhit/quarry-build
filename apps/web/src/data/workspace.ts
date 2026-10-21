@@ -21,12 +21,25 @@ import type {
 // allows it, a copy is kept in this browser's local storage so a reload does not lose it; nothing
 // is ever sent anywhere.
 
+/** An accommodation attached to a student, copied from the library so later library edits never change it. */
+export interface StudentAccommodation {
+  id: string;
+  student_id: string;
+  title: string;
+  kind: string;
+  description: string;
+  location: string;
+  frequency: string;
+  duration: string;
+}
+
 export interface Workspace {
   students: Student[];
   ieps: Iep[];
   goals: Goal[];
   plans: MeasurementPlan[];
   points: DataPoint[];
+  accommodations: StudentAccommodation[];
   /** Student ids an SLP or school psych serves. Practice sign-in only. */
   served: string[];
   /** Goal ids a paraprofessional or gen-ed teacher may enter data for. Practice sign-in only. */
@@ -55,6 +68,7 @@ export const emptyWorkspace = (): Workspace => ({
   goals: [],
   plans: [],
   points: [],
+  accommodations: [],
   served: [],
   delegated: [],
 });
@@ -74,6 +88,7 @@ const sampleWorkspace = (): Workspace => {
     goals: sampleDistrict.goals,
     plans: sampleDistrict.measurement_plans,
     points: sampleDistrict.data_points,
+    accommodations: [],
     served: students.slice(0, 5).map((s) => s.id),
     delegated: students
       .slice(0, 6)
@@ -159,6 +174,20 @@ const validPoint = (p: Rec) =>
   num(p["value_num"]) &&
   (p["note"] === null || typeof p["note"] === "string");
 
+const validAccommodation = (a: Rec) =>
+  str(a["id"], 80) &&
+  str(a["student_id"], 80) &&
+  str(a["title"], 120) &&
+  str(a["kind"], 40) &&
+  typeof a["description"] === "string" &&
+  a["description"].length <= 600 &&
+  typeof a["location"] === "string" &&
+  a["location"].length <= 200 &&
+  typeof a["frequency"] === "string" &&
+  a["frequency"].length <= 200 &&
+  typeof a["duration"] === "string" &&
+  a["duration"].length <= 200;
+
 const keep = (v: unknown, ok: (r: Rec) => boolean): Rec[] =>
   Array.isArray(v) ? v.filter((r): r is Rec => isRec(r) && ok(r)) : [];
 
@@ -177,6 +206,9 @@ export function parse(text: string | null): Workspace | null {
     const plans = keep(v["plans"], validPlan).filter((p) => goalIds.has(p["goal_id"]));
     const planGoals = new Set(plans.map((p) => p["goal_id"]));
     const points = keep(v["points"], validPoint).filter((p) => planGoals.has(p["goal_id"]));
+    const accommodations = keep(v["accommodations"], validAccommodation).filter((a) =>
+      studentIds.has(a["student_id"]),
+    );
     const ids = (list: unknown, allowed: Set<unknown>): string[] =>
       Array.isArray(list)
         ? [...new Set(list.filter((x): x is string => typeof x === "string" && allowed.has(x)))]
@@ -187,6 +219,7 @@ export function parse(text: string | null): Workspace | null {
       goals,
       plans,
       points,
+      accommodations,
       served: ids(v["served"], studentIds),
       delegated: ids(v["delegated"], goalIds),
     } as unknown as Workspace;
@@ -420,6 +453,7 @@ export function deleteStudent(studentId: string) {
     goals: current.goals.filter((g) => !goalIds.has(g.id)),
     plans: current.plans.filter((p) => !goalIds.has(p.goal_id)),
     points: current.points.filter((p) => !goalIds.has(p.goal_id)),
+    accommodations: current.accommodations.filter((a) => a.student_id !== studentId),
     served: current.served.filter((s) => s !== studentId),
     delegated: current.delegated.filter((g) => !goalIds.has(g)),
   });
@@ -560,6 +594,12 @@ export function importText(text: string, mode: "replace" | "add" = "replace"): I
     current.points.map((r) => r.id),
     (r) => keepP.has(r.goal_id),
   );
+  const accommodations = fresh(
+    ws.accommodations,
+    (r) => r.id,
+    current.accommodations.map((r) => r.id),
+    (r) => keepS.has(r.student_id),
+  );
   if (students.length > 0)
     commit({
       students: [...current.students, ...students],
@@ -567,6 +607,7 @@ export function importText(text: string, mode: "replace" | "add" = "replace"): I
       goals: [...current.goals, ...goals],
       plans: [...current.plans, ...plans],
       points: [...current.points, ...points],
+      accommodations: [...current.accommodations, ...accommodations],
       served: [...new Set([...current.served, ...ws.served.filter((x) => keepS.has(x))])],
       delegated: [...new Set([...current.delegated, ...ws.delegated.filter((x) => keepG.has(x))])],
     });
@@ -577,6 +618,45 @@ export function importText(text: string, mode: "replace" | "add" = "replace"): I
       skipped > 0 ? `; ${skipped} already here and left as they are` : ""
     }.`,
   };
+}
+
+export interface AccommodationInput {
+  title: string;
+  kind: string;
+  description: string;
+  location: string;
+  frequency: string;
+  duration: string;
+}
+
+/** Copies a library accommodation onto a student. The same accommodation is not added twice. */
+export function addAccommodation(studentId: string, input: AccommodationInput): string {
+  if (!current.students.some((s) => s.id === studentId)) throw new Error("Student not found");
+  const title = input.title.trim().slice(0, 120);
+  if (!title) throw new Error("The accommodation needs a title");
+  const existing = current.accommodations.find(
+    (a) => a.student_id === studentId && a.title === title,
+  );
+  if (existing) throw new Error("This student already has that accommodation");
+  const record: StudentAccommodation = {
+    id: id(),
+    student_id: studentId,
+    title,
+    kind: input.kind.slice(0, 40),
+    description: input.description.slice(0, 600),
+    location: input.location.slice(0, 200),
+    frequency: input.frequency.slice(0, 200),
+    duration: input.duration.slice(0, 200),
+  };
+  commit({ ...current, accommodations: [...current.accommodations, record] });
+  return record.id;
+}
+
+export function removeAccommodation(accommodationId: string) {
+  commit({
+    ...current,
+    accommodations: current.accommodations.filter((a) => a.id !== accommodationId),
+  });
 }
 
 export function deletePoint(pointId: string) {

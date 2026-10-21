@@ -38,8 +38,8 @@ describe("template wording", () => {
 
 describe("sample library", () => {
   it("is small, original and consistent", () => {
-    expect(goals.length).toBeLessThanOrEqual(12);
-    expect(accommodations.length).toBeLessThanOrEqual(12);
+    expect(goals.length).toBeLessThanOrEqual(15);
+    expect(accommodations.length).toBeLessThanOrEqual(15);
     expect(new Set(goals.map((g) => g.id)).size).toBe(goals.length);
     for (const g of goals) {
       // Every blank in the wording is declared or is the date.

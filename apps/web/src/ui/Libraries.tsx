@@ -20,7 +20,8 @@ import {
   preview,
   renderedText,
 } from "../data/libraryText.ts";
-import { addGoal } from "../data/workspace.ts";
+import { can, getRole } from "../data/roles.ts";
+import { addAccommodation, addGoal, getWorkspace, removeAccommodation } from "../data/workspace.ts";
 import "./libraries.css";
 
 const todayIso = () => {
@@ -137,6 +138,26 @@ export function Libraries() {
 }
 
 function AccommodationDetail({ item }: { item: AccommodationItem }) {
+  const [studentId, setStudentId] = useState("");
+  const [message, setMessage] = useState("");
+  const role = getRole();
+  const student = students.find((s) => s.student.id === studentId)?.student;
+  const add = () => {
+    if (!student) return;
+    try {
+      addAccommodation(student.id, {
+        title: item.title,
+        kind: item.kind,
+        description: item.description,
+        location: item.location,
+        frequency: item.frequency,
+        duration: item.duration,
+      });
+      setMessage(`Added to ${displayName(student)}.`);
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Could not add the accommodation");
+    }
+  };
   return (
     <section className="lib-detail" aria-label={item.title}>
       <h3>{item.title}</h3>
@@ -151,7 +172,69 @@ function AccommodationDetail({ item }: { item: AccommodationItem }) {
         <br />
         <strong>For how long:</strong> {item.duration}
       </p>
-      <p className="meta">Adding accommodations to a student is not on the web practice app yet.</p>
+      {role && can(role, "editGoal") && (
+        <form className="form" onSubmit={(e) => e.preventDefault()}>
+          <label>
+            <span>Add to student</span>
+            <select
+              value={studentId}
+              onChange={(e) => {
+                setStudentId(e.target.value);
+                setMessage("");
+              }}
+            >
+              <option value="">Choose a student</option>
+              {students.map((s) => (
+                <option key={s.student.id} value={s.student.id}>
+                  {displayName(s.student)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="actions">
+            <button type="button" className="save" onClick={add} disabled={!student}>
+              Add to student
+            </button>
+          </div>
+          <p className="saved" role="status">
+            {message}
+          </p>
+        </form>
+      )}
+    </section>
+  );
+}
+
+/** The accommodations on a student's page, with a way to remove one. */
+export function StudentAccommodations({ studentId }: { studentId: string }) {
+  const role = getRole();
+  const list = getWorkspace().accommodations.filter((a) => a.student_id === studentId);
+  return (
+    <section className="lib-detail" aria-label="Accommodations">
+      <h3>Accommodations</h3>
+      {list.length === 0 && (
+        <p className="empty">
+          None yet. Add one from the <a href="#/libraries">Libraries</a> tab.
+        </p>
+      )}
+      {list.map((a) => (
+        <div key={a.id}>
+          <strong>{a.title}</strong>
+          <p>{a.description}</p>
+          <p className="meta">
+            {a.location} · {a.frequency} · {a.duration}
+          </p>
+          {role && can(role, "editGoal") && (
+            <button
+              type="button"
+              className="danger-ghost"
+              onClick={() => removeAccommodation(a.id)}
+            >
+              Remove {a.title}
+            </button>
+          )}
+        </div>
+      ))}
     </section>
   );
 }
