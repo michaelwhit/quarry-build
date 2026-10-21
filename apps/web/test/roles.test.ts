@@ -2,7 +2,14 @@ import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { beforeEach, describe, expect, it } from "vitest";
 import { displayName, scrub, students } from "../src/data/district.ts";
-import { agreeToPrivacy, can, isDelegateRole, needsPrivacy, setRole } from "../src/data/roles.ts";
+import {
+  agreeToPrivacy,
+  can,
+  delegateFallback,
+  isDelegateRole,
+  needsPrivacy,
+  setRole,
+} from "../src/data/roles.ts";
 import { Today, shortGoal } from "../src/ui/Home.tsx";
 import { safeDecode } from "../src/data/hash.ts";
 import { AtAGlance, MyStudents } from "../src/ui/Glance.tsx";
@@ -264,5 +271,12 @@ describe("gen-ed At a glance", () => {
     share();
     const html = renderToString(createElement(AtAGlance, { studentId: "not-shared" }));
     expect(html).toContain("This student is no longer shared with you.");
+  });
+});
+
+describe("delegate landing", () => {
+  it("sends gen-ed teachers to My students and paras to Today", () => {
+    expect(delegateFallback("gen_ed_teacher")).toBe("my_students");
+    expect(delegateFallback("paraprofessional")).toBe("today");
   });
 });

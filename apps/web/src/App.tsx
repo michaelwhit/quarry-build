@@ -11,6 +11,7 @@ import {
   can,
   getRole,
   getRoleVersion,
+  delegateFallback,
   isDelegateRole,
   needsPrivacy,
   roleById,
@@ -289,7 +290,11 @@ export function App() {
   ) : role === "gen_ed_teacher" && glance?.[1] ? (
     <AtAGlance studentId={decode(glance[1])} />
   ) : delegate && !delegateOk ? (
-    <Today />
+    delegateFallback(role) === "my_students" ? (
+      <MyStudents />
+    ) : (
+      <Today />
+    )
   ) : t?.[1] && t[2] ? (
     <TrackGoal studentId={t[1]} goalId={t[2]} />
   ) : hash.startsWith("#/track") ? (
