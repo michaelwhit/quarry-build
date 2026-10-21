@@ -83,12 +83,13 @@ export interface Mastery {
   maintenance_check: boolean;
 }
 
-export function masteryLine(m: Mastery): string {
+export function masteryLine(m: Mastery, values: Record<string, string> = {}): string {
+  const unit = m.unit === "percent" ? "%" : m.unit ? ` ${m.unit}` : "";
+  const typed = m.threshold_from_slot ? (values[m.threshold_from_slot] ?? "").trim() : "";
   let target: string;
-  if (m.threshold != null) {
-    const unit = m.unit === "percent" ? "%" : m.unit ? ` ${m.unit}` : "";
-    target = `${m.threshold}${unit}`;
-  } else if (m.threshold_from_slot) target = `the [${label(m.threshold_from_slot)}] you choose`;
+  if (m.threshold != null) target = `${m.threshold}${unit}`;
+  else if (typed !== "") target = `${typed}${unit}`;
+  else if (m.threshold_from_slot) target = `the [${label(m.threshold_from_slot)}] you choose`;
   else target = "the target";
   const words =
     m.window_kind === "consecutive"
