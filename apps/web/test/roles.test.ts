@@ -1,7 +1,10 @@
+import { createElement } from "react";
+import { renderToString } from "react-dom/server";
 import { beforeEach, describe, expect, it } from "vitest";
 import { displayName, scrub, students } from "../src/data/district.ts";
 import { agreeToPrivacy, can, isDelegateRole, needsPrivacy, setRole } from "../src/data/roles.ts";
 import { shortGoal } from "../src/ui/Home.tsx";
+import { SignIn } from "../src/ui/SignIn.tsx";
 import {
   addGoal,
   addStudent,
@@ -149,5 +152,17 @@ describe("shortGoal", () => {
     expect(out.length).toBeLessThanOrEqual(101);
     expect(out.endsWith("…")).toBe(true);
     expect(shortGoal("short goal")).toBe("short goal");
+  });
+});
+
+describe("sign-in landing", () => {
+  it("opens on the logo, name, practice notice and one Sign in button, with no role choices", () => {
+    const html = renderToString(createElement(SignIn));
+    expect(html).toContain("GoalLine");
+    expect(html).toContain('src="icon.svg"');
+    expect(html).toContain("Everything in this app is made up. No real student information.");
+    expect(html).toContain(">Sign in<");
+    expect(html).not.toContain("Practice Director");
+    expect(html).not.toContain("Case manager");
   });
 });
