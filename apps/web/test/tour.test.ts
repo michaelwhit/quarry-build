@@ -138,16 +138,39 @@ describe("public tour page", () => {
   });
 
   it("keeps every tap area inside its picture and the motion off for reduced motion", () => {
-    for (const m of read("hotspots.css").matchAll(
-      /left: ([\d.]+)%; top: ([\d.]+)%; width: ([\d.]+)%; height: ([\d.]+)%/g,
-    )) {
-      const [x, y, w, h] = m.slice(1).map(Number) as [number, number, number, number];
-      expect(x + w).toBeLessThanOrEqual(100.05);
-      expect(y + h).toBeLessThanOrEqual(100.05);
-    }
+    const boxes = (css: string) =>
+      [
+        ...css.matchAll(
+          /left:\s*([\d.]+)%;\s*top:\s*([\d.]+)%;\s*width:\s*([\d.]+)%;\s*height:\s*([\d.]+)%/g,
+        ),
+      ].map((m) => m.slice(1).map(Number) as [number, number, number, number]);
+    const outside = (css: string) =>
+      boxes(css).filter(([x, y, w, h]) => x + w > 100.05 || y + h > 100.05);
+    const real = read("hotspots.css");
+    expect(boxes(real).length).toBeGreaterThan(10);
+    expect(outside(real)).toEqual([]);
+    // The check itself must be able to fail: a box running past the picture is caught.
+    expect(
+      outside(".x {\n  left: 60%;\n  top: 10%;\n  width: 50%;\n  height: 5%;\n}"),
+    ).toHaveLength(1);
     const css = read("tour.css");
     expect(css).toMatch(/@media \(prefers-reduced-motion: no-preference\)[^@]*animation: pulse/);
     expect(css).toMatch(/min-height: 44px/);
+  });
+
+  it("uses only pictures and tap areas made for the size a picture is shown at", () => {
+    // A picture shown to tablets that was made at computer size is a computer picture: its frame,
+    // its image files and its tap areas all say computer, so nothing is placed for another size.
+    const figures = html.split(/<figure\s/).slice(1);
+    expect(figures.length).toBeGreaterThan(20);
+    for (const f of figures) {
+      const cls = /class="shot ([^"]*)"/.exec(f)?.[1] ?? "";
+      const frame = ["computer", "tablet", "phone"].find((d) => cls.split(" ").includes(d));
+      const used = new Set(
+        [...f.matchAll(/(?:img\/[\w-]*?|\bh-[\w]*?)-?(computer|tablet|phone)\b/g)].map((m) => m[1]),
+      );
+      if (frame && used.size) expect([...used], f.slice(0, 120)).toEqual([frame]);
+    }
   });
 
   it("opens the practice app in a new tab without passing anything along", () => {
