@@ -382,7 +382,7 @@ export const mockDrafter: Drafter = {
     for (const st of req.statements) {
       if (st.kind === "strength") {
         out.push({
-          template: `{{student}} shows a strength: ${lower1(end(st.text))}`,
+          template: `{{student}} shows a strength: {{text:${st.id}}}`,
           cites: [st.id],
         });
         continue;
@@ -394,12 +394,12 @@ export const mockDrafter: Drafter = {
             ? "The team"
             : "The teacher";
       out.push({
-        template: `${who} identified a need: ${lower1(end(st.text))}`,
+        template: `${who} identified a need: {{text:${st.id}}}`,
         cites: [st.id, ...st.scoreIds],
       });
       if (st.implication.trim() !== "")
         out.push({
-          template: `Impact on instruction: ${lower1(end(st.implication))}`,
+          template: `Impact on instruction: {{implication:${st.id}}}`,
           cites: [st.id],
         });
     }
@@ -409,8 +409,10 @@ export const mockDrafter: Drafter = {
 
 // ---- filling placeholders ----
 
+const escapeRe = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 const PLACEHOLDER =
-  /\{\{(student|measure|value|percentile|descriptor|date)(?::([A-Za-z0-9_-]+))?\}\}/g;
+  /\{\{(student|measure|value|percentile|descriptor|date|text|implication)(?::([A-Za-z0-9_-]+))?\}\}/g;
 
 export interface FillResult {
   sentences: Sentence[];
@@ -431,6 +433,7 @@ const dateText = (iso: string) => {
 /** Fills placeholders from confirmed rows. A sentence the drafter wrote with its own digits is dropped. */
 export function fill(raw: RawSentence[], ev: SlotEvidence, firstName: string): FillResult {
   const byId = new Map(ev.scores.map((s) => [s.id, s]));
+  const stById = new Map(ev.statements.map((s) => [s.id, s]));
   const known = new Set([...ev.scores.map((s) => s.id), ...ev.statements.map((s) => s.id)]);
   const sentences: Sentence[] = [];
   const dropped: string[] = [];
@@ -445,6 +448,14 @@ export function fill(raw: RawSentence[], ev: SlotEvidence, firstName: string): F
     const text = r.template
       .replace(PLACEHOLDER, (_m, kind: string, id?: string) => {
         if (kind === "student") return firstName;
+        // The teacher's own words: they may hold digits, and are not a number the drafter wrote.
+        if (kind === "text" || kind === "implication") {
+          const st = id ? stById.get(id) : undefined;
+          const own = kind === "text" ? st?.text : st?.implication;
+          if (!st || !own || own.trim() === "") return ((bad = true), "");
+          cites.add(st.id);
+          return lower1(end(own));
+        }
         const s = id ? byId.get(id) : undefined;
         if (!s) return ((bad = true), "");
         cites.add(s.id);
@@ -520,10 +531,12 @@ export function checkSlot(
         text: `${s.measure} was given more than 12 months ago. Present levels should rest on current data.`,
       });
   }
-  const linked = new Set(ev.statements.flatMap((st) => [...st.scoreIds]));
-  const anyStatement = ev.statements.some((st) => st.kind === "need" || st.kind === "strength");
+  // A statement anywhere in the record counts: the state and district section carries no
+  // statements of its own, so the score is covered by one that cites it or names its area.
+  const confirmedStatements = rec.statements.filter((st) => st.state === "confirmed");
+  const linked = new Set(confirmedStatements.flatMap((st) => [...st.scoreIds]));
   for (const s of ev.scores.filter(usable))
-    if (!linked.has(s.id) && !anyStatement)
+    if (!linked.has(s.id) && !confirmedStatements.some((st) => st.area === s.area))
       out.push({
         severity: "amber",
         text: `${s.measure}: the score has no statement of what the student can and cannot yet do.`,
@@ -556,11 +569,7 @@ export function checkSlot(
       });
     for (const s of ev.scores.filter(usable)) {
       const d = s.descriptor.trim().toLowerCase();
-      if (
-        !d ||
-        !new RegExp(`(?<![\\d.])${s.value.trim().replace(/\./g, "\\.")}(?![\\d])`).test(text)
-      )
-        continue;
+      if (!d || !new RegExp(`(?<![\\d.])${escapeRe(s.value.trim())}(?![\\d])`).test(text)) continue;
       const said = (text.match(BAND_RE) ?? []).map((b) => b.toLowerCase());
       if (said.length > 0 && !text.toLowerCase().includes(d))
         out.push({
@@ -799,6 +808,10 @@ export async function draftSlot(
   const { sentences, dropped } = fill(raw, ev, firstName);
   // Re-read: the record may have changed while the drafter worked.
   const cur = getPl(rec.studentId);
+  if (cur.slots[key]?.approved)
+    return ["This section was approved while drafting. Edit it again to redraft."];
+  if (basisOf(slotEvidence(cur, key)) !== basisOf(ev))
+    return ["The evidence changed while drafting. Draft again."];
   const slot: SlotDraft = {
     text: sentences.map((s) => s.text).join(" "),
     sentences,
