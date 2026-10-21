@@ -31,7 +31,7 @@ public enum StaffRolesText {
     public static func roleName(_ role: StaffRole) -> String {
         switch role {
         case .spedDirector: "SPED director"
-        case .caseManager: "SPED teacher"
+        case .caseManager: "Case manager"
         case .relatedServiceProvider: "SLP / psych"
         case .paraprofessional: "Para"
         default: role.title
