@@ -820,3 +820,28 @@ h2.page-title {
   margin-top: 24px;
   min-height: 48px;
 }
+
+.landing .tour-link {
+  margin-top: 12px;
+  width: 100%;
+  text-align: center;
+  min-height: 44px;
+}
+
+.signin .save {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-color: var(--primary);
+  justify-content: center;
+  font-weight: 700;
+}
+h2.landing-name {
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text);
+  font-size: 34px;
+}
+.landing .signin-main,
+.landing .tour-link {
+  justify-content: center;
+}

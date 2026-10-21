@@ -21,6 +21,9 @@ export function SignIn() {
         >
           Sign in
         </button>
+        <a className="btn tour-link" href="tour/">
+          See how it works
+        </a>
       </main>
     );
   return <PracticePeople onBack={() => setStep("landing")} />;
