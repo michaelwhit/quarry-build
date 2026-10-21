@@ -1,9 +1,22 @@
 import { useState } from "react";
 import type { GoalArea, MeasurementType } from "@synthetic/src/types.ts";
-import { displayName, goalById, studentById } from "../data/district.ts";
+import { displayName, goalById, studentById, students } from "../data/district.ts";
+import {
+  FIELDS,
+  MAX_FILE_BYTES,
+  type Mapping,
+  type PlannedRow,
+  type CsvTable,
+  detectMapping,
+  isComplete,
+  parseCsv,
+  planImport,
+  readyRows,
+} from "../data/csv.ts";
 import {
   addGoal,
   addStudent,
+  addStudents,
   deleteGoal,
   deleteStudent,
   updateGoal,
@@ -411,6 +424,173 @@ export function AddGoal({ studentId, editGoalId }: { studentId: string; editGoal
             window.location.hash = `#/student/${s.student.id}`;
           }}
         />
+      )}
+    </>
+  );
+}
+
+const statusText = (r: PlannedRow) =>
+  r.status.kind === "ready"
+    ? "Will add"
+    : r.status.kind === "duplicate"
+      ? "Already on the list"
+      : r.status.why;
+
+/** Add many students at once from a spreadsheet saved as CSV: pick the file, check the columns, preview, confirm. */
+export function ImportStudents() {
+  const [fileName, setFileName] = useState("");
+  const [table, setTable] = useState<CsvTable | null>(null);
+  const [mapping, setMapping] = useState<Mapping>({});
+  const [error, setError] = useState("");
+  const [added, setAdded] = useState<number | null>(null);
+
+  const known = students.map((v) => ({
+    firstName: v.student.first_name,
+    lastName: v.student.last_name,
+    grade: v.student.grade,
+  }));
+  const plan = table && isComplete(mapping) ? planImport(table, mapping, known) : null;
+  const ready = plan ? readyRows(plan) : [];
+
+  const pick = (file: File | undefined) => {
+    setError("");
+    setAdded(null);
+    if (!file) return;
+    if (file.size > MAX_FILE_BYTES) {
+      setError("That file is larger than 1 MB. Check that it is the right file.");
+      return;
+    }
+    void file.text().then((text) => {
+      const result = parseCsv(text);
+      if (!result.ok) {
+        setTable(null);
+        setError(result.message);
+        return;
+      }
+      setTable(result.table);
+      setFileName(file.name);
+      setMapping(detectMapping(result.table.headers));
+    });
+  };
+
+  const confirm = () => {
+    setError("");
+    try {
+      // One save for the whole file: either every student is added or none is.
+      const ids = addStudents(
+        ready.map((r) => ({
+          firstName: r.firstName,
+          lastName: r.lastName,
+          preferredName: r.preferredName,
+          grade: r.grade,
+        })),
+      );
+      setAdded(ids.length);
+    } catch {
+      setError("Could not add students. Nothing was added. Try again.");
+    }
+  };
+
+  return (
+    <>
+      <a className="btn back" href="#/caseload">
+        ← Caseload
+      </a>
+      <h2 className="page-title">Import students</h2>
+      <p className="form-warn" role="note">
+        Practice only: use made-up names. Do not enter a real student.
+      </p>
+      <p className="meta">
+        Use a spreadsheet saved as CSV with one student per row and a header row. Nothing is added
+        until you confirm.
+      </p>
+      <div className="actions">
+        <label className="btn file-btn">
+          {table ? "Choose a different file" : "Choose a file"}
+          <input
+            type="file"
+            accept=".csv,text/csv,text/plain"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              pick(f);
+            }}
+          />
+        </label>
+        {fileName && <span className="meta">{fileName}</span>}
+      </div>
+      {error && (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      )}
+      {table && (
+        <form className="form" onSubmit={(e) => e.preventDefault()}>
+          <h4 className="sec">Which column is which</h4>
+          {FIELDS.map((f) => (
+            <label key={f.key}>
+              <span>{f.required ? f.title : `${f.title} (optional)`}</span>
+              <select
+                value={mapping[f.key] ?? ""}
+                onChange={(e) => {
+                  const next = { ...mapping };
+                  if (e.target.value === "") delete next[f.key];
+                  else next[f.key] = Number(e.target.value);
+                  setMapping(next);
+                  setAdded(null);
+                }}
+              >
+                <option value="">Not in the file</option>
+                {table.headers.map((h, i) => (
+                  <option key={i} value={i}>
+                    {h || `Column ${i + 1}`}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
+          {!isComplete(mapping) && (
+            <p className="meta">Choose a column for first name, last name and grade.</p>
+          )}
+        </form>
+      )}
+      {plan && (
+        <section aria-label="Preview">
+          <h4 className="sec">Preview</h4>
+          <p className="saved" role="status">
+            {added !== null
+              ? `${added} student${added === 1 ? "" : "s"} added.`
+              : `${ready.length} to add, ${plan.filter((r) => r.status.kind === "duplicate").length} already on the list, ${plan.filter((r) => r.status.kind === "problem").length} to fix in the file`}
+          </p>
+          {added === null && (
+            <ul className="import-list">
+              {plan.map((r) => (
+                <li key={r.line}>
+                  <span>
+                    {`${r.firstName} ${r.lastName}`.trim() || "(no name)"}
+                    <span className="meta">
+                      {" "}
+                      Grade {r.grade || "?"} · row {r.line}
+                    </span>
+                  </span>
+                  <span className={r.status.kind === "problem" ? "form-error" : "meta"}>
+                    {statusText(r)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="actions">
+            <button
+              type="button"
+              className="save"
+              onClick={confirm}
+              disabled={ready.length === 0 || added !== null}
+            >
+              Add students
+            </button>
+          </div>
+        </section>
       )}
     </>
   );
