@@ -229,6 +229,10 @@ function StudentPage({ id }: { id: string }) {
 
 export function App() {
   const hash = useRoute();
+  useEffect(() => {
+    // The tour is a plain page of its own (it must work with scripts off); #/tour is its short address.
+    if (hash === "#/tour") window.location.replace("tour/");
+  }, [hash]);
   const theme = useTheme();
   const m = /^#\/student\/(.+)$/.exec(hash);
   const active = activeTab(hash, isDelegateRole(getRole()));
@@ -322,7 +326,8 @@ export function App() {
         <h1>
           GoalLine
           <span className="sub">
-            {districtName} · {roleById(role)?.person}
+            {districtName}
+            {role ? ` · ${roleById(role)?.person}` : ""}
           </span>
         </h1>
         <button type="button" onClick={theme.toggle}>

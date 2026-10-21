@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'"
+    />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#0B1220" />
+    <link rel="icon" href="../icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="tour.css" />
+    <title>GoalLine: see how it works</title>
+  </head>
+  <body>
+    <header class="bar">
+      <a class="link" href="../">Back</a>
+      <a class="link" href="../">Sign in</a>
+    </header>
+    <main id="tour">
+      <section class="panel intro" aria-label="About this preview">
+        <img class="logo" src="../icon.svg" alt="" width="64" height="64" />
+        <h1>GoalLine</h1>
+        <p>
+          GoalLine is one tool for the whole special education team. The teacher collects goal data,
+          the director sees where things stand, paras enter data on only their goals, and general ed
+          teachers will see what a student needs (planned). In this preview, each person sees only
+          their part.
+        </p>
+        <p class="note">Preview with practice data. Not for real students.</p>
+        <p class="note">Not affiliated with any school district or state agency.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="p1">
+        <h2 id="p1">Record data</h2>
+        <figure class="phone">
+          <a href="record-data.png"
+            ><img
+              src="record-data.png"
+              width="390"
+              height="780"
+              alt="Practice screen for recording a session on a goal, with a large count button and a Save button"
+          /></a>
+        </figure>
+        <p class="caption">Teachers record data in seconds.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="p2">
+        <h2 id="p2">The graph</h2>
+        <figure class="wide">
+          <a href="graph.png"
+            ><img
+              src="graph.png"
+              width="900"
+              height="975"
+              alt="Practice goal with a line graph of sessions, a dashed goal line and a dotted trend line"
+          /></a>
+          <figcaption>Tap the picture to see it larger.</figcaption>
+        </figure>
+        <p class="caption">The graph builds itself from what was recorded.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="p3">
+        <h2 id="p3">Goal bank <span class="tag">Preview</span></h2>
+        <figure class="wide">
+          <img
+            src="goal-bank-preview.svg"
+            width="900"
+            height="560"
+            alt="Preview drawing of a goal bank with two lines of sample goal wording and Add buttons"
+          />
+          <figcaption>A drawing of a screen that is planned, not a built screen.</figcaption>
+        </figure>
+        <p class="caption">Start from sample goal wording.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="p4">
+        <h2 id="p4">Director overview</h2>
+        <figure class="wide">
+          <a href="director-overview.png"
+            ><img
+              src="director-overview.png"
+              width="900"
+              height="720"
+              alt="Practice home screen with the number of students and goals and how many are on track"
+          /></a>
+        </figure>
+        <p class="caption">The director sees every caseload in one place.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="p5">
+        <h2 id="p5">Paraprofessional view</h2>
+        <figure class="phone">
+          <a href="para-view.png"
+            ><img
+              src="para-view.png"
+              width="390"
+              height="780"
+              alt="Practice phone screen listing a few goals with first names only and a Start a session button"
+          /></a>
+        </figure>
+        <p class="caption">In this preview, paras see only the goals they were given.</p>
+      </section>
+
+      <section class="panel planned" aria-labelledby="p6">
+        <h2 id="p6">What is coming <span class="tag">Planned</span></h2>
+        <ul>
+          <li>AI drafting of goals and present levels <span class="tag">Planned</span></li>
+          <li>
+            A helper to copy reports into the state record system <span class="tag">Planned</span>
+          </li>
+          <li>
+            A read-only "at a glance" page for classroom teachers <span class="tag">Planned</span>
+          </li>
+        </ul>
+        <p class="note">Planned items are not built.</p>
+      </section>
+
+      <nav class="steps" aria-label="Tour steps" hidden>
+        <button type="button" id="back">Back</button>
+        <span id="count" aria-live="polite"></span>
+        <button type="button" id="next">Next</button>
+      </nav>
+
+      <p class="note">Preview with practice data. Not for real students.</p>
+      <p class="contact">Contact details coming soon.</p>
+    </main>
+    <script src="tour.js"></script>
+  </body>
+</html>

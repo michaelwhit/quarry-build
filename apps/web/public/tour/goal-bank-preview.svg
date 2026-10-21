@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 560" role="img" aria-label="Preview drawing of a goal bank: a list of sample goal wording with an Add button">
+  <rect width="900" height="560" fill="#000000"/>
+  <rect x="0" y="0" width="900" height="28" fill="#ffb454"/>
+  <text x="450" y="19" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#0e1420" letter-spacing="1">TEST DATA · preview drawing, not a built screen</text>
+  <text x="40" y="84" font-family="system-ui, sans-serif" font-size="30" font-weight="700" fill="#e8edf7">Goal bank</text>
+  <text x="40" y="112" font-family="system-ui, sans-serif" font-size="16" fill="#9fb0cc">Sample goal wording. Preview.</text>
+  <rect x="40" y="136" width="820" height="44" rx="12" fill="#1c1c1e" stroke="#2c2c2e"/>
+  <text x="60" y="164" font-family="system-ui, sans-serif" font-size="16" fill="#9fb0cc">Search sample goals</text>
+  <g font-family="system-ui, sans-serif">
+    <rect x="40" y="204" width="820" height="130" rx="14" fill="#1c1c1e" stroke="#2c2c2e"/>
+    <text x="64" y="236" font-size="14" font-weight="700" fill="#7ee0c3">Reading</text>
+    <text x="64" y="266" font-size="17" fill="#e8edf7">Given a short passage at the student's level, the student will answer</text>
+    <text x="64" y="290" font-size="17" fill="#e8edf7">who, what and where questions with 80% accuracy in 4 of 5 sessions.</text>
+    <rect x="740" y="296" width="100" height="26" rx="8" fill="#5b8cff"/>
+    <text x="790" y="314" text-anchor="middle" font-size="14" font-weight="700" fill="#0e1420">Add</text>
+    <rect x="40" y="350" width="820" height="130" rx="14" fill="#1c1c1e" stroke="#2c2c2e"/>
+    <text x="64" y="382" font-size="14" font-weight="700" fill="#7ee0c3">Behavior</text>
+    <text x="64" y="412" font-size="17" fill="#e8edf7">When frustrated during a class task, the student will use a taught</text>
+    <text x="64" y="436" font-size="17" fill="#e8edf7">calming strategy within 2 minutes in 4 of 5 observations.</text>
+    <rect x="740" y="442" width="100" height="26" rx="8" fill="#5b8cff"/>
+    <text x="790" y="460" text-anchor="middle" font-size="14" font-weight="700" fill="#0e1420">Add</text>
+  </g>
+</svg>
