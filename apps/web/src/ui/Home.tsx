@@ -23,11 +23,12 @@ const TILES: Tile[] = [
   { title: "Today", subtitle: "Start a session", icon: "☑", href: "#/today" },
   { title: "Track progress", subtitle: "Pick a student and goal", icon: "◎", href: "#/track" },
   { title: "Caseload", subtitle: "Your students", icon: "👥", href: "#/caseload" },
-  { title: "Goal library", subtitle: "Find and add goals", icon: "📚" },
+  { title: "Goal library", subtitle: "Find and add goals", icon: "📚", href: "#/libraries" },
   {
     title: "Accommodations",
     subtitle: "Find supports, set where, how often, how long",
     icon: "✋",
+    href: "#/libraries/accommodations",
   },
   {
     title: "Draft from evaluation",

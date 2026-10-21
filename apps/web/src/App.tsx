@@ -56,7 +56,7 @@ function activeTab(hash: string, delegate = false): string {
   )
     return "caseload";
   if (hash === "#/today") return "today";
-  if (hash === "#/libraries") return "libraries";
+  if (hash === "#/libraries" || hash === "#/libraries/accommodations") return "libraries";
   if (hash === "#/more") return "more";
   // Track screens (#/track...) are reached from Home, so Home stays highlighted on purpose.
   return "home";
@@ -361,8 +361,8 @@ export function App() {
     )
   ) : hash === "#/today" ? (
     <Today />
-  ) : hash === "#/libraries" ? (
-    <Libraries />
+  ) : hash === "#/libraries" || hash === "#/libraries/accommodations" ? (
+    <Libraries key={hash} start={hash.endsWith("/accommodations") ? "accommodations" : "goals"} />
   ) : hash === "#/more" ? (
     <More />
   ) : (

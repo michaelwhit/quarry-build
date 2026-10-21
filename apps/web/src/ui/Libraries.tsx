@@ -33,8 +33,8 @@ const todayIso = () => {
 type Tab = "goals" | "accommodations";
 
 /** Browse the sample goal and accommodation libraries, fill a goal in, and add it to a student. */
-export function Libraries() {
-  const [tab, setTab] = useState<Tab>("goals");
+export function Libraries({ start = "goals" }: { start?: Tab }) {
+  const [tab, setTab] = useState<Tab>(start);
   const [query, setQuery] = useState("");
   const [band, setBand] = useState("");
   const [area, setArea] = useState("");
