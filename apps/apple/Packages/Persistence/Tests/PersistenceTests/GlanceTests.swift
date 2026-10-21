@@ -96,11 +96,27 @@ struct GlanceTests {
             #expect(shownIDs.isSubset(of: store.delegatedGoalIDs))
         }
         // Nothing handed out at all means no goals, however many are on the IEP.
-        let bare = try PrototypeStore(
-            dataset: SyntheticDataset.load(from: Data(contentsOf: PrototypeStoreTests.fixtureURL)),
-            today: { LocalDate(year: 2026, month: 10, day: 17)! })
+        // The shared demo district now carries delegations of its own, so clear them first.
+        var noDelegations = try SyntheticDataset.load(
+            from: Data(contentsOf: PrototypeStoreTests.fixtureURL))
+        noDelegations.goalDelegations = []
+        let bare = PrototypeStore(
+            dataset: noDelegations, today: { LocalDate(year: 2026, month: 10, day: 17)! })
         try signIn(bare, as: .genEdTeacher)
         #expect(bare.glanceStudents.flatMap(\.goals).isEmpty)
+    }
+
+    @Test("with the shared demo delegations, only the goals handed to the gen-ed teacher appear")
+    func sharedDelegations() throws {
+        let dataset = try SyntheticDataset.load(
+            from: Data(contentsOf: PrototypeStoreTests.fixtureURL))
+        let store = PrototypeStore(
+            dataset: dataset, today: { LocalDate(year: 2026, month: 10, day: 17)! })
+        try signIn(store, as: .genEdTeacher)
+        let genEd = try #require(store.currentStaff)
+        let handed = Set(dataset.goalDelegations.filter { $0.staffID == genEd.id }.map(\.goalID))
+        let shown = Set(store.glanceStudents.flatMap(\.goals).map(\.id))
+        #expect(shown.isSubset(of: handed))
     }
 
     @Test("the case manager named on the page is the student's active caseload holder")
