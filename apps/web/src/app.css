@@ -781,3 +781,42 @@ h2.page-title {
   transform: translateY(-50%);
   font-size: 22px;
 }
+
+.landing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 360px;
+  margin: 0 auto;
+  padding-top: 32px;
+  text-align: center;
+}
+.landing-logo {
+  width: 96px;
+  height: 96px;
+}
+.landing-name {
+  margin: 16px 0 0;
+  font-size: 34px;
+  font-weight: 700;
+}
+.landing-notice {
+  margin-top: 32px;
+  padding: 12px 16px;
+  width: 100%;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  text-align: left;
+}
+.landing-notice h3 {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+.landing-notice p {
+  margin: 0;
+}
+.landing .signin-main {
+  margin-top: 24px;
+  min-height: 48px;
+}

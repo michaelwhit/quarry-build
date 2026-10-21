@@ -1,10 +1,39 @@
+import { useState } from "react";
 import { type RoleId, ROLES, agreeToPrivacy, roleById, setRole } from "../data/roles.ts";
 
-/** Practice sign-in: choose a made-up staff role. Nothing is sent anywhere. */
+/** First screen when signed out: logo, name, the practice notice and one Sign in button. */
 export function SignIn() {
+  const [step, setStep] = useState<"landing" | "pick">("landing");
+  if (step === "landing")
+    return (
+      <main id="main" className="signin landing">
+        <img className="landing-logo" src="icon.svg" alt="" width="96" height="96" />
+        <h2 className="landing-name">GoalLine</h2>
+        <section className="landing-notice" aria-label="Practice data">
+          <h3>Practice data</h3>
+          <p>Everything in this app is made up. No real student information.</p>
+        </section>
+        <button
+          type="button"
+          className="save signin-main"
+          autoFocus
+          onClick={() => setStep("pick")}
+        >
+          Sign in
+        </button>
+      </main>
+    );
+  return <PracticePeople onBack={() => setStep("landing")} />;
+}
+
+/** Practice sign-in: choose a made-up staff role. Nothing is sent anywhere. */
+function PracticePeople({ onBack }: { onBack: () => void }) {
   return (
     <main id="main" className="signin">
-      <h2 className="page-title">GoalLine</h2>
+      <button type="button" onClick={onBack}>
+        ‹ Back
+      </button>
+      <h2 className="page-title">Practice: sign in as a sample user</h2>
       <p className="meta">Practice build with made-up students. Pick who is signing in.</p>
       <p className="form-warn" role="note">
         Practice data only: never enter real students. No account or password, and nothing leaves
