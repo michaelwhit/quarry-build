@@ -217,7 +217,6 @@ export function slotEvidence(
 }
 
 const usable = (s: EvScore) => !isEquivalent(s.kind);
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- used by the checks and storage in the next patch
 const hasEvidence = (e: SlotEvidence) => e.scores.some(usable) || e.statements.length > 0;
 
 /** Changes whenever anything the slot would use changes. */
@@ -419,7 +418,6 @@ export const mockDrafter: Drafter = {
 
 // ---- filling placeholders ----
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- used by the checks and storage in the next patch
 const escapeRe = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const PLACEHOLDER =
@@ -482,4 +480,410 @@ export function fill(raw: RawSentence[], ev: SlotEvidence, firstName: string): F
     else sentences.push({ text, cites: [...cites] });
   }
   return { sentences, dropped };
+}
+
+// ---- checks ----
+
+export interface Problem {
+  severity: "red" | "amber" | "info";
+  text: string;
+}
+
+const BANDS = [
+  "extremely low",
+  "very low",
+  "low average",
+  "below average",
+  "well below average",
+  "borderline",
+  "high average",
+  "above average",
+  "very high",
+  "superior",
+  "average",
+  "low",
+  "high",
+];
+const BAND_RE = new RegExp(`(?<![\\p{L}])(${BANDS.join("|")})(?![\\p{L}])`, "giu");
+
+const monthsBetween = (fromIso: string, toIso: string) => {
+  const a = new Date(`${fromIso}T00:00:00Z`);
+  const b = new Date(`${toIso}T00:00:00Z`);
+  return (
+    (b.getUTCFullYear() - a.getUTCFullYear()) * 12 +
+    (b.getUTCMonth() - a.getUTCMonth()) -
+    (b.getUTCDate() < a.getUTCDate() ? 1 : 0)
+  );
+};
+
+export function checkSlot(
+  key: string,
+  slot: SlotDraft | undefined,
+  rec: PlRecord,
+  today: string,
+): Problem[] {
+  const def = slotDef(key);
+  const out: Problem[] = [];
+  if (!def || !slot) return out;
+  const ev = slotEvidence(rec, key);
+  if (!def.ai) return out;
+  // A section the teacher typed by hand was not drafted from evidence, so it has no basis to go stale.
+  if (slot.drafter !== "" && slot.drafter !== "teacher" && basisOf(ev) !== slot.basis)
+    out.push({ severity: "red", text: "The evidence changed after this draft. Draft it again." });
+  for (const s of ev.scores) {
+    if (isEquivalent(s.kind))
+      out.push({
+        severity: "info",
+        text: `${s.measure}: age and grade equivalents are not used in drafts.`,
+      });
+    else if (monthsBetween(s.testedOn, today) >= 12)
+      out.push({
+        severity: "amber",
+        text: `${s.measure} was given more than 12 months ago. Present levels should rest on current data.`,
+      });
+  }
+  // A statement anywhere in the record counts: the state and district section carries no
+  // statements of its own, so the score is covered by one that cites it or a need in its area.
+  const confirmedStatements = rec.statements.filter((st) => st.state === "confirmed");
+  const linked = new Set(confirmedStatements.flatMap((st) => [...st.scoreIds]));
+  for (const s of ev.scores.filter(usable))
+    if (
+      !linked.has(s.id) &&
+      !confirmedStatements.some((st) => st.kind === "need" && st.area === s.area)
+    )
+      out.push({
+        severity: "amber",
+        text: `${s.measure}: the score has no statement of what the student can and cannot yet do.`,
+      });
+  const text = slot.text;
+  if (
+    /\bgrade[- ]equivalent\b|\bage[- ]equivalent\b|\b(?:reads|performs|functions|works)\b[^.]{0,30}\b(?:grade|year)[- ]?level\b/i.test(
+      text,
+    )
+  )
+    out.push({
+      severity: "amber",
+      text: "Avoid grade levels and age equivalents. Describe what the student can do.",
+    });
+  if (slot.edited) {
+    const allowed = new Set<string>();
+    for (const s of ev.scores) {
+      allowed.add(s.value.trim());
+      if (s.percentile.trim()) allowed.add(s.percentile.trim());
+      for (const part of s.testedOn.split("-")) allowed.add(String(Number(part)));
+    }
+    const numbers = text.match(/\d+(?:\.\d+)?/g) ?? [];
+    const stray = [...new Set(numbers)].filter(
+      (n) => !allowed.has(n) && !allowed.has(String(Number(n))),
+    );
+    if (stray.length > 0)
+      out.push({
+        severity: "amber",
+        text: `Check ${stray.join(", ")}: not found in the confirmed scores.`,
+      });
+    for (const s of ev.scores.filter(usable)) {
+      const d = s.descriptor.trim().toLowerCase();
+      if (!d || !new RegExp(`(?<![\\d.])${escapeRe(s.value.trim())}(?![\\d]|\\.\\d)`).test(text))
+        continue;
+      // Compare whole labels. "average" must not be found inside "below average" or "low average".
+      const said = (text.match(BAND_RE) ?? []).map((b) => b.toLowerCase());
+      const usesPrinted = BANDS.includes(d)
+        ? said.includes(d)
+        : new RegExp(`(?<![\\p{L}])${escapeRe(d)}(?![\\p{L}])`, "iu").test(text);
+      if (said.length > 0 && !usesPrinted)
+        out.push({
+          severity: "red",
+          text: `${s.measure}: the report calls this "${s.descriptor.trim()}". Do not use a different label.`,
+        });
+    }
+  } else {
+    for (const sn of slot.sentences)
+      if (sn.cites.length === 0) out.push({ severity: "amber", text: "A sentence has no source." });
+  }
+  if (key === "summary.strengths" && text.trim() === "")
+    out.push({ severity: "amber", text: "The strengths section is empty." });
+  return out;
+}
+
+export const hasRed = (p: Problem[]) => p.some((x) => x.severity === "red");
+
+export interface Requirement {
+  id: string;
+  label: string;
+  met: boolean;
+}
+/** The NDE guidance's required content, judged from the confirmed evidence and typed input. */
+export function requiredContent(rec: PlRecord): Requirement[] {
+  const sc = rec.scores.filter((s) => s.state === "confirmed" && !isEquivalent(s.kind));
+  const st = rec.statements.filter((s) => s.state === "confirmed");
+  const inArea = (a: Area) =>
+    sc.some((s) => s.area === a) || st.some((s) => s.area === a && s.kind === "need");
+  return [
+    { id: "academic", label: "Academic achievement", met: inArea("reading") || inArea("math") },
+    { id: "functional", label: "Functional performance", met: inArea("other") },
+    {
+      id: "impact",
+      label: "Impact on involvement and progress in the general curriculum",
+      met: st.some((s) => s.implication.trim() !== ""),
+    },
+    { id: "strengths", label: "Strengths", met: st.some((s) => s.kind === "strength") },
+    {
+      id: "concerns",
+      label: "Parent or student concerns and vision",
+      met: (rec.slots["summary.parent_input"]?.text ?? "").trim() !== "",
+    },
+  ];
+}
+
+// ---- storage ----
+
+export const PL_KEY = "goalline-practice-plaafp-v1";
+const MAX_LOG = 500;
+
+interface StorageLike {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+}
+let storage: StorageLike | null = null;
+try {
+  storage = typeof window === "undefined" ? null : window.localStorage;
+} catch {
+  storage = null;
+}
+export function usePlStorage(s: StorageLike | null) {
+  storage = s;
+  records = load();
+  bump();
+}
+
+const isRec = (v: unknown): v is Record<string, unknown> =>
+  typeof v === "object" && v !== null && !Array.isArray(v);
+
+function load(): Map<string, PlRecord> {
+  const out = new Map<string, PlRecord>();
+  try {
+    const raw: unknown = JSON.parse(storage?.getItem(PL_KEY) ?? "[]");
+    if (!Array.isArray(raw)) return out;
+    for (const r of raw)
+      if (
+        isRec(r) &&
+        typeof r["studentId"] === "string" &&
+        Array.isArray(r["scores"]) &&
+        Array.isArray(r["statements"]) &&
+        isRec(r["slots"]) &&
+        Array.isArray(r["log"]) &&
+        typeof r["nextId"] === "number"
+      )
+        out.set(r["studentId"], r as unknown as PlRecord);
+  } catch {
+    // unreadable storage starts empty
+  }
+  return out;
+}
+
+let records = load();
+let version = 0;
+const listeners = new Set<() => void>();
+export const getPlVersion = () => version;
+export function subscribePl(l: () => void) {
+  listeners.add(l);
+  return () => listeners.delete(l);
+}
+function bump() {
+  version++;
+  for (const l of listeners) l();
+}
+function save() {
+  try {
+    storage?.setItem(PL_KEY, JSON.stringify([...records.values()]));
+  } catch {
+    // storage full or blocked: the work still stands for this visit
+  }
+}
+
+export const emptyRecord = (studentId: string): PlRecord => ({
+  studentId,
+  scores: [],
+  statements: [],
+  slots: {},
+  log: [],
+  nextId: 1,
+});
+export const getPl = (studentId: string): PlRecord =>
+  records.get(studentId) ?? emptyRecord(studentId);
+
+export interface Ctx {
+  who: string;
+  now?: Date;
+}
+
+function commit(next: PlRecord, ctx: Ctx, rows: string[]) {
+  const at = (ctx.now ?? new Date()).toISOString();
+  const log = [...next.log, ...rows.map((text) => ({ at, who: ctx.who, text }))].slice(-MAX_LOG);
+  records.set(next.studentId, { ...next, log });
+  save();
+  bump();
+}
+
+const locked = (rec: PlRecord) => Object.values(rec.slots).some((s) => s.approved);
+
+export const blankScore = (rec: PlRecord): EvScore => ({
+  id: `sc${rec.nextId}`,
+  state: "draft",
+  area: "reading",
+  source: "classroom",
+  instrument: "",
+  measure: "",
+  kind: "standard",
+  value: "",
+  percentile: "",
+  descriptor: "",
+  testedOn: "",
+});
+export const blankStatement = (rec: PlRecord): EvStatement => ({
+  id: `st${rec.nextId}`,
+  state: "draft",
+  kind: "need",
+  area: "reading",
+  statedBy: "teacher",
+  text: "",
+  implication: "",
+  scoreIds: [],
+});
+
+export function saveScore(rec: PlRecord, s: EvScore, ctx: Ctx) {
+  const exists = rec.scores.some((x) => x.id === s.id);
+  const scores = exists
+    ? rec.scores.map((x) => (x.id === s.id ? { ...s, state: "draft" as const } : x))
+    : [...rec.scores, { ...s, state: "draft" as const }];
+  commit({ ...rec, scores, nextId: exists ? rec.nextId : rec.nextId + 1 }, ctx, []);
+}
+export function saveStatement(rec: PlRecord, s: EvStatement, ctx: Ctx) {
+  const exists = rec.statements.some((x) => x.id === s.id);
+  const statements = exists
+    ? rec.statements.map((x) => (x.id === s.id ? { ...s, state: "draft" as const } : x))
+    : [...rec.statements, { ...s, state: "draft" as const }];
+  commit({ ...rec, statements, nextId: exists ? rec.nextId : rec.nextId + 1 }, ctx, []);
+}
+export function removeEvidence(rec: PlRecord, id: string, ctx: Ctx) {
+  commit(
+    {
+      ...rec,
+      scores: rec.scores.filter((x) => x.id !== id),
+      statements: rec.statements
+        .filter((x) => x.id !== id)
+        .map((x) => ({ ...x, scoreIds: x.scoreIds.filter((i) => i !== id) })),
+    },
+    ctx,
+    [],
+  );
+}
+
+/** Confirming is the teacher's statement that the row matches the report. Rows with problems stay drafts. */
+export function confirmEvidence(rec: PlRecord, id: string, ctx: Ctx, today: string): boolean {
+  const s = rec.scores.find((x) => x.id === id);
+  const st = rec.statements.find((x) => x.id === id);
+  if (s) {
+    if (scoreProblems(s, today).length > 0) return false;
+    commit(
+      { ...rec, scores: rec.scores.map((x) => (x.id === id ? { ...x, state: "confirmed" } : x)) },
+      ctx,
+      [`Confirmed score: ${s.measure.trim()}`],
+    );
+    return true;
+  }
+  if (st) {
+    if (statementProblems(st).length > 0) return false;
+    commit(
+      {
+        ...rec,
+        statements: rec.statements.map((x) => (x.id === id ? { ...x, state: "confirmed" } : x)),
+      },
+      ctx,
+      [`Confirmed ${st.kind}`],
+    );
+    return true;
+  }
+  return false;
+}
+
+/** Drafts one slot. Slots already approved are left alone until reopened. */
+export async function draftSlot(
+  rec: PlRecord,
+  key: string,
+  firstName: string,
+  names: string[],
+  drafter: Drafter,
+  ctx: Ctx,
+): Promise<string[]> {
+  const def = slotDef(key);
+  if (!def || !def.ai) return [];
+  if (rec.slots[key]?.approved) return [];
+  const ev = slotEvidence(rec, key);
+  if (!hasEvidence(ev)) return ["No confirmed evidence for this section yet."];
+  const { request, withheld } = buildRequest(def, ev, names);
+  if (withheld.length > 0) return withheld.map((w) => `Held back. ${w}.`);
+  const raw = await drafter.draft(request);
+  const { sentences, dropped } = fill(raw, ev, firstName);
+  // Re-read: the record may have changed while the drafter worked.
+  const cur = getPl(rec.studentId);
+  if (cur.slots[key]?.approved)
+    return ["This section was approved while drafting. Edit it again to redraft."];
+  if (basisOf(slotEvidence(cur, key)) !== basisOf(ev))
+    return ["The evidence changed while drafting. Draft again."];
+  const slot: SlotDraft = {
+    text: sentences.map((s) => s.text).join(" "),
+    sentences,
+    edited: false,
+    approved: false,
+    basis: basisOf(ev),
+    drafter: drafter.id,
+  };
+  commit({ ...cur, slots: { ...cur.slots, [key]: slot } }, ctx, [
+    `Draft made for ${def.label} (${drafter.id})`,
+  ]);
+  return dropped;
+}
+
+export function setSlotText(rec: PlRecord, key: string, text: string, ctx: Ctx) {
+  const def = slotDef(key);
+  const cur = rec.slots[key];
+  if (!def || cur?.approved) return;
+  const slot: SlotDraft = def.ai
+    ? { ...(cur ?? { sentences: [], basis: "", drafter: "" }), text, edited: true, approved: false }
+    : { sentences: [], basis: "", drafter: "teacher", text, edited: true, approved: false };
+  commit(
+    { ...rec, slots: { ...rec.slots, [key]: slot } },
+    ctx,
+    cur?.edited ? [] : [`Edited ${def.label}`],
+  );
+}
+
+/** Approval needs text, no red problem, and a draft that matches the current evidence. */
+export function approveSlot(rec: PlRecord, key: string, ctx: Ctx, today: string): boolean {
+  const slot = rec.slots[key];
+  const def = slotDef(key);
+  if (!slot || !def || slot.approved || slot.text.trim() === "") return false;
+  if (hasRed(checkSlot(key, slot, rec, today))) return false;
+  commit({ ...rec, slots: { ...rec.slots, [key]: { ...slot, approved: true } } }, ctx, [
+    `Approved ${def.label}`,
+  ]);
+  return true;
+}
+
+export function reopenSlot(rec: PlRecord, key: string, ctx: Ctx) {
+  const slot = rec.slots[key];
+  const def = slotDef(key);
+  if (!slot?.approved || !def) return;
+  commit({ ...rec, slots: { ...rec.slots, [key]: { ...slot, approved: false } } }, ctx, [
+    `Reopened ${def.label}`,
+  ]);
+}
+
+export const anyApproved = locked;
+
+export function resetPlForTests() {
+  records = new Map();
+  save();
+  bump();
 }
