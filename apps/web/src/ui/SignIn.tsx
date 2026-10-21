@@ -9,6 +9,8 @@ export function SignIn() {
       <main id="main" className="signin landing">
         <img className="landing-logo" src="icon.svg" alt="" width="160" height="160" />
         <h2 className="landing-name">GoalLine</h2>
+        <p className="landing-slogan">Made by SPED staff for SPED staff</p>
+        <p className="landing-affil">Not affiliated with any school district or state agency.</p>
         <section className="landing-notice" aria-label="Practice data">
           <h3>Practice data only. Not for real students.</h3>
           <p>Everything in this app is made up. No real student information.</p>

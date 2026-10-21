@@ -54,4 +54,12 @@ describe("public tour page", () => {
     }
     expect(read("goal-bank-preview.svg")).not.toMatch(/<metadata|c2pa|xmp/i);
   });
+
+  it("pairs the slogan with the not-affiliated line wherever it appears", () => {
+    const flat = html.replace(/\s+/g, " ");
+    const slogan = '<p class="slogan">Made by SPED staff for SPED staff</p>';
+    const pair = `${slogan} <p class="note">Not affiliated with any school district or state agency.</p>`;
+    expect(flat.split(slogan)).toHaveLength(3);
+    expect(flat.split(pair)).toHaveLength(3);
+  });
 });

@@ -193,6 +193,8 @@ describe("sign-in landing", () => {
     expect(html).toContain('src="icon.svg"');
     expect(html).toContain("Everything in this app is made up. No real student information.");
     expect(html).toContain("Practice data only. Not for real students.");
+    expect(html).toContain("Made by SPED staff for SPED staff");
+    expect(html).toContain("Not affiliated with any school district or state agency.");
     expect(html).toContain(">Sign in<");
     expect(html).not.toContain("Practice Director");
     expect(html).not.toContain("Case manager");
