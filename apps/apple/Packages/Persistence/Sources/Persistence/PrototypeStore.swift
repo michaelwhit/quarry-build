@@ -84,7 +84,7 @@ public final class PrototypeStore {
     /// Changes to students already in the district or added by hand, keyed by student id.
     public private(set) var studentEdits: [UUID: Student]
     @ObservationIgnored private let stateURL: URL?
-    @ObservationIgnored private let calendarToday: @Sendable () -> LocalDate
+    @ObservationIgnored let calendarToday: @Sendable () -> LocalDate
 
     /// - Parameters:
     ///   - dataset: the synthetic district to browse.

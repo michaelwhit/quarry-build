@@ -21,6 +21,8 @@ public struct SyntheticDataset: Codable, Sendable {
     public var ieps: [IEP]
     public var goals: [Goal]
     public var measurementPlans: [MeasurementPlan]
+    /// Goals handed to a para or general-education teacher. Older files do not have this key.
+    public var goalDelegations: [GoalDelegation] = []
     public var dataPoints: [DataPoint]
     public var reportingPeriods: [ReportingPeriod]
 
@@ -29,8 +31,28 @@ public struct SyntheticDataset: Codable, Sendable {
         case generatorVersion = "generator_version"
         case caseloadAssignments = "caseload_assignments"
         case measurementPlans = "measurement_plans"
+        case goalDelegations = "goal_delegations"
         case dataPoints = "data_points"
         case reportingPeriods = "reporting_periods"
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        synthetic = try c.decode(Bool.self, forKey: .synthetic)
+        seed = try c.decode(Int.self, forKey: .seed)
+        generatorVersion = try c.decode(String.self, forKey: .generatorVersion)
+        tenant = try c.decode(Tenant.self, forKey: .tenant)
+        schools = try c.decode([School].self, forKey: .schools)
+        staff = try c.decode([Staff].self, forKey: .staff)
+        students = try c.decode([Student].self, forKey: .students)
+        caseloadAssignments = try c.decode([CaseloadAssignment].self, forKey: .caseloadAssignments)
+        ieps = try c.decode([IEP].self, forKey: .ieps)
+        goals = try c.decode([Goal].self, forKey: .goals)
+        measurementPlans = try c.decode([MeasurementPlan].self, forKey: .measurementPlans)
+        goalDelegations =
+            try c.decodeIfPresent([GoalDelegation].self, forKey: .goalDelegations) ?? []
+        dataPoints = try c.decode([DataPoint].self, forKey: .dataPoints)
+        reportingPeriods = try c.decode([ReportingPeriod].self, forKey: .reportingPeriods)
     }
 
     /// Decodes a dataset and refuses anything not marked synthetic at both the file and the
