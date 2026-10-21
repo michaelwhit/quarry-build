@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -114,6 +115,13 @@ describe("staff screens and access", () => {
     setRole("case_manager");
     expect(renderToString(createElement(Home))).not.toContain('href="#/staff"');
     expect(renderToString(createElement(Home))).not.toContain("#/access-review");
+  });
+
+  it("show no sign-up approval panel in the practice build, and gate it on the server address", () => {
+    const list = renderToString(createElement(StaffList));
+    expect(list).not.toContain("Invite a new staff member");
+    const src = readFileSync(new URL("../src/ui/StaffList.tsx", import.meta.url), "utf8");
+    expect(src).toMatch(/import\.meta\.env\.VITE_GOALLINE_API_ORIGIN\s*\?\s*lazy\(/);
   });
 
   it("render with the read-only note and the CSV button", () => {
