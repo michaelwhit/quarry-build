@@ -23,6 +23,7 @@ import { safeDecode } from "./data/hash.ts";
 import { canSeeOverdue } from "./data/overdue.ts";
 import { AtAGlance, MyStudents } from "./ui/Glance.tsx";
 import { Overdue } from "./ui/Overdue.tsx";
+import { Evaluation } from "./ui/Evaluation.tsx";
 import { Privacy, SignIn } from "./ui/SignIn.tsx";
 import { getVersion, getWorkspace, setDelegated, setServed, subscribe } from "./data/workspace.ts";
 
@@ -343,6 +344,12 @@ export function App() {
     <StudentPage id={decode(m[1])} />
   ) : hash === "#/caseload" ? (
     <Caseload />
+  ) : hash === "#/evaluation" ? (
+    allow("evaluation") ? (
+      <Evaluation />
+    ) : (
+      <NotAllowed />
+    )
   ) : hash === "#/today" ? (
     <Today />
   ) : hash === "#/libraries" ? (
