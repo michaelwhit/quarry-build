@@ -40,3 +40,19 @@ test.describe("keyboard and screen-reader basics", () => {
     expect(footer && bar && footer.y + footer.height <= bar.y + 1).toBe(true);
   });
 });
+
+test.describe("desktop widths", () => {
+  for (const width of [1280, 1440]) {
+    test(`no sideways scroll on any tab at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await signIn(page, "director");
+      for (const name of ["Home", "Today", "Caseload", "Libraries", "More"]) {
+        await tabBar(page).getByRole("link", { name }).click();
+        expect(
+          await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+          name,
+        ).toBe(true);
+      }
+    });
+  }
+});

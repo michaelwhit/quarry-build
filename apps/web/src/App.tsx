@@ -20,6 +20,7 @@ import {
   subscribeRole,
 } from "./data/roles.ts";
 import { safeDecode } from "./data/hash.ts";
+import { pageTitle } from "./data/title.ts";
 import { canSeeOverdue } from "./data/overdue.ts";
 import { AtAGlance, MyStudents } from "./ui/Glance.tsx";
 import { Overdue } from "./ui/Overdue.tsx";
@@ -49,7 +50,7 @@ function useAnnounceRoute(hash: string, signedIn: boolean): void {
     }
     if (document.querySelector('[role="dialog"]')) return;
     const heading = document.querySelector<HTMLElement>("main h2");
-    document.title = heading?.textContent ? `${heading.textContent} · GoalLine` : "GoalLine";
+    document.title = pageTitle(hash, heading?.textContent ?? null);
     if (heading) {
       heading.tabIndex = -1;
       heading.focus({ preventScroll: true });
