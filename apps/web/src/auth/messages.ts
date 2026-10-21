@@ -27,6 +27,13 @@ export function waitMessage(retryAfter: string | null): string {
 
 export const SETUP_NEEDED = "Ask your director for a reset code to set up your authenticator app.";
 
+/** The line shown after a recovery code is used: how many are left, and what to do at none. */
+export function recoveryLeftMessage(left: number): string {
+  if (left <= 0)
+    return "You have no recovery codes left. Ask your director for a reset code before you need one.";
+  return `You have ${left} recovery ${left === 1 ? "code" : "codes"} left.`;
+}
+
 export type Route = "password" | "set-password" | "signup" | "second-factor" | "enrol";
 
 export const DEVICE_LIMIT =

@@ -12,14 +12,21 @@ function stopTimer() {
   timer = undefined;
 }
 
-/** Refresh a minute before the access token ends; a failed refresh signs the person out. */
-function schedule() {
+/** How long to wait before trying again when the server cannot be reached. */
+const RETRY_MS = 15_000;
+
+/**
+ * Refresh a minute before the access token ends. Only the server saying the session is over
+ * (401) signs the person out. When the server cannot be reached the refresh is tried again
+ * until the token itself runs out.
+ */
+function schedule(wait = Math.max(5_000, tokenExpiresAt() - Date.now() - 60_000)) {
   stopTimer();
-  const wait = Math.max(5_000, tokenExpiresAt() - Date.now() - 60_000);
   timer = setTimeout(() => {
     void refresh().then((r) => {
       if (r === "ok") schedule();
-      else endLocal();
+      else if (r === "signed_out" || Date.now() >= tokenExpiresAt()) endLocal();
+      else schedule(RETRY_MS);
     });
   }, wait);
 }

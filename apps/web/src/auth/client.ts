@@ -94,8 +94,11 @@ async function json(res: Response): Promise<Record<string, unknown> | null> {
 function keep(body: Record<string, unknown>): boolean {
   if (typeof body.access_token !== "string" || typeof body.access_expires_at !== "string")
     return false;
+  const ends = Date.parse(body.access_expires_at);
+  // An unreadable end time would make the refresh timer fire at once and loop.
+  if (Number.isNaN(ends)) return false;
   accessToken = body.access_token;
-  expiresAt = Date.parse(body.access_expires_at);
+  expiresAt = ends;
   return true;
 }
 
