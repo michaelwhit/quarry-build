@@ -60,7 +60,8 @@ export type Action =
   | "assignServed"
   | "history"
   | "files"
-  | "manageData";
+  | "manageData"
+  | "evaluation";
 
 const ALLOWED: Record<RoleId, readonly Action[]> = {
   sped_director: [
@@ -73,8 +74,17 @@ const ALLOWED: Record<RoleId, readonly Action[]> = {
     "history",
     "files",
     "manageData",
+    "evaluation",
   ],
-  case_manager: ["addStudent", "editStudent", "deleteStudent", "editGoal", "share", "history"],
+  case_manager: [
+    "addStudent",
+    "editStudent",
+    "deleteStudent",
+    "editGoal",
+    "share",
+    "history",
+    "evaluation",
+  ],
   related_service_provider: ["editGoal", "history"],
   paraprofessional: [],
   gen_ed_teacher: [],

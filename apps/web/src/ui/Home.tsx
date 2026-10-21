@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { dueFor } from "../data/derive.ts";
-import { can, getRole, isDelegateRole, roleById, setRole } from "../data/roles.ts";
+import { type Action, can, getRole, isDelegateRole, roleById, setRole } from "../data/roles.ts";
 import { displayName, districtName, goalCounts, students } from "../data/district.ts";
 import { canSeeOverdue } from "../data/overdue.ts";
 import { OverdueHomeLine } from "./Overdue.tsx";
@@ -12,6 +12,8 @@ interface Tile {
   icon: string;
   /** Undefined means not built on the web yet. */
   href?: string;
+  /** Shown only to roles with this right. */
+  needs?: Action;
 }
 
 // Same tiles and order as the native Home screen. A tile for something the web app does not do
@@ -30,6 +32,8 @@ const TILES: Tile[] = [
     title: "Draft from evaluation",
     subtitle: "Goals and accommodations from test results",
     icon: "🔍",
+    href: "#/evaluation",
+    needs: "evaluation",
   },
   { title: "Present levels", subtitle: "Draft the present-levels section", icon: "¶" },
   {
@@ -82,7 +86,7 @@ export function Home() {
         </div>
       )}
       <ul className="home-tiles">
-        {TILES.map((t) => (
+        {TILES.filter((t) => !t.needs || can(getRole(), t.needs)).map((t) => (
           <li key={t.title}>
             {t.href ? (
               <a className="card tile-card" href={t.href}>
