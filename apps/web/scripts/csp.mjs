@@ -2,6 +2,19 @@
 // The only way to loosen it is the build setting VITE_GOALLINE_API_ORIGIN: that one origin is added
 // to connect-src, and nothing else changes.
 
+import { fileURLToPath } from "node:url";
+import { loadEnv } from "vite";
+
+/**
+ * The API origin for a build, read one way for the build, the gate and the server: the process
+ * environment first, then the .env files, exactly as the build itself resolves it.
+ */
+export function buildOrigin(mode = "production") {
+  return apiOrigin(
+    loadEnv(mode, fileURLToPath(new URL("..", import.meta.url)), "VITE_").VITE_GOALLINE_API_ORIGIN,
+  );
+}
+
 /**
  * The API origin from the build setting, or "" when it is unset. Throws on anything that is not a
  * bare origin: https only (plain http only for a local test host), no user info, path, query or hash.

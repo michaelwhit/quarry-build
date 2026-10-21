@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
-import { defineConfig, loadEnv, type Plugin } from "vite";
-import { apiOrigin, metaFor } from "./scripts/csp.mjs";
+import { defineConfig, type Plugin } from "vite";
+import { buildOrigin, metaFor } from "./scripts/csp.mjs";
 
 /** Adds the one API origin from the build setting to connect-src in the page's policy. */
 function apiOriginPolicy(origin: string): Plugin {
@@ -19,7 +19,7 @@ function apiOriginPolicy(origin: string): Plugin {
 
 export default defineConfig(({ mode }) => {
   // Empty for the practice build; a bare https origin when a sign-in server is wired in.
-  const origin = apiOrigin(loadEnv(mode, process.cwd(), "VITE_").VITE_GOALLINE_API_ORIGIN);
+  const origin = buildOrigin(mode);
   return {
     base: "./",
     plugins: [react(), apiOriginPolicy(origin)],

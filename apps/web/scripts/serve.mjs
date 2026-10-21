@@ -7,9 +7,9 @@ import { readFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { apiOrigin, cspFor } from "./csp.mjs";
+import { buildOrigin, cspFor } from "./csp.mjs";
 
-const CSP = cspFor(apiOrigin(process.env.VITE_GOALLINE_API_ORIGIN));
+const CSP = cspFor(buildOrigin());
 
 const root = fileURLToPath(new URL("../dist/", import.meta.url));
 const TYPES = {
