@@ -136,7 +136,7 @@ struct MoreView: View {
         } catch PrototypeStore.FileError.noSessions {
             fileMessage = "That file has nothing to load."
         } catch PrototypeStore.StoreError.saveFailed {
-            fileMessage = "The sessions could not be saved. Nothing was changed."
+            fileMessage = "The file could not be saved. Nothing was changed."
         } catch {
             fileMessage = "That file is not a practice-data export for the students you can see."
         }
