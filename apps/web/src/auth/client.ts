@@ -4,7 +4,15 @@
 // in front and sends the cookie along. The access token lives in memory only; the refresh token is an
 // HttpOnly cookie the page cannot read.
 import type { RoleId } from "../data/roles.ts";
-import { CANT_FINISH, GENERIC, NO_SERVER, errorMessage, problemLines } from "./messages.ts";
+import {
+  CANT_FINISH,
+  DEVICE_LIMIT,
+  GENERIC,
+  NO_SERVER,
+  SETUP_NEEDED,
+  errorMessage,
+  problemLines,
+} from "./messages.ts";
 import type { Route } from "./messages.ts";
 
 const ROLE_IDS: readonly RoleId[] = [
@@ -23,8 +31,10 @@ export interface Me {
 }
 
 export type Outcome =
-  | { kind: "signed_in"; me: Me }
+  | { kind: "signed_in"; me: Me; recoveryLeft?: number }
   | { kind: "pending" }
+  | { kind: "second_factor"; challenge: string }
+  | { kind: "enrol"; challenge: string }
   | { kind: "error"; message: string; lines: string[] };
 
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
@@ -89,8 +99,8 @@ function keep(body: Record<string, unknown>): boolean {
   return true;
 }
 
-const fail = (message: string, lines: string[] = []): Outcome => ({
-  kind: "error",
+const fail = (message: string, lines: string[] = []) => ({
+  kind: "error" as const,
   message,
   lines,
 });
@@ -101,13 +111,33 @@ async function finish(route: Route, res: Response): Promise<Outcome> {
   // The server answers a waiting account with 403 { status: "pending" } (202 also accepted).
   if ((res.status === 202 || res.status === 403) && body?.status === "pending")
     return { kind: "pending" };
+  // A person with no authenticator yet is turned away at the password step.
+  if (res.status === 403 && body?.status === "second_factor_setup_needed")
+    return fail(SETUP_NEEDED);
   if (res.status === 422) return fail("That password won't work.", problemLines(body?.problems));
   if (res.status !== 200)
     return fail(errorMessage(route, res.status, res.headers.get("Retry-After")));
   if (!body) return fail(NO_SERVER);
+  // The challenge is kept by the screen, in memory only.
+  if (
+    (body.status === "second_factor" || body.status === "enrol_second_factor") &&
+    typeof body.challenge === "string"
+  )
+    return {
+      kind: body.status === "second_factor" ? "second_factor" : "enrol",
+      challenge: body.challenge,
+    };
+  return signedIn(body);
+}
+
+async function signedIn(body: Record<string, unknown>): Promise<Outcome> {
   if (body.status !== "signed_in" || !keep(body)) return fail(CANT_FINISH);
   const me = await getMe();
-  return me ? { kind: "signed_in", me } : fail(GENERIC);
+  if (!me) return fail(GENERIC);
+  const left = body.recovery_codes_left;
+  return typeof left === "number"
+    ? { kind: "signed_in", me, recoveryLeft: left }
+    : { kind: "signed_in", me };
 }
 
 async function call(route: Route, path: string, body: unknown): Promise<Outcome> {
@@ -126,6 +156,75 @@ export const setPassword = (email: string, code: string, password: string) =>
 
 export const signUp = (code: string, email: string, displayName: string, password: string) =>
   call("signup", "/v0/auth/signup", { code, email, displayName, password, deviceId: deviceId() });
+
+// ---- Second factor (spec section 6) ----
+
+/** A 401 here means the code was wrong or the challenge ended; the screen stays, says to check the time on the phone, and offers "Start again". */
+export async function secondFactor(
+  challenge: string,
+  entry: { code: string } | { recoveryCode: string },
+): Promise<Outcome> {
+  try {
+    const res = await post("/v0/auth/second-factor", { challenge, ...entry, deviceId: deviceId() });
+    if (res.status === 200) {
+      const body = await json(res);
+      return body ? signedIn(body) : fail(NO_SERVER);
+    }
+    return fail(errorMessage("second-factor", res.status, res.headers.get("Retry-After")));
+  } catch {
+    return fail(NO_SERVER);
+  }
+}
+
+export type Enrol =
+  | { kind: "key"; otpauthUri: string; secret: string }
+  | { kind: "expired" }
+  | { kind: "error"; message: string; lines: string[] };
+
+export async function enrolStart(challenge: string): Promise<Enrol> {
+  try {
+    const res = await post("/v0/auth/second-factor/enrol", { challenge, deviceId: deviceId() });
+    if (res.status === 401) return { kind: "expired" };
+    const body = await json(res);
+    if (res.status !== 200)
+      return fail(errorMessage("enrol", res.status, res.headers.get("Retry-After")));
+    if (typeof body?.otpauth_uri !== "string" || typeof body.secret !== "string")
+      return fail(CANT_FINISH);
+    return { kind: "key", otpauthUri: body.otpauth_uri, secret: body.secret };
+  } catch {
+    return fail(NO_SERVER);
+  }
+}
+
+export type Confirm =
+  | { kind: "codes"; codes: string[]; me: Me | null; after: string | null }
+  | { kind: "error"; message: string; lines: string[] };
+
+/** Recovery codes come back once; the screen shows them and never stores them. */
+export async function enrolConfirm(challenge: string, code: string): Promise<Confirm> {
+  try {
+    const res = await post("/v0/auth/second-factor/enrol/confirm", {
+      challenge,
+      code,
+      deviceId: deviceId(),
+    });
+    const body = await json(res);
+    const codes = Array.isArray(body?.recovery_codes)
+      ? body.recovery_codes.filter((c): c is string => typeof c === "string")
+      : [];
+    // 409 still carries the codes: show them, then the device-limit message.
+    if (res.status === 409 && codes.length > 0)
+      return { kind: "codes", codes, me: null, after: DEVICE_LIMIT };
+    if (res.status !== 200 || !body)
+      return fail(errorMessage("enrol", res.status, res.headers.get("Retry-After")));
+    if (codes.length === 0) return fail(CANT_FINISH);
+    const out = await signedIn(body);
+    if (out.kind !== "signed_in") return fail(CANT_FINISH);
+    return { kind: "codes", codes, me: out.me, after: null };
+  } catch {
+    return fail(NO_SERVER);
+  }
+}
 
 /** Tabs take turns: the refresh token rotates, so a second tab must send the rotated cookie. */
 async function locked<T>(fn: () => Promise<T>): Promise<T> {
