@@ -77,7 +77,7 @@ describe("public tour page", () => {
       expect(text).not.toContain(word);
     // Every picture is labelled, and every picture file the page names exists in both colours.
     const labels = html.match(/Web app, practice data/g) ?? [];
-    const figures = html.match(/<figure class="shot/g) ?? [];
+    const figures = html.match(/<figure\s+class="shot/g) ?? [];
     expect(labels.length).toBe(figures.length - 3); // the three goal-bank drawings are labelled Preview
     for (const m of html.matchAll(/src="(img\/[^"]+)"/g)) read(m[1] as string);
   });
@@ -93,23 +93,22 @@ describe("public tour page", () => {
     expect(html).not.toContain("Made by SPED staff");
     expect(flat.split("Preview with practice data. Not for real students.")).toHaveLength(2);
     expect(flat).toMatch(
-      /<footer class="foot">.*Preview with practice data.*Not affiliated.*<\/footer>/,
+      /<footer\s+class="foot">.*Preview with practice data.*Not affiliated.*<\/footer>/,
     );
     expect(html).not.toContain("Contact details");
     expect(flat).toContain(
       "Today this is the web app, which runs in a web browser. Mac and iPhone apps are planned.",
     );
-    const js = read("tour.js") + read("boot.js");
     expect(js).not.toMatch(/localStorage|sessionStorage|document\.cookie|fetch\(|XMLHttpRequest/);
   });
 
   it("guides with labelled tap areas that always land on a prepared picture", () => {
     const css = read("hotspots.css");
-    const panels = html.split('<section class="panel"').slice(1);
+    const panels = html.split(/<section\s+class="panel"/).slice(1);
     let hotspots = 0;
     for (const panel of panels) {
       const states = new Set([...panel.matchAll(/data-state="([^"]+)"/g)].map((m) => m[1]));
-      for (const m of panel.matchAll(/<button type="button" class="hot ([^"]+)"([^>]*)>/g)) {
+      for (const m of panel.matchAll(/<button\s+type="button"\s+class="hot ([^"]+)"([^>]*)>/g)) {
         hotspots++;
         const attrs = m[2] ?? "";
         expect(attrs).toMatch(/aria-label="[^"]+"/);
@@ -123,6 +122,19 @@ describe("public tour page", () => {
     }
     expect(hotspots).toBeGreaterThan(10);
     expect(html).toContain('<span class="lbl">');
+  });
+
+  it("keeps tap areas on one picture from overlapping the next one", () => {
+    const boxes = [
+      ...read("hotspots.css").matchAll(
+        /\.(h-para-phone-[\w-]+) \{\s*left: ([\d.]+)%;\s*top: ([\d.]+)%;\s*width: ([\d.]+)%;\s*height: ([\d.]+)%/g,
+      ),
+    ].map((m) => ({ name: m[1], top: Number(m[3]), bottom: Number(m[3]) + Number(m[5]) }));
+    const card = boxes.find((b) => b.name === "h-para-phone-goal-card");
+    const start = boxes.find((b) => b.name === "h-para-phone-start");
+    expect(card).toBeDefined();
+    expect(start).toBeDefined();
+    expect(card!.bottom).toBeLessThanOrEqual(start!.top + 0.05);
   });
 
   it("keeps every tap area inside its picture and the motion off for reduced motion", () => {
@@ -139,9 +151,12 @@ describe("public tour page", () => {
   });
 
   it("opens the practice app in a new tab without passing anything along", () => {
-    expect(html).toContain(
-      '<a class="try" href="../" target="_blank" rel="noopener noreferrer" >Try the practice app</a >',
-    );
+    const link = /<a\s+class="try"([^>]*)>\s*Try the practice app\s*<\/a\s*>/.exec(html);
+    expect(link).not.toBeNull();
+    const attrs = link?.[1] ?? "";
+    expect(attrs).toMatch(/href="\.\.\/"/);
+    expect(attrs).toMatch(/target="_blank"/);
+    expect(attrs).toMatch(/rel="noopener noreferrer"/);
     expect(html).not.toMatch(/href="\.\.\/[?#]/);
   });
 });
