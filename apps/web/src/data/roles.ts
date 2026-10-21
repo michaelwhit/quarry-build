@@ -29,7 +29,7 @@ export const ROLES: Role[] = [
     id: "case_manager",
     label: "Case manager",
     person: "Practice Case Manager",
-    sees: "The students on their caseload with full goals. Can add and edit, and share data entry for a goal with paras and gen-ed teachers.",
+    sees: "The students on their caseload with full goals. Can add and edit, give a para data entry on a goal, and share a goal read-only with a gen-ed teacher.",
   },
   {
     id: "related_service_provider",
@@ -47,7 +47,7 @@ export const ROLES: Role[] = [
     id: "gen_ed_teacher",
     label: "General-education teacher",
     person: "Practice Teacher",
-    sees: "Only goals shared with them. First name and the goal only. Data entry only.",
+    sees: "Only the goals shared with them, as a read-only At a glance. No data entry and no editing.",
   },
 ];
 
@@ -61,7 +61,8 @@ export type Action =
   | "history"
   | "files"
   | "manageData"
-  | "evaluation";
+  | "evaluation"
+  | "staffRoles";
 
 const ALLOWED: Record<RoleId, readonly Action[]> = {
   sped_director: [
@@ -75,6 +76,7 @@ const ALLOWED: Record<RoleId, readonly Action[]> = {
     "files",
     "manageData",
     "evaluation",
+    "staffRoles",
   ],
   case_manager: [
     "addStudent",

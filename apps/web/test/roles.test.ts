@@ -3,6 +3,7 @@ import { renderToString } from "react-dom/server";
 import { beforeEach, describe, expect, it } from "vitest";
 import { displayName, scrub, students } from "../src/data/district.ts";
 import {
+  ROLES,
   agreeToPrivacy,
   can,
   delegateFallback,
@@ -278,5 +279,16 @@ describe("delegate landing", () => {
   it("sends gen-ed teachers to My students and paras to Today", () => {
     expect(delegateFallback("gen_ed_teacher")).toBe("my_students");
     expect(delegateFallback("paraprofessional")).toBe("today");
+  });
+});
+
+describe("sign-in picker role summaries", () => {
+  it("do not give gen-ed teachers data entry", () => {
+    const genEd = ROLES.find((r) => r.id === "gen_ed_teacher");
+    expect(genEd?.sees).toContain("read-only At a glance");
+    expect(genEd?.sees).not.toMatch(/data entry only/i);
+    expect(ROLES.find((r) => r.id === "case_manager")?.sees).toContain(
+      "read-only with a gen-ed teacher",
+    );
   });
 });

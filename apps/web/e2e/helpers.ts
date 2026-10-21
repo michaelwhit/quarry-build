@@ -43,7 +43,10 @@ export async function signIn(page: Page, role: RoleKey) {
     await page.getByRole("button", { name: new RegExp(PEOPLE[role].person) }).click();
   }
   await page.getByRole("button", { name: "I understand" }).click();
-  if (isDelegate(role)) await page.getByRole("button", { name: "I agree, continue" }).click();
+  if (isDelegate(role)) {
+    await page.getByLabel("I have read this and I agree.").check();
+    await page.getByRole("button", { name: "I agree, continue" }).click();
+  }
   await expect(header(page)).toContainText(PEOPLE[role].person);
 }
 

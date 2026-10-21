@@ -891,3 +891,35 @@ h2.landing-name {
   padding: 8px 0;
   border-bottom: 1px solid var(--border);
 }
+
+.privacy-points {
+  margin: 12px 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 8px;
+}
+.privacy-check {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  margin: 12px 0;
+}
+.privacy-check input {
+  width: 24px;
+  height: 24px;
+}
+.chip-button {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 22px;
+}
+.chip-button[aria-pressed="true"] {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-color: var(--primary);
+  font-weight: 700;
+}
+.staff-search {
+  margin: 12px 0;
+}

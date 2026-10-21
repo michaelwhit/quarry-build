@@ -24,6 +24,7 @@ import { canSeeOverdue } from "./data/overdue.ts";
 import { AtAGlance, MyStudents } from "./ui/Glance.tsx";
 import { Overdue } from "./ui/Overdue.tsx";
 import { Evaluation } from "./ui/Evaluation.tsx";
+import { AccessReview, StaffList } from "./ui/StaffList.tsx";
 import { Privacy, SignIn } from "./ui/SignIn.tsx";
 import { ProgressReport, canUseReports } from "./ui/ProgressReport.tsx";
 import { getVersion, getWorkspace, setDelegated, setServed, subscribe } from "./data/workspace.ts";
@@ -56,7 +57,7 @@ function activeTab(hash: string, delegate = false): string {
   )
     return "caseload";
   if (hash === "#/today") return "today";
-  if (hash === "#/libraries") return "libraries";
+  if (hash === "#/libraries" || hash === "#/libraries/accommodations") return "libraries";
   if (hash === "#/more") return "more";
   // Track screens (#/track...) are reached from Home, so Home stays highlighted on purpose.
   return "home";
@@ -359,10 +360,22 @@ export function App() {
     ) : (
       <NotAllowed />
     )
+  ) : hash === "#/staff" ? (
+    allow("staffRoles") ? (
+      <StaffList />
+    ) : (
+      <NotAllowed />
+    )
+  ) : hash === "#/access-review" ? (
+    allow("staffRoles") ? (
+      <AccessReview />
+    ) : (
+      <NotAllowed />
+    )
   ) : hash === "#/today" ? (
     <Today />
-  ) : hash === "#/libraries" ? (
-    <Libraries />
+  ) : hash === "#/libraries" || hash === "#/libraries/accommodations" ? (
+    <Libraries key={hash} start={hash.endsWith("/accommodations") ? "accommodations" : "goals"} />
   ) : hash === "#/more" ? (
     <More />
   ) : (

@@ -118,6 +118,12 @@ describe("evaluation redaction", () => {
     expect(redact("She is eligible for services", null).withheldReasons).toEqual([
       "eligibility conclusion",
     ]);
+    expect(redact("Student is ineligible for services", null).withheldReasons).toEqual([
+      "eligibility conclusion",
+    ]);
+    expect(redact("Ineligibility was noted", null).withheldReasons).toEqual([
+      "eligibility conclusion",
+    ]);
     expect(redact("Ineligibleish words", null).withheldReasons).toEqual([]);
   });
 
