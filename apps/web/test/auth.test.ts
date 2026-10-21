@@ -10,6 +10,10 @@ import {
   rejectSignup,
   forgetToken,
   enrolConfirm,
+  rejectSignups,
+  searchSchools,
+  setSchoolListing,
+  signUpSchool,
   enrolStart,
   secondFactor,
   getMe,
@@ -222,7 +226,11 @@ describe("password screens", () => {
     const people = [
       { id: "p1", displayName: "Sam Q", email: "sam@example.test", requestedAt: "2026-10-21" },
     ];
-    const none = { approve: async () => null, reject: async () => null };
+    const none = {
+      approve: async () => null,
+      reject: async () => null,
+      rejectMany: async () => null,
+    };
     const html = renderToString(
       createElement(PendingList, { people, actions: none, onChanged: () => {} }),
     );
@@ -279,9 +287,9 @@ describe("director routes", () => {
     await signIn("d@example.test", "pw");
     const l = await listSignups();
     expect(l).toMatchObject({ ok: true, value: [{ id: "a1", displayName: "Sam Q" }] });
-    expect(await approveSignup("a1", "paraprofessional", "2027-06-30")).toEqual({
+    expect(await approveSignup("a1", "paraprofessional", "2027-06-30")).toMatchObject({
       ok: true,
-      value: { role: "paraprofessional" },
+      value: { role: "paraprofessional", setupCode: null },
     });
     expect(JSON.parse(String(calls.at(-1)!.init?.body))).toEqual({
       role: "paraprofessional",
@@ -310,7 +318,7 @@ describe("director routes", () => {
     server({
       "/v0/staff/signups/y/approve": () => reply(201, { staff_id: "s1", role: "gen_ed_teacher" }),
     });
-    expect(await approveSignup("y", "gen_ed_teacher", "2027-06-30")).toEqual({
+    expect(await approveSignup("y", "gen_ed_teacher", "2027-06-30")).toMatchObject({
       ok: true,
       value: { role: "gen_ed_teacher" },
     });
@@ -340,11 +348,15 @@ describe("director routes", () => {
     const html = renderToString(
       createElement(PendingList, {
         people: [{ id: "p1", displayName: "Sam Q", email: "s@example.test", requestedAt: "" }],
-        actions: { approve: async () => null, reject: async () => null },
+        actions: {
+          approve: async () => null,
+          reject: async () => null,
+          rejectMany: async () => null,
+        },
         onChanged: () => {},
       }),
     );
-    expect(html).toContain("Building coordinator");
+    expect(html).not.toContain("Building coordinator");
     expect(html).not.toContain("SPED director");
     expect(html).toContain('type="date"');
   });
@@ -589,5 +601,198 @@ describe("the scheduled refresh", () => {
     expect(await refresh()).toBe("no_server");
     expect(hasToken()).toBe(false);
     expect(calls).toHaveLength(1);
+  });
+});
+
+describe("school sign-up and the director's new routes", () => {
+  const sent = (n = -1) => JSON.parse(String(calls.at(n)!.init?.body)) as Record<string, unknown>;
+
+  it("searches schools with an encoded query and keeps at most 8 well-formed rows", async () => {
+    const rows = Array.from({ length: 10 }, (_, i) => ({
+      id: `id${i}`,
+      name: `School ${i}`,
+      town: i === 0 ? null : "Riverbend",
+      district: "Demo District (synthetic)",
+    }));
+    server({
+      "/v0/auth/schools?q=elm%20st": () => reply(200, { schools: [...rows, { nope: 1 }] }),
+    });
+    const r = await searchSchools("elm st");
+    expect(r.ok && r.schools).toHaveLength(8);
+    expect(r.ok && r.schools[0]).toEqual({
+      id: "id0",
+      name: "School 0",
+      town: null,
+      district: "Demo District (synthetic)",
+    });
+    expect(calls[0]!.path).toBe("/v0/auth/schools?q=elm%20st");
+  });
+
+  it("search: 429 waits, other failures are one generic line, throw is no server", async () => {
+    server({ "/v0/auth/schools?q=abc": () => reply(429, undefined, { "Retry-After": "40" }) });
+    expect(await searchSchools("abc")).toEqual({
+      ok: false,
+      message: "Too many tries. Wait a minute and try again.",
+    });
+    server({ "/v0/auth/schools?q=abc": () => reply(400) });
+    expect(await searchSchools("abc")).toMatchObject({ ok: false });
+    useFetch(async () => {
+      throw new TypeError("offline");
+    });
+    expect(await searchSchools("abc")).toMatchObject({ ok: false });
+  });
+
+  it("signs up with a school id and no code, and every 202 is the same waiting answer", async () => {
+    server({ "/v0/auth/signup": () => reply(202, { status: "pending" }) });
+    expect(await signUpSchool("sch1", "a@example.test", "A B", "a long passphrase here")).toEqual({
+      kind: "pending",
+    });
+    const body = sent();
+    expect(body).toMatchObject({ schoolId: "sch1", email: "a@example.test", displayName: "A B" });
+    expect(body).not.toHaveProperty("code");
+    expect(hasToken()).toBe(false);
+  });
+
+  it("a school that is not taking sign-ups gets its own 401 line", async () => {
+    server({ "/v0/auth/signup": () => reply(401) });
+    const out = await signUpSchool("sch1", "a@example.test", "A B", "pw");
+    expect((out as { message: string }).message).toBe(
+      "That school isn't taking sign-ups. Ask your director for an invite code.",
+    );
+    expect(errorMessage("signup-school", 429, "600")).toBe(
+      "Too many tries. Wait 10 minutes and try again.",
+    );
+  });
+
+  it("a long wait after too many wrong codes says hours and offers the director's reset code", async () => {
+    expect(waitMessage("3600")).toBe(
+      "Too many tries. Wait 1 hour and try again. Ask your director for a reset code to sign in sooner.",
+    );
+    expect(waitMessage("86400")).toBe(
+      "Too many tries. Wait 24 hours and try again. Ask your director for a reset code to sign in sooner.",
+    );
+    expect(waitMessage("3000")).toBe("Too many tries. Wait 50 minutes and try again.");
+    for (const [route, call] of [
+      ["/v0/auth/password", () => signIn("a@example.test", "pw")],
+      ["/v0/auth/second-factor", () => secondFactor("c", { code: "1" })],
+      ["/v0/auth/second-factor/enrol/confirm", () => enrolConfirm("c", "1")],
+    ] as const) {
+      server({ [route]: () => reply(429, undefined, { "Retry-After": "86400" }) });
+      expect(await call()).toMatchObject({
+        message: expect.stringContaining("24 hours") as string,
+      });
+    }
+    expect(hasToken()).toBe(false);
+  });
+
+  it("a 403 pending is still pending", async () => {
+    server({ "/v0/auth/password": () => reply(403, { status: "pending" }) });
+    expect(await signIn("a@example.test", "pw")).toEqual({ kind: "pending" });
+  });
+
+  it("lists how each sign-up arrived and whether the email domain matched", async () => {
+    server({
+      "/v0/staff/signups": () =>
+        reply(200, {
+          signups: [
+            {
+              id: "a",
+              email: "a@x.test",
+              display_name: "A",
+              via: "school",
+              school_id: "s",
+              email_domain_matched: false,
+            },
+            {
+              id: "b",
+              email: "b@x.test",
+              display_name: "B",
+              via: "invite",
+              school_id: null,
+              email_domain_matched: null,
+            },
+          ],
+        }),
+    });
+    const r = await listSignups();
+    expect(r.ok && r.value.map((p) => [p.via, p.emailDomainMatched])).toEqual([
+      ["school", false],
+      ["invite", null],
+    ]);
+  });
+
+  it("approving a school sign-up returns the setup code once; an invite approval has none", async () => {
+    server({
+      "/v0/staff/signups/a/approve": () =>
+        reply(201, {
+          staff_id: "s",
+          role: "case_manager",
+          setup_code: "ABCD-EFGH-JKLM-NPQR",
+          setup_code_expires_at: "2026-10-23T00:00:00Z",
+        }),
+      "/v0/staff/signups/b/approve": () => reply(201, { staff_id: "s", role: "case_manager" }),
+    });
+    const a = await approveSignup("a", "case_manager", "2027-06-30");
+    expect(a).toMatchObject({
+      ok: true,
+      value: { setupCode: "ABCD-EFGH-JKLM-NPQR", setupCodeExpiresAt: "2026-10-23T00:00:00Z" },
+    });
+    const b = await approveSignup("b", "case_manager", "2027-06-30");
+    expect(b.ok && b.value.setupCode).toBeNull();
+  });
+
+  it("rejects many at once and reports how many", async () => {
+    server({ "/v0/staff/signups/reject": () => reply(200, { rejected: 2 }) });
+    expect(await rejectSignups(["a", "b"])).toEqual({ ok: true, value: 2 });
+    expect(sent()).toEqual({ ids: ["a", "b"] });
+    server({ "/v0/staff/signups/reject": () => reply(403) });
+    expect(await rejectSignups(["a"])).toMatchObject({ ok: false });
+  });
+
+  it("opens and closes the school list; 409 explains the first admin must be verified", async () => {
+    server({ "/v0/staff/district/listing": () => reply(200, { listed: true }) });
+    expect(await setSchoolListing(true)).toEqual({ ok: true, value: true });
+    expect(sent()).toEqual({ listed: true });
+    server({ "/v0/staff/district/listing": () => reply(409) });
+    const r = await setSchoolListing(true);
+    expect((r as { message: string }).message).toContain("first admin");
+  });
+
+  it("the Pending list warns about a non-district email and offers Reject selected", () => {
+    const html = renderToString(
+      createElement(PendingList, {
+        people: [
+          {
+            id: "p1",
+            displayName: "Sam Q",
+            email: "s@gmail.test",
+            requestedAt: "",
+            emailDomainMatched: false,
+          },
+          {
+            id: "p2",
+            displayName: "Lee R",
+            email: "l@x.test",
+            requestedAt: "",
+            emailDomainMatched: true,
+          },
+        ],
+        actions: {
+          approve: async () => null,
+          reject: async () => null,
+          rejectMany: async () => null,
+        },
+        onChanged: () => {},
+      }),
+    );
+    expect(html.split("isn&#x27;t a district address")).toHaveLength(2);
+    expect(html.match(/type="checkbox"/g)).toHaveLength(2);
+    expect(html).not.toContain("Reject selected");
+  });
+
+  it("the sign-in screen offers sign-up with my school", () => {
+    const html = renderToString(createElement(AuthPanel, { onBack: () => {} }));
+    expect(html).toContain("Sign up with my school");
+    expect(html).not.toContain("Copy setup key");
   });
 });

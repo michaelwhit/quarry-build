@@ -1,14 +1,23 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { enrolConfirm, enrolStart, secondFactor, setPassword, signIn, signUp } from "./client.ts";
-import type { Confirm, Enrol, Me, Outcome } from "./client.ts";
+import {
+  enrolConfirm,
+  enrolStart,
+  searchSchools,
+  secondFactor,
+  setPassword,
+  signIn,
+  signUp,
+  signUpSchool,
+} from "./client.ts";
+import type { Confirm, Enrol, Me, Outcome, School } from "./client.ts";
 import { restore, begin } from "./session.ts";
-import { NO_SERVER, START_OVER, recoveryLeftMessage } from "./messages.ts";
+import { NO_SCHOOLS, NO_SERVER, START_OVER, recoveryLeftMessage } from "./messages.ts";
 
 const RULES =
   "At least 14 characters. A few unrelated words together work well. Not a common or breached password, and not your name, your email, or GoalLine.";
 
-type Mode = "signin" | "setpw" | "signup" | "waiting" | "factor" | "enrol" | "notice";
+type Mode = "signin" | "setpw" | "signup" | "waiting" | "school" | "factor" | "enrol" | "notice";
 
 function Field(props: {
   label: string;
@@ -253,6 +262,129 @@ function Enrolment(props: {
   );
 }
 
+/** Sign-up by picking a school: search after 3 letters, about half a second after the last key. */
+function SchoolSignup({ onPending, onBack }: { onPending: () => void; onBack: () => void }) {
+  const [q, setQ] = useState("");
+  const [found, setFound] = useState<School[] | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [school, setSchool] = useState<School | null>(null);
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [password, setPw] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [out, setOut] = useState<Outcome | null>(null);
+
+  useEffect(() => {
+    const text = q.trim();
+    setSearchError(null);
+    if (school || text.length < 3 || text.length > 60) {
+      setFound(null);
+      return;
+    }
+    let live = true;
+    const timer = setTimeout(() => {
+      void searchSchools(text).then((r) => {
+        if (!live) return;
+        if (r.ok) setFound(r.schools);
+        else {
+          setFound(null);
+          setSearchError(r.message);
+        }
+      });
+    }, 500);
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+  }, [q, school]);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (busy || !school) return;
+    setBusy(true);
+    const res = await signUpSchool(school.id, email, name, password);
+    setBusy(false);
+    setPw("");
+    // Every outcome after the checks is the same waiting screen.
+    if (res.kind === "pending") onPending();
+    else setOut(res);
+  };
+
+  return (
+    <main id="main" className="signin">
+      <button type="button" onClick={onBack}>
+        ‹ Back
+      </button>
+      <h2 className="page-title">Sign up with my school</h2>
+      <form className="form" onSubmit={(e) => void submit(e)}>
+        {school ? (
+          <p>
+            <strong>{school.name}</strong>
+            {school.town ? `, ${school.town}` : ""}
+            {school.district ? ` (${school.district})` : ""}{" "}
+            <button type="button" onClick={() => setSchool(null)}>
+              Change school
+            </button>
+          </p>
+        ) : (
+          <>
+            <label>
+              <span>Your school (type at least 3 letters)</span>
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                maxLength={60}
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+              />
+            </label>
+            {searchError && (
+              <p className="form-error" role="alert">
+                {searchError}
+              </p>
+            )}
+            {found && found.length === 0 && <p className="meta">{NO_SCHOOLS}</p>}
+            {found && found.length > 0 && (
+              <ul className="pick">
+                {found.map((s) => (
+                  <li key={s.id}>
+                    <button type="button" onClick={() => setSchool(s)}>
+                      {s.name}
+                      {s.town ? `, ${s.town}` : ""}
+                      {s.district ? ` (${s.district})` : ""}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        )}
+        <Field label="Your name" value={name} onChange={setName} autoComplete="name" />
+        <Field
+          label="Work email"
+          value={email}
+          onChange={setEmail}
+          type="email"
+          autoComplete="username"
+        />
+        <Field
+          label="New password"
+          value={password}
+          onChange={setPw}
+          type="password"
+          autoComplete="new-password"
+          hint={RULES}
+        />
+        <Errors out={out} />
+        <button type="submit" className="save signin-main" disabled={busy || !school}>
+          {busy ? "One moment…" : "Request access"}
+        </button>
+      </form>
+    </main>
+  );
+}
+
 /** Email and password, the one-time-code screen, and sign-up with an invite code. */
 export function AuthPanel({ onBack }: { onBack: () => void }) {
   const [mode, setMode] = useState<Mode>("signin");
@@ -301,6 +433,8 @@ export function AuthPanel({ onBack }: { onBack: () => void }) {
     setOut(message ? { kind: "error", message, lines: [] } : null);
   };
 
+  if (mode === "school")
+    return <SchoolSignup onPending={() => setMode("waiting")} onBack={() => go("signin")} />;
   if (mode === "factor")
     return (
       <SecondFactor
@@ -407,6 +541,9 @@ export function AuthPanel({ onBack }: { onBack: () => void }) {
           I already have a password
         </button>
       )}
+      <button type="button" onClick={() => go("school")}>
+        Sign up with my school
+      </button>
       {mode !== "signup" && (
         <button type="button" onClick={() => go("signup")}>
           I have an invite code

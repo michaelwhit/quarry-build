@@ -34,7 +34,11 @@ export function recoveryLeftMessage(left: number): string {
   return `You have ${left} recovery ${left === 1 ? "code" : "codes"} left.`;
 }
 
-export type Route = "password" | "set-password" | "signup" | "second-factor" | "enrol";
+export type Route =
+  "password" | "set-password" | "signup" | "signup-school" | "second-factor" | "enrol";
+
+export const NO_SCHOOLS =
+  "No schools found. Check the spelling, or ask your director for an invite code.";
 
 export const DEVICE_LIMIT =
   "You're signed in on two other devices. Sign out on one of them, then try again.";
@@ -52,11 +56,13 @@ export function errorMessage(route: Route, status: number, retryAfter: string | 
       return "That email and password don't match an account that can sign in.";
     if (route === "set-password")
       return "That code didn't work. It may have expired or been used. Ask your director for a new one.";
+    if (route === "signup-school")
+      return "That school isn't taking sign-ups. Ask your director for an invite code.";
     return "That invite code didn't work. Ask your director for a new one.";
   }
   if (status === 409 && (route === "password" || route === "second-factor" || route === "enrol"))
     return DEVICE_LIMIT;
-  if (status === 503 && route === "signup")
+  if (status === 503 && (route === "signup" || route === "signup-school"))
     return "Sign-up is busy right now. Try again in a few minutes.";
   if (status === 404) return "Sign-up and sign-in aren't available here yet.";
   return GENERIC;
