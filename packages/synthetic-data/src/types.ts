@@ -83,6 +83,15 @@ export interface CaseloadAssignment {
   end_date: string | null;
 }
 
+export interface GoalDelegation {
+  id: string;
+  tenant_id: string;
+  goal_id: string;
+  staff_id: string;
+  granted_by: string;
+  expires_at: string | null;
+}
+
 export interface Iep {
   id: string;
   tenant_id: string;
@@ -151,6 +160,29 @@ export interface ReportingPeriod {
   srs_report_date: string;
 }
 
+export type ProgressReportState =
+  "not_started" | "drafted" | "approved" | "copied" | "filed_attested" | "verified_by_pdf";
+
+/** One SRS progress report for one IEP and one reporting period (architecture 5.2, 9.2a). */
+export interface ProgressReport {
+  id: string;
+  tenant_id: string;
+  iep_id: string;
+  reporting_period_id: string;
+  /** When the report is due. The first overdue day is the next school day after it. */
+  due_date: string;
+  state: ProgressReportState;
+  srs_method: "paste_kit" | "pdf_appendix" | null;
+  filed_attested_by: string | null;
+  filed_attested_at: string | null;
+}
+
+/** Days with no school (breaks, holidays, staff PD days) for one school year. Weekends are implied. */
+export interface SchoolCalendar {
+  school_year: string;
+  no_school_days: string[];
+}
+
 export interface SyntheticDistrict {
   /** Marks the file as fake data. Tools refuse to load a dataset without it. */
   synthetic: true;
@@ -164,6 +196,9 @@ export interface SyntheticDistrict {
   ieps: Iep[];
   goals: Goal[];
   measurement_plans: MeasurementPlan[];
+  goal_delegations: GoalDelegation[];
   data_points: DataPoint[];
   reporting_periods: ReportingPeriod[];
+  school_calendar: SchoolCalendar;
+  progress_reports: ProgressReport[];
 }

@@ -96,10 +96,16 @@ struct RoleViewTests {
 
         let para = try #require(store.dataset.staff.first { $0.role == .paraprofessional })
         store.signIn(as: para)
-        // The fixture gives this person no students, so name the director's student directly.
+        // This person's own students are other ones, so name the director's student directly.
         #expect(store.displayName(for: student) == (student.preferredName ?? student.firstName))
         #expect(!store.displayName(for: student).contains(student.lastName))
-        #expect(store.goalsForToday.isEmpty)
+        // The fixture hands this person two students; until goal-by-goal delegation is used on
+        // the Today list, it holds every goal of those students and of nobody else.
+        let mine = store.visibleStudents
+        #expect(mine.count == 2)
+        #expect(!mine.contains { $0.id == student.id })
+        #expect(store.goalsForToday.count == mine.flatMap { store.goals(for: $0) }.count)
+        #expect(!store.goalsForToday.isEmpty)
     }
 
     @Test("a screen-safe copy of a student drops the last name and every identifier")
