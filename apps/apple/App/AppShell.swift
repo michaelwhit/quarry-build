@@ -1,18 +1,20 @@
 import DesignSystem
 import FeatureEvaluation
 import FeatureSession
+import FeatureStudents
 import Persistence
 import SwiftUI
 
 /// The five places in the app. Home is the first and is always one tap away (tab bar on iPhone,
 /// sidebar on Mac), except inside a live session, which owns the whole screen.
 enum AppTab: String, CaseIterable, Identifiable {
-    case home, today, caseload, libraries, more
+    case myStudents, home, today, caseload, libraries, more
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
+        case .myStudents: "My students"
         case .home: "Home"
         case .today: "Today"
         case .caseload: "Caseload"
@@ -23,6 +25,7 @@ enum AppTab: String, CaseIterable, Identifiable {
 
     var systemImage: String {
         switch self {
+        case .myStudents: "person.2"
         case .home: "house"
         case .today: "checklist"
         case .caseload: "person.2"
@@ -62,7 +65,10 @@ struct AppShell: View {
         let role = store.roleView
         return AppTab.allCases.filter { item in
             switch item {
-            case .home: role.homeStyle == .numbersAndTiles && (role.showsToday || role.showsCaseload)
+            case .myStudents: role.showsMyStudents
+            case .home:
+                role.homeStyle == .numbersAndTiles && !role.showsMyStudents
+                    && (role.showsToday || role.showsCaseload)
             case .today: role.showsToday
             case .caseload: role.showsCaseload
             case .libraries: role.showsLibraries
@@ -161,6 +167,9 @@ struct AppShell: View {
     @ViewBuilder
     private func content(for tab: AppTab) -> some View {
         switch tab {
+        case .myStudents:
+            MyStudentsView(
+                students: store.glanceStudents, resolve: { store.glanceStudent(id: $0) })
         case .home:
             NavigationStack { HomeView(screens: screens, todayAvailable: store.canRecordData, open: open) }
         case .today:
