@@ -65,6 +65,8 @@ jobs:
       - run: pnpm --filter @iep/web build
       - name: Content-security-policy check (no inline script, strict policy)
         run: pnpm --filter @iep/web check:csp
+      - name: Public bundle check (no sign-in server code in the practice build)
+        run: pnpm --filter @iep/web check:bundle
       # Dependency audit and Semgrep for apps/web run in security.yml (workspace-wide).
 
   apple:
