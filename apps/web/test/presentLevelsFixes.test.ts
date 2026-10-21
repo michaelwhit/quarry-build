@@ -15,6 +15,7 @@ import {
   resetPlForTests,
   saveScore,
   saveStatement,
+  scoreProblems,
   setSlotText,
   slotEvidence,
   usePlStorage,
@@ -139,5 +140,59 @@ describe("fixes after review of 26a", () => {
     expect(warn()).toBe(true);
     addStatement({ area: "math", text: "Solves one-step problems with a number line." });
     expect(warn()).toBe(false);
+  });
+});
+
+describe("fixes after the second review of 26a", () => {
+  it("keeps the score sentence when the instrument name has digits", async () => {
+    addScore({ instrument: "DIBELS 8th Edition", source: "classroom", area: "reading" });
+    addStatement({});
+    await draftSlot(getPl(SID), READ, "Maria", [], mockDrafter, ctx);
+    const text = getPl(SID).slots[READ]!.text;
+    expect(text).toContain("(DIBELS 8th Edition)");
+    expect(text).toContain("78");
+  });
+
+  it("a hand-typed section in a drafted area can be approved", () => {
+    addScore({});
+    addStatement({});
+    setSlotText(getPl(SID), READ, "Maria reads short passages with support.", ctx);
+    const p = checkSlot(READ, getPl(SID).slots[READ], getPl(SID), TODAY);
+    expect(p.some((x) => /evidence changed/.test(x.text))).toBe(false);
+    expect(approveSlot(getPl(SID), READ, ctx, TODAY)).toBe(true);
+  });
+
+  it("keeps acronyms, I and the student's name when joining a clause", async () => {
+    addStatement({ text: "ELL students need visual supports" });
+    addStatement({ text: "Maria loses her place" });
+    addStatement({ text: "Reads slowly" });
+    await draftSlot(getPl(SID), READ, "Maria", [], mockDrafter, ctx);
+    const text = getPl(SID).slots[READ]!.text;
+    expect(text).toContain("ELL students need visual supports.");
+    expect(text).toContain("Maria loses her place.");
+    expect(text).toContain("reads slowly.");
+  });
+
+  it("a strength does not clear the no-statement warning for a score", async () => {
+    const key = "summary.state_district_results";
+    addScore({ source: "state_district", area: "math", measure: "State math" });
+    await draftSlot(getPl(SID), key, "Maria", [], mockDrafter, ctx);
+    const warn = () =>
+      checkSlot(key, getPl(SID).slots[key], getPl(SID), TODAY).some((p) =>
+        /no statement of what the student can/.test(p.text),
+      );
+    addStatement({ kind: "strength", area: "math", text: "Persistent." });
+    expect(warn()).toBe(true);
+    addStatement({ kind: "need", area: "math", text: "Needs a number line." });
+    expect(warn()).toBe(false);
+  });
+
+  it("rejects dates that are not real days", () => {
+    const base = { ...blankScore(getPl(SID)), measure: "m", value: "90" };
+    expect(scoreProblems({ ...base, testedOn: "2026-02-31" }, TODAY).join(" ")).toMatch(
+      /year-month-day/,
+    );
+    expect(scoreProblems({ ...base, testedOn: "2026-02-28" }, TODAY)).toEqual([]);
+    expect(scoreProblems({ ...base, testedOn: "2024-02-29" }, TODAY)).toEqual([]);
   });
 });

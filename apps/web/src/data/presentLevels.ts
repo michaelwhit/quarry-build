@@ -246,8 +246,12 @@ const RANGE: Partial<Record<ScoreKind, [number, number]>> = {
   tScore: [10, 90],
   percentile: [1, 99],
 };
-const isDay = (s: string) =>
-  /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(`${s}T00:00:00Z`));
+const isDay = (s: string) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const d = new Date(`${s}T00:00:00Z`);
+  // A date that rolls over (2026-02-31 becomes March 3) is not a real day.
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
+};
 
 /** What is wrong with a score row, in plain words. Empty means it can be confirmed. */
 export function scoreProblems(s: EvScore, today: string): string[] {
@@ -359,7 +363,12 @@ export function buildRequest(def: SlotDef, ev: SlotEvidence, names: string[]): B
 }
 
 const end = (t: string) => (/[.!?]$/.test(t.trim()) ? t.trim() : `${t.trim()}.`);
-const lower1 = (t: string) => t.charAt(0).toLowerCase() + t.slice(1);
+/** Lowercases the first letter to join a clause, but keeps acronyms ("ELL"), "I" and the student's name. */
+const lower1 = (t: string, keep: string[] = []) => {
+  const word = /^[^\s,.;:]+/u.exec(t)?.[0] ?? "";
+  if (/^\p{Lu}{2,}/u.test(word) || /^I(?:'|$)/.test(word) || keep.includes(word)) return t;
+  return t.charAt(0).toLowerCase() + t.slice(1);
+};
 
 /** The offline stand-in. Deterministic, no network, writes only placeholders and the teacher's own words. */
 export const mockDrafter: Drafter = {
@@ -367,7 +376,7 @@ export const mockDrafter: Drafter = {
   async draft(req) {
     const out: RawSentence[] = [];
     for (const s of req.scores) {
-      const inst = s.instrument.trim() !== "" ? ` (${s.instrument.trim()})` : "";
+      const inst = s.instrument.trim() !== "" ? ` ({{instrument:${s.id}}})` : "";
       const pct = s.hasPercentile ? ", percentile {{percentile:" + s.id + "}}" : "";
       const label = s.hasDescriptor
         ? ", described in the report as {{descriptor:" + s.id + "}}"
@@ -412,7 +421,7 @@ export const mockDrafter: Drafter = {
 const escapeRe = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const PLACEHOLDER =
-  /\{\{(student|measure|value|percentile|descriptor|date|text|implication)(?::([A-Za-z0-9_-]+))?\}\}/g;
+  /\{\{(student|measure|instrument|value|percentile|descriptor|date|text|implication)(?::([A-Za-z0-9_-]+))?\}\}/g;
 
 export interface FillResult {
   sentences: Sentence[];
@@ -454,12 +463,13 @@ export function fill(raw: RawSentence[], ev: SlotEvidence, firstName: string): F
           const own = kind === "text" ? st?.text : st?.implication;
           if (!st || !own || own.trim() === "") return ((bad = true), "");
           cites.add(st.id);
-          return lower1(end(own));
+          return lower1(end(own), [firstName]);
         }
         const s = id ? byId.get(id) : undefined;
         if (!s) return ((bad = true), "");
         cites.add(s.id);
         if (kind === "measure") return s.measure.trim();
+        if (kind === "instrument") return s.instrument.trim() || ((bad = true), "");
         if (kind === "value") return s.value.trim();
         if (kind === "percentile") return s.percentile.trim() || ((bad = true), "");
         if (kind === "descriptor") return s.descriptor.trim() || ((bad = true), "");
@@ -517,7 +527,8 @@ export function checkSlot(
   if (!def || !slot) return out;
   const ev = slotEvidence(rec, key);
   if (!def.ai) return out;
-  if (basisOf(ev) !== slot.basis)
+  // A section the teacher typed by hand was not drafted from evidence, so it has no basis to go stale.
+  if (slot.drafter !== "" && slot.drafter !== "teacher" && basisOf(ev) !== slot.basis)
     out.push({ severity: "red", text: "The evidence changed after this draft. Draft it again." });
   for (const s of ev.scores) {
     if (isEquivalent(s.kind))
@@ -532,11 +543,14 @@ export function checkSlot(
       });
   }
   // A statement anywhere in the record counts: the state and district section carries no
-  // statements of its own, so the score is covered by one that cites it or names its area.
+  // statements of its own, so the score is covered by one that cites it or a need in its area.
   const confirmedStatements = rec.statements.filter((st) => st.state === "confirmed");
   const linked = new Set(confirmedStatements.flatMap((st) => [...st.scoreIds]));
   for (const s of ev.scores.filter(usable))
-    if (!linked.has(s.id) && !confirmedStatements.some((st) => st.area === s.area))
+    if (
+      !linked.has(s.id) &&
+      !confirmedStatements.some((st) => st.kind === "need" && st.area === s.area)
+    )
       out.push({
         severity: "amber",
         text: `${s.measure}: the score has no statement of what the student can and cannot yet do.`,
