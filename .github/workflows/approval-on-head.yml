@@ -31,11 +31,13 @@ concurrency:
 
 jobs:
   status:
-    # Comments on plain issues are ignored, and so are review runs with no same-repo pull request.
+    # Comments on plain issues are ignored, and so are review runs with no same-repo pull request. The
+    # trusted review is recognised by its workflow file: its run name is "Review <number> <sha>", and
+    # the run name is what the event's name field carries, so the name cannot identify it.
     if: >-
       (github.event_name == 'issue_comment' && github.event.issue.pull_request != null) ||
       (github.event_name == 'workflow_run' && join(github.event.workflow_run.pull_requests.*.number, '') != '') ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.name == 'Claude PR review (trusted)')
+      (github.event_name == 'workflow_run' && startsWith(github.event.workflow_run.path, '.github/workflows/claude-review-trusted.yml'))
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
