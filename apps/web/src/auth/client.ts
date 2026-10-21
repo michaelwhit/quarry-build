@@ -158,8 +158,9 @@ export const signIn = (email: string, password: string) =>
 export const setPassword = (email: string, code: string, password: string) =>
   call("set-password", "/v0/auth/set-password", { email, code, password, deviceId: deviceId() });
 
-export const signUp = (code: string, email: string, displayName: string, password: string) =>
-  call("signup", "/v0/auth/signup", { code, email, displayName, password, deviceId: deviceId() });
+/** No password at sign-up: the director's setup code is how the person sets one. */
+export const signUp = (code: string, email: string, displayName: string) =>
+  call("signup", "/v0/auth/signup", { code, email, displayName, deviceId: deviceId() });
 
 // ---- Second factor (spec section 6) ----
 
@@ -229,19 +230,8 @@ export async function enrolConfirm(challenge: string, code: string): Promise<Con
 }
 
 /** Sign-up by picking a school: every answer after the checks is the same waiting screen. */
-export const signUpSchool = (
-  schoolId: string,
-  email: string,
-  displayName: string,
-  password: string,
-) =>
-  call("signup-school", "/v0/auth/signup", {
-    schoolId,
-    email,
-    displayName,
-    password,
-    deviceId: deviceId(),
-  });
+export const signUpSchool = (schoolId: string, email: string, displayName: string) =>
+  call("signup-school", "/v0/auth/signup", { schoolId, email, displayName, deviceId: deviceId() });
 
 export interface School {
   id: string;

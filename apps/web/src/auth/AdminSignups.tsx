@@ -32,11 +32,14 @@ const actions = (
     const r = await approveSignup(id, role, endsOn);
     if (!r.ok) return r.message;
     const label = APPROVE_LABELS[r.value.role as ApproveRole] ?? r.value.role;
+    // Every approval hands back a setup code: it is how the person sets their password.
     if (r.value.setupCode) {
-      // School sign-ups never use the password chosen at sign-up.
       setup(id, r.value.setupCode, r.value.setupCodeExpiresAt ?? "");
       done(`Approved as ${label}. Give them the setup code before they can sign in.`);
-    } else done(`Approved as ${label}. They can sign in now.`);
+    } else
+      done(
+        `Approved as ${label}, but no setup code came back. Reload this page and check that they are still listed.`,
+      );
     return null;
   },
   rejectMany: async (ids) => {
@@ -104,7 +107,7 @@ export function AdminSignups() {
           </h3>
           <p className="meta">
             Confirm this is really {setup.name}, by phone or in person, before you hand over this
-            code. They&apos;ll use it on the &apos;I have a code&apos; screen to set their own
+            code. They&apos;ll use it on the &apos;I have a setup code&apos; screen to set their own
             password. It works once{ends(setup.endsAt)}. It is shown only now.
           </p>
           <p className="name">{setup.code}</p>
