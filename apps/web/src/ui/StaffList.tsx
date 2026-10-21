@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import {
   FILTERS,
   ROLE_LINES,
@@ -11,6 +11,12 @@ import {
   staffRows,
 } from "../data/staffList.ts";
 
+// Sign-up approval talks to the sign-in server, so it exists only in a build made with a server
+// address (VITE_GOALLINE_API_ORIGIN). Otherwise this is null and the bundler drops the auth code.
+const AdminSignups = import.meta.env.VITE_GOALLINE_API_ORIGIN
+  ? lazy(() => import("../auth/AdminSignups.tsx").then((m) => ({ default: m.AdminSignups })))
+  : null;
+
 /** The director's read-only Staff and roles list: search, role chips, one card per person. */
 export function StaffList() {
   const [filter, setFilter] = useState<StaffFilter>("all");
@@ -22,6 +28,11 @@ export function StaffList() {
         ← Home
       </a>
       <h2 className="page-title">{TEXT.title}</h2>
+      {AdminSignups && (
+        <Suspense fallback={null}>
+          <AdminSignups />
+        </Suspense>
+      )}
       <p className="meta">{TEXT.roleHelp}</p>
       <label className="form staff-search">
         <span>{TEXT.searchLabel}</span>
