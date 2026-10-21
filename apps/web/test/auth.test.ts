@@ -29,6 +29,7 @@ import {
 import { begin, currentPerson } from "../src/auth/session.ts";
 import { onSignOut, setRole } from "../src/data/roles.ts";
 import { AuthPanel, groupKey } from "../src/auth/AuthPanel.tsx";
+import { popSetup, pushSetup } from "../src/auth/AdminSignups.tsx";
 import { PendingList, defaultEndsOn } from "../src/auth/PendingList.tsx";
 import { errorMessage, recoveryLeftMessage, waitMessage } from "../src/auth/messages.ts";
 
@@ -521,6 +522,23 @@ describe("second factor", () => {
   it("groups the setup key in fours", () => {
     expect(groupKey("ABCDEFGHJKLMNPQR")).toBe("ABCD EFGH JKLM NPQR");
     expect(groupKey("abcd efgh ij")).toBe("abcd efgh ij");
+  });
+});
+
+describe("setup codes shown once", () => {
+  const a = { name: "Ann", code: "AAAA", endsAt: "" };
+  const b = { name: "Ben", code: "BBBB", endsAt: "" };
+
+  it("a second approval waits behind the code on screen and never replaces it", () => {
+    const q = pushSetup(pushSetup([], a), b);
+    expect(q[0]).toBe(a);
+    expect(q).toHaveLength(2);
+  });
+
+  it("hiding the code on screen brings the next one up, and the last one leaves none", () => {
+    const q = popSetup(pushSetup(pushSetup([], a), b));
+    expect(q).toEqual([b]);
+    expect(popSetup(q)).toEqual([]);
   });
 });
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   approveSignup,
   createInvite,
@@ -18,6 +18,11 @@ export interface SetupCode {
   code: string;
   endsAt: string;
 }
+
+/** A new code goes to the back of the line; the one on screen is never replaced. */
+export const pushSetup = (queue: SetupCode[], next: SetupCode): SetupCode[] => [...queue, next];
+/** Hiding the code on screen brings the next one up. */
+export const popSetup = (queue: SetupCode[]): SetupCode[] => queue.slice(1);
 
 const actions = (
   done: (line: string) => void,
@@ -50,11 +55,17 @@ export function AdminSignups() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [invite, setInvite] = useState<{ code: string; expiresAt: string } | null>(null);
-  const [setup, setSetup] = useState<SetupCode | null>(null);
+  // Codes are shown once. A second approval waits in line behind the one on screen.
+  const [setups, setSetups] = useState<SetupCode[]>([]);
+  const setup = setups[0] ?? null;
   const [listed, setListed] = useState<boolean | null>(null);
 
+  const loads = useRef(0);
   const load = useCallback(async () => {
+    const mine = ++loads.current;
     const r = await listSignups();
+    // An older answer that arrives late must not replace a newer list.
+    if (mine !== loads.current) return;
     if (r.ok) {
       setPeople(r.value);
       setError(null);
@@ -97,9 +108,14 @@ export function AdminSignups() {
             password. It works once{ends(setup.endsAt)}. It is shown only now.
           </p>
           <p className="name">{setup.code}</p>
-          <button type="button" onClick={() => setSetup(null)}>
-            Done, hide the code
+          <button type="button" onClick={() => setSetups(popSetup)}>
+            {setups.length > 1 ? "Done, show the next code" : "Done, hide the code"}
           </button>
+          {setups.length > 1 && (
+            <p className="meta" role="status">
+              {setups.length - 1} more {setups.length === 2 ? "code is" : "codes are"} waiting.
+            </p>
+          )}
         </section>
       )}
       <section className="card">
@@ -172,7 +188,9 @@ export function AdminSignups() {
           }))}
           actions={actions(setNotice, (id, code, endsAt) => {
             const person = people.find((x) => x.id === id);
-            setSetup({ name: person?.displayName ?? "this person", code, endsAt });
+            setSetups((q) =>
+              pushSetup(q, { name: person?.displayName ?? "this person", code, endsAt }),
+            );
           })}
           onChanged={() => void load()}
         />
