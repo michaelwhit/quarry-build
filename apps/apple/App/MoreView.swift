@@ -123,14 +123,20 @@ struct MoreView: View {
         }
         do {
             let result = try store.importPractice(data)
-            var parts = ["\(result.sessions) session\(result.sessions == 1 ? "" : "s")"]
+            var parts: [String] = []
+            if result.sessions > 0 {
+                parts.append("\(result.sessions) session\(result.sessions == 1 ? "" : "s")")
+            }
             if result.students > 0 {
                 parts.append("\(result.students) student\(result.students == 1 ? "" : "s")")
             }
             if result.edits > 0 {
                 parts.append("\(result.edits) student change\(result.edits == 1 ? "" : "s")")
             }
-            fileMessage = "Loaded " + parts.joined(separator: ", ") + "."
+            fileMessage =
+                parts.isEmpty
+                ? "Everything in that file was already here."
+                : "Loaded " + parts.joined(separator: ", ") + "."
         } catch PrototypeStore.FileError.tooLarge {
             fileMessage = "That file is too large."
         } catch PrototypeStore.FileError.noSessions {

@@ -565,8 +565,9 @@ public final class PrototypeStore {
     /// here are skipped; a file never overwrites or removes one. New students keep only their name,
     /// grade and school (no ids or birth date). Anyone but the director and building coordinator
     /// gets every new student on their own caseload, and caseload links the file holds for other
-    /// people are ignored, so a file cannot hand students to someone else. Edits in the file apply to
-    /// students the signed-in person can see. The file lands whole or not at all.
+    /// people are ignored, so a file cannot hand students to someone else. An edit applies only to a
+    /// student the signed-in person can see; a file that edits anyone else is refused. The file
+    /// lands whole or not at all.
     @discardableResult
     public func importPractice(_ data: Data) throws -> PracticeImport {
         guard let staff = currentStaff else { throw StoreError.notSignedIn }
