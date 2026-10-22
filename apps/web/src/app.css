@@ -530,9 +530,35 @@ footer {
   color: var(--primary);
   font-weight: 700;
 }
-body {
-  /* rem so the content clears the tab bar when text is enlarged */
-  padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+/* On a phone the page does not scroll. The content scrolls inside .scroll and the tab bar is the
+   last item of a full-height column, so it sits at the bottom and cannot move or hide content,
+   whatever the browser does with its own toolbars or the text size. */
+@media (max-width: 799.98px) {
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+  }
+  body {
+    padding-bottom: 0;
+  }
+  #root {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+  }
+  .scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tabbar {
+    position: static;
+    flex: none;
+  }
 }
 @media (min-width: 800px) {
   body {

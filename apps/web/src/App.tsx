@@ -438,36 +438,43 @@ export function App() {
         </div>
       )}
       {role && (
-        <>
+        <div className="watermark-bg" aria-hidden="true">
+          <span>TEST DATA</span>
+        </div>
+      )}
+      {/* The page scrolls inside this box, so the tab bar below it can never move on a phone. */}
+      <div className="scroll">
+        {role && (
           <aside className="watermark" aria-label="Test data notice">
             TEST DATA · fake students only
           </aside>
-          <div className="watermark-bg" aria-hidden="true">
-            <span>TEST DATA</span>
-          </div>
-        </>
-      )}
-      <header className="top">
-        <h1>
-          GoalLine
-          <span className="sub">{role ? roleById(role)?.person : districtName}</span>
-        </h1>
-        <button type="button" onClick={theme.toggle}>
-          {theme.label}
-        </button>
-        {role && (
-          <button type="button" onClick={() => setRole(null)}>
-            Sign out
-          </button>
         )}
-      </header>
-      {role && needsPrivacy(role) ? (
-        <Privacy role={role} />
-      ) : role ? (
-        <main id="main">{screen}</main>
-      ) : (
-        <SignIn />
-      )}
+        <header className="top">
+          <h1>
+            GoalLine
+            <span className="sub">{role ? roleById(role)?.person : districtName}</span>
+          </h1>
+          <button type="button" onClick={theme.toggle}>
+            {theme.label}
+          </button>
+          {role && (
+            <button type="button" onClick={() => setRole(null)}>
+              Sign out
+            </button>
+          )}
+        </header>
+        {role && needsPrivacy(role) ? (
+          <Privacy role={role} />
+        ) : role ? (
+          <main id="main">{screen}</main>
+        ) : (
+          <SignIn />
+        )}
+        <footer>
+          Practice data only. Not for real students. What you add stays in this browser and is never
+          sent anywhere.
+        </footer>
+      </div>
       <nav className="tabbar" aria-label="Main" hidden={!role}>
         {TABS.filter((x) => !delegate || x.id === "today" || x.id === "more").map((tab) => (
           <a
@@ -481,10 +488,6 @@ export function App() {
           </a>
         ))}
       </nav>
-      <footer>
-        Practice data only. Not for real students. What you add stays in this browser and is never
-        sent anywhere.
-      </footer>
     </>
   );
 }

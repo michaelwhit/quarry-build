@@ -30,7 +30,11 @@ test.describe("keyboard and screen-reader basics", () => {
     await page.evaluate(() => {
       document.documentElement.style.fontSize = "200%";
     });
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    // On a phone the content scrolls inside the page's scroll box, not the window.
+    await page.evaluate(() => {
+      const box = document.querySelector(".scroll");
+      if (box) box.scrollTop = box.scrollHeight;
+    });
     const footer = await page.locator("footer").boundingBox();
     const bar = await tabBar(page).boundingBox();
     expect(
