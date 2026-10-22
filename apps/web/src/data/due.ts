@@ -67,7 +67,8 @@ export interface DataGap {
 
 export interface CaseManagerDue {
   caseManager: string;
-  building: string;
+  /** Every building where the case manager has students on the caseload, sorted by name. */
+  buildings: string[];
   overdue: DueItem[];
   comingUp: DueItem[];
   needsData: DataGap[];
@@ -118,10 +119,14 @@ export function dueView(today: string, window: WindowDays = WINDOWS[0]): DueView
     if (!manager || !student) return null;
     let row = rows.get(manager.id);
     if (!row) {
-      const building = schoolById.get(student.school_id)?.name ?? "";
+      const names = new Set<string>();
+      for (const [studentId, staffId] of held) {
+        const school = schoolById.get(studentById.get(studentId)?.school_id ?? "");
+        if (staffId === manager.id && school) names.add(school.name.replace(" (synthetic)", ""));
+      }
       row = {
         caseManager: manager.display_name,
-        building: building.replace(" (synthetic)", ""),
+        buildings: [...names].sort(),
         overdue: [],
         comingUp: [],
         needsData: [],

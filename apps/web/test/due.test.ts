@@ -90,6 +90,15 @@ describe("students who need data recorded", () => {
   });
 });
 
+describe("where a case manager works", () => {
+  it("names every building the caseload is in, not just the first student's", () => {
+    const managers = dueView("2026-10-30").managers;
+    expect(managers.length).toBeGreaterThan(0);
+    const want = ["Prairie Wind Elementary", "Sandhill Middle"];
+    for (const m of managers) expect(m.buildings).toEqual(want);
+  });
+});
+
 describe("plain words and no ranking", () => {
   it("uses first name and last initial, and orders case managers by name, not by count", () => {
     const v = dueView("2026-10-30");
