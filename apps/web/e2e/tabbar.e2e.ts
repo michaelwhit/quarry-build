@@ -42,14 +42,25 @@ test.describe("tab bar on a phone", () => {
   });
 
   test("also holds at large text, where the bar grows taller", async ({ page }) => {
+    await loadSamplesAsDirector(page);
     await signIn(page, "director");
+    await tabBar(page).getByRole("link", { name: "Caseload" }).click();
+    await expect(page.locator("ul.cards .name").first()).toBeVisible();
     await page.evaluate(() => {
       document.documentElement.style.fontSize = "200%";
     });
-    const bar = await tabBar(page).boundingBox();
-    expect(Math.round((bar?.y ?? 0) + (bar?.height ?? 0))).toBe(844);
-    await page.locator(".scroll").evaluate((el) => (el.scrollTop = el.scrollHeight));
-    const after = await tabBar(page).boundingBox();
-    expect(after?.y).toBeCloseTo(bar?.y ?? 0, 0);
+    const bar = tabBar(page);
+    const rest = await bar.boundingBox();
+    expect(Math.round((rest?.y ?? 0) + (rest?.height ?? 0))).toBe(844);
+
+    // The page really scrolls here, so the check below is not an empty one.
+    const box = page.locator(".scroll");
+    await box.evaluate((el) => (el.scrollTop = el.scrollHeight));
+    expect(await box.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+
+    const after = await bar.boundingBox();
+    expect(after?.y).toBeCloseTo(rest?.y ?? 0, 0);
+    const footer = await page.locator("footer").boundingBox();
+    expect((footer?.y ?? 0) + (footer?.height ?? 0)).toBeLessThanOrEqual((after?.y ?? 0) + 1);
   });
 });
