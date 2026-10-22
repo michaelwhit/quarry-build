@@ -8,8 +8,8 @@ import {
   goalAreaLabel,
   goals,
   kindLabel,
-  searchText,
 } from "../data/library.ts";
+import { categoriesOf, filterAccommodations, filterGoals } from "../data/libraryFilter.ts";
 import {
   checks,
   vagueFrequency,
@@ -38,18 +38,20 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
   const [query, setQuery] = useState("");
   const [band, setBand] = useState("");
   const [area, setArea] = useState("");
+  const [kind, setKind] = useState("");
+  const [category, setCategory] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
 
-  const q = query.trim().toLowerCase();
-  const shownGoals = goals.filter(
-    (g) =>
-      (!band || g.grade_bands.includes(band as never)) &&
-      (!area || g.area === area) &&
-      (!q || searchText(g.title, `${g.template_text} ${goalAreaLabel[g.area]}`).includes(q)),
-  );
-  const shownAccs = accommodations.filter(
-    (a) => !q || searchText(a.title, `${a.description} ${a.category}`).includes(q),
-  );
+  const shownGoals = filterGoals(goals, { query, band, area });
+  const shownAccs = filterAccommodations(accommodations, { query, kind, category });
+  const filtering = tab === "goals" ? !!(query || band || area) : !!(query || kind || category);
+  const clear = () => {
+    setQuery("");
+    setBand("");
+    setArea("");
+    setKind("");
+    setCategory("");
+  };
   const openGoal = tab === "goals" ? goals.find((g) => g.id === openId) : undefined;
   const openAcc =
     tab === "accommodations" ? accommodations.find((a) => a.id === openId) : undefined;
@@ -101,7 +103,42 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
             </select>
           </>
         )}
+        {tab === "accommodations" && (
+          <>
+            <select aria-label="Type" value={kind} onChange={(e) => setKind(e.target.value)}>
+              <option value="">All types</option>
+              {Object.entries(kindLabel).map(([k, v]) => (
+                <option key={k} value={k}>
+                  {v}
+                </option>
+              ))}
+            </select>
+            <select
+              aria-label="Category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              <option value="">All categories</option>
+              {categoriesOf(accommodations).map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </select>
+          </>
+        )}
       </div>
+      <p className="lib-count" role="status">
+        {tab === "goals"
+          ? `${shownGoals.length} of ${goals.length} goals`
+          : `${shownAccs.length} of ${accommodations.length} accommodations`}
+        {filtering && (
+          <>
+            {" "}
+            <button type="button" className="link" onClick={clear}>
+              Clear search and filters
+            </button>
+          </>
+        )}
+      </p>
       {tab === "goals" ? (
         <ul className="lib-list" aria-label="Goals">
           {shownGoals.map((g) => (
