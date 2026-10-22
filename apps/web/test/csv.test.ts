@@ -13,6 +13,7 @@ import {
   readyRows,
   type CsvTable,
 } from "../src/data/csv.ts";
+import { EXAMPLE_FILE } from "../src/data/importExample.ts";
 
 const table = (text: string): CsvTable => {
   const r = parseCsv(text);
@@ -231,5 +232,18 @@ describe("more grade wordings", () => {
       expect(normalizeGrade(text), text).toBe(want);
     for (const bad of ["Grade 13", "grade", "fifteenth", "green", "0"])
       expect(normalizeGrade(bad), bad).toBeNull();
+  });
+});
+
+describe("the made-up example file", () => {
+  it("is read whole: every row is ready, with the title line skipped and extra columns ignored", () => {
+    const rows = planFor(EXAMPLE_FILE);
+    expect(rows.map((r) => r.status.kind)).toEqual(["ready", "ready", "ready", "ready"]);
+    expect(rows.map((r) => `${r.firstName} ${r.lastName} ${r.grade}`)).toEqual([
+      "Avery Examplewood 3",
+      "Blake Samplefield K",
+      "Casey Teststone 5",
+      "Devon Mockridge 7",
+    ]);
   });
 });

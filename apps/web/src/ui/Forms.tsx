@@ -13,6 +13,7 @@ import {
   planImport,
   readyRows,
 } from "../data/csv.ts";
+import { EXAMPLE_FILE, EXAMPLE_FILE_NAME } from "../data/importExample.ts";
 import {
   addGoal,
   addStudent,
@@ -436,6 +437,8 @@ const statusText = (r: PlannedRow) =>
       ? "Already on the list"
       : r.status.why;
 
+const IMPORT_STEPS = ["Choose file", "Match columns", "Review and fix", "Add"];
+
 /** Add many students at once from a spreadsheet saved as CSV: pick the file, check the columns, preview, confirm. */
 export function ImportStudents() {
   const [fileName, setFileName] = useState("");
@@ -452,6 +455,20 @@ export function ImportStudents() {
   const plan = table && isComplete(mapping) ? planImport(table, mapping, known) : null;
   const ready = plan ? readyRows(plan) : [];
 
+  const load = (text: string, name: string) => {
+    setError("");
+    setAdded(null);
+    const result = parseCsv(text);
+    if (!result.ok) {
+      setTable(null);
+      setError(result.message);
+      return;
+    }
+    setTable(result.table);
+    setFileName(name);
+    setMapping(detectMapping(result.table.headers));
+  };
+
   const pick = (file: File | undefined) => {
     setError("");
     setAdded(null);
@@ -462,22 +479,15 @@ export function ImportStudents() {
     }
     void file
       .text()
-      .then((text) => {
-        const result = parseCsv(text);
-        if (!result.ok) {
-          setTable(null);
-          setError(result.message);
-          return;
-        }
-        setTable(result.table);
-        setFileName(file.name);
-        setMapping(detectMapping(result.table.headers));
-      })
+      .then((text) => load(text, file.name))
       .catch(() => {
         setTable(null);
         setError("That file could not be read. Try saving it again as a CSV file.");
       });
   };
+
+  const step =
+    added !== null ? 4 : !table ? 1 : plan?.some((r) => r.status.kind === "problem") ? 3 : 2;
 
   const confirm = () => {
     setError("");
@@ -506,10 +516,33 @@ export function ImportStudents() {
       <p className="form-warn" role="note">
         Practice only: use made-up names. Do not enter a real student.
       </p>
-      <p className="meta">
-        Use a spreadsheet saved as CSV (commas, semicolons or tabs) with one student per row and a
-        header row. Nothing is added until you confirm.
-      </p>
+      <ol className="import-steps" aria-label="Steps">
+        {IMPORT_STEPS.map((label, i) => (
+          <li key={label} aria-current={step === i + 1 ? "step" : undefined}>
+            {label}
+          </li>
+        ))}
+      </ol>
+      {!table && (
+        <section aria-label="What the file needs">
+          <p className="meta">
+            Use the caseload list you export from your records system, or any spreadsheet saved as
+            CSV (commas, semicolons or tabs), with one student per row. A report title above the
+            column names is fine. Nothing is added until you confirm.
+          </p>
+          <ul className="meta">
+            <li>Needed: a grade, and either a first and last name or one full-name column.</li>
+            <li>Optional: a preferred name. Any other columns are ignored.</li>
+            <li>
+              GoalLine matches the columns for you, and you can change them before anything is
+              added.
+            </li>
+            <li>
+              The file is read in this browser only. Delete the downloaded file when you are done.
+            </li>
+          </ul>
+        </section>
+      )}
       <div className="actions">
         <label className="btn file-btn">
           {table ? "Choose a different file" : "Choose a file"}
@@ -523,6 +556,11 @@ export function ImportStudents() {
             }}
           />
         </label>
+        {!table && (
+          <button type="button" onClick={() => load(EXAMPLE_FILE, EXAMPLE_FILE_NAME)}>
+            Try a made-up example file
+          </button>
+        )}
         {fileName && <span className="meta">{fileName}</span>}
       </div>
       {error && (

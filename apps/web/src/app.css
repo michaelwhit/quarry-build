@@ -989,3 +989,24 @@ h2.landing-name {
     display: none;
   }
 }
+.import-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 12px;
+  counter-reset: import-step;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+.import-steps li {
+  counter-increment: import-step;
+}
+.import-steps li::before {
+  content: counter(import-step) ". ";
+}
+.import-steps li[aria-current="step"] {
+  color: var(--text);
+  font-weight: 700;
+}

@@ -66,4 +66,45 @@ test.describe("flexible roster file", () => {
     await page.getByRole("button", { name: "Add students" }).click();
     await expect(page.getByRole("status")).toContainText("1 student added.");
   });
+
+  test("the first screen explains the file and the example file adds four made-up students", async ({
+    page,
+  }) => {
+    const errors = watchErrors(page);
+    await signIn(page, "director");
+    await tabBar(page).getByRole("link", { name: "Caseload" }).click();
+    await page.getByRole("link", { name: "Import from file" }).click();
+    await expect(page.getByLabel("Steps").getByRole("listitem")).toHaveText([
+      "Choose file",
+      "Match columns",
+      "Review and fix",
+      "Add",
+    ]);
+    await expect(page.getByLabel("Steps").locator('[aria-current="step"]')).toHaveText(
+      "Choose file",
+    );
+    await expect(page.getByText(/Delete the downloaded file when you are done/)).toBeVisible();
+    await page.getByRole("button", { name: "Try a made-up example file" }).click();
+    await expect(page.getByLabel("Steps").locator('[aria-current="step"]')).toHaveText(
+      "Match columns",
+    );
+    await expect(page.getByRole("status")).toContainText(
+      "4 to add, 0 already on the list, 0 to fix",
+    );
+    await page.getByRole("button", { name: "Add students" }).click();
+    await expect(page.getByRole("status")).toContainText("4 students added.");
+    await expect(page.getByLabel("Steps").locator('[aria-current="step"]')).toHaveText("Add");
+    expect(errors).toEqual([]);
+  });
+
+  test("the example file clears an earlier error message", async ({ page }) => {
+    await signIn(page, "director");
+    await tabBar(page).getByRole("link", { name: "Caseload" }).click();
+    await page.getByRole("link", { name: "Import from file" }).click();
+    await page.locator('input[type="file"]').setInputFiles(file(""));
+    await expect(page.getByRole("alert")).toBeVisible();
+    await page.getByRole("button", { name: "Try a made-up example file" }).click();
+    await expect(page.getByRole("alert")).toHaveCount(0);
+    await expect(page.getByRole("status")).toContainText("4 to add");
+  });
 });
