@@ -1,4 +1,5 @@
-// The short IEP sections (practice data only): header dates and meeting attendance. Kept in this browser's storage, one record per student.
+// The short IEP sections (practice data only): header dates, meeting attendance, alternate
+// assessment and extended school year. Kept in this browser's storage, one record per student.
 // Nothing is sent anywhere; the teacher copies each item into SRS by hand.
 
 /** SRS position list. To be confirmed against the district's dropdown. */
@@ -34,6 +35,9 @@ export interface IepShort {
   attendees: Attendee[];
   /** One answer per PARENT_QUESTIONS entry: "yes", "no" or "". */
   parent: string[];
+  altRequired: "yes" | "no" | "";
+  altWhy: string;
+  esy: { choice: "not_needed" | "needed"; text: string } | null;
 }
 const empty = (): IepShort => ({
   effective: "",
@@ -41,6 +45,9 @@ const empty = (): IepShort => ({
   school: "",
   attendees: [],
   parent: PARENT_QUESTIONS.map(() => ""),
+  altRequired: "",
+  altWhy: "",
+  esy: null,
 });
 
 // ---- dates (plain parts; no Date objects, so no time zone can shift a day) ----
@@ -122,6 +129,11 @@ function clean(v: unknown): IepShort {
       const x = (v["parent"] as unknown[])[i];
       return x === "yes" || x === "no" ? x : "";
     });
+  out.altRequired = v["altRequired"] === "yes" || v["altRequired"] === "no" ? v["altRequired"] : "";
+  out.altWhy = str(v["altWhy"], 2000);
+  const e = v["esy"];
+  if (isRec(e) && (e["choice"] === "not_needed" || e["choice"] === "needed"))
+    out.esy = { choice: e["choice"], text: str(e["text"], 2000) };
   return out;
 }
 

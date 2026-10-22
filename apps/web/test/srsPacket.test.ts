@@ -50,7 +50,8 @@ describe("IEP for SRS", () => {
   });
 
   it("sections not built yet cannot be marked", () => {
-    const t = section("esy");
+    // A section with no builder, whichever sections happen to be built by now.
+    const t = { ...section("goals"), built: false, items: [] };
     expect(t.built).toBe(false);
     expect(canMark(getPacket(sid()), t)).toBe(false);
     expect(setMarked(sid(), t, true, "Ms. A")).toBe(false);
