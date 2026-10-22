@@ -1,9 +1,11 @@
-import { useState, useSyncExternalStore } from "react";
+import { type ComponentType, useState, useSyncExternalStore } from "react";
 import { displayName, studentById } from "../data/district.ts";
 import { getRole, getRoleVersion, roleById, subscribeRole } from "../data/roles.ts";
 import {
   type PacketItem,
   buildPacket,
+  getSectionsVersion,
+  subscribeSections,
   canMark,
   getPacket,
   getPacketVersion,
@@ -14,8 +16,20 @@ import {
   subscribePacket,
 } from "../data/srsPacket.ts";
 import { canUsePresentLevels } from "./PresentLevels.tsx";
-import { getPlVersion, subscribePl } from "../data/presentLevels.ts";
 import { getVersion, subscribe } from "../data/workspace.ts";
+
+// An edit form is a file in src/ui/srs/ that exports `section` and `Form`. The page shows it in
+// that section's card.
+const FORMS = new Map(
+  Object.values(
+    import.meta.glob<{ section: string; Form: ComponentType<{ studentId: string }> }>(
+      "./srs/*.tsx",
+      {
+        eager: true,
+      },
+    ),
+  ).map((m) => [m.section, m.Form]),
+);
 
 // Same people who can write present levels may build the packet.
 export const canUsePacket = canUsePresentLevels;
@@ -79,7 +93,7 @@ function CopyRow({
 
 export function SrsPacket({ studentId }: { studentId: string }) {
   useSyncExternalStore(subscribePacket, getPacketVersion, getPacketVersion);
-  useSyncExternalStore(subscribePl, getPlVersion, getPlVersion);
+  useSyncExternalStore(subscribeSections, getSectionsVersion, getSectionsVersion);
   useSyncExternalStore(subscribe, getVersion, getVersion);
   useSyncExternalStore(subscribeRole, getRoleVersion, getRoleVersion);
   const role = getRole();
@@ -131,11 +145,10 @@ export function SrsPacket({ studentId }: { studentId: string }) {
                 ? ` · ${mark.who}, ${new Date(mark.at).toLocaleString()}`
                 : ""}
             </p>
-            {sec.id === "plaafp" && (
-              <p>
-                <a href={`#/student/${studentId}/present-levels`}>Write present levels</a>
-              </p>
-            )}
+            {(() => {
+              const Form = FORMS.get(sec.id);
+              return Form ? <Form studentId={studentId} /> : null;
+            })()}
             <ul className="pick">
               {sec.items.map((item) => (
                 <CopyRow
