@@ -281,11 +281,11 @@ function AccommodationDetail({ item }: { item: AccommodationItem }) {
         {kindLabel[item.kind]} · {item.category}
       </p>
       <p>
-        <strong>Where:</strong> {item.location}
+        <strong>Location:</strong> {item.location}
         <br />
-        <strong>How often:</strong> {item.frequency}
+        <strong>Frequency:</strong> {item.frequency}
         <br />
-        <strong>For how long:</strong> {item.duration}
+        <strong>Duration:</strong> {item.duration}
       </p>
       {role && can(role, "editGoal") && (
         <form className="form" onSubmit={(e) => e.preventDefault()}>
@@ -307,15 +307,15 @@ function AccommodationDetail({ item }: { item: AccommodationItem }) {
             </select>
           </label>
           <label>
-            <span>Where</span>
+            <span>Location</span>
             <input value={where} maxLength={200} onChange={(e) => setWhere(e.target.value)} />
           </label>
           <label>
-            <span>How often</span>
+            <span>Frequency</span>
             <input value={often} maxLength={200} onChange={(e) => setOften(e.target.value)} />
           </label>
           <label>
-            <span>For how long</span>
+            <span>Duration</span>
             <input value={length} maxLength={200} onChange={(e) => setLength(e.target.value)} />
           </label>
           {vague && (
