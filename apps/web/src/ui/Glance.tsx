@@ -74,7 +74,10 @@ export function AtAGlance({ studentId }: { studentId: string }) {
       <h3 className="sec">Accommodations and modifications</h3>
       <div className="card planned-card">
         <span className="planned-tag">Planned</span>
-        <p>Accommodations and modifications are not on the web yet.</p>
+        <p>
+          Accommodations are kept on the case manager's student page. They are not shown on this
+          read-only page yet.
+        </p>
       </div>
       <h3 className="sec">Services</h3>
       <div className="card planned-card">

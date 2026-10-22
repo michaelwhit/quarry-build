@@ -40,7 +40,7 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
   const [band, setBand] = useState("");
   const [area, setArea] = useState("");
   const [forId, setForId] = useState("");
-  const [note, setNote] = useState("");
+  const [status, setStatus] = useState("");
   const [kind, setKind] = useState("");
   const [category, setCategory] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
@@ -51,7 +51,6 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
     ),
   );
   const [starsOnly, setStarsOnly] = useState(false);
-  const [starNote, setStarNote] = useState("");
 
   const starSet = tab === "goals" ? stars.goals : stars.accommodations;
   const only = starsOnly ? starSet : undefined;
@@ -65,9 +64,8 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
         ? { ...stars, goals: toggled(stars.goals, id) }
         : { ...stars, accommodations: toggled(stars.accommodations, id) };
     setStars(next);
-    setNote("");
     const on = (tab === "goals" ? next.goals : next.accommodations).has(id);
-    setStarNote(
+    setStatus(
       saveFavorites(next)
         ? `${on ? "Saved" : "Removed"} "${title}" ${on ? "to" : "from"} your favorites.`
         : `Could not keep "${title}" in your favorites; this browser would not save it.`,
@@ -80,6 +78,7 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
     setKind("");
     setCategory("");
     setStarsOnly(false);
+    setStatus("");
   };
   const role = getRole();
   const canAdd = !!role && can(role, "editGoal");
@@ -99,9 +98,9 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
     if (!q || !facts) return;
     try {
       addGoal(forId, q.input);
-      setNote(`Added "${g.title}" to ${facts.name}.`);
+      setStatus(`Added "${g.title}" to ${facts.name}.`);
     } catch (err) {
-      setNote(err instanceof Error ? err.message : "Could not add the goal");
+      setStatus(err instanceof Error ? err.message : "Could not add the goal");
     }
   };
   const openGoal = tab === "goals" ? goals.find((g) => g.id === openId) : undefined;
@@ -123,6 +122,7 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
             onClick={() => {
               setTab(t);
               setOpenId(null);
+              setStatus("");
             }}
           >
             {t === "goals" ? "Goals" : "Accommodations"}
@@ -185,7 +185,7 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
             value={forId}
             onChange={(e) => {
               setForId(e.target.value);
-              setNote("");
+              setStatus("");
             }}
           >
             <option value="">Draft for a student (optional)</option>
@@ -212,7 +212,7 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
         Favorites only ({starSet.size})
       </label>
       <p className="lib-note" role="status">
-        {note || starNote}
+        {status}
       </p>
       <p className="lib-count" role="status">
         {tab === "goals"
@@ -424,7 +424,11 @@ export function StudentAccommodations({ studentId }: { studentId: string }) {
           <strong>{a.title}</strong>
           <p>{a.description}</p>
           <p className="meta">
-            {a.location} · {a.frequency} · {a.duration}
+            <strong>Location:</strong> {a.location}
+            <br />
+            <strong>Frequency:</strong> {a.frequency}
+            <br />
+            <strong>Duration:</strong> {a.duration}
           </p>
           {role && can(role, "editGoal") && (
             <button
