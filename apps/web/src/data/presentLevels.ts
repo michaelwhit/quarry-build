@@ -441,7 +441,8 @@ const dateText = (iso: string) => {
 
 /** Fills placeholders from confirmed rows. A sentence the drafter wrote with its own digits is dropped. */
 export function fill(raw: RawSentence[], ev: SlotEvidence, firstName: string): FillResult {
-  const byId = new Map(ev.scores.map((s) => [s.id, s]));
+  // Age and grade equivalents are never written into a draft, even by a guessed id.
+  const byId = new Map(ev.scores.filter(usable).map((s) => [s.id, s]));
   const stById = new Map(ev.statements.map((s) => [s.id, s]));
   const known = new Set([...ev.scores.map((s) => s.id), ...ev.statements.map((s) => s.id)]);
   const sentences: Sentence[] = [];
