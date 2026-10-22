@@ -86,3 +86,7 @@
   font: inherit;
   cursor: pointer;
 }
+.lib-note {
+  margin: 0 0 8px;
+  min-height: 1.2em;
+}
