@@ -50,7 +50,7 @@ describe("IEP for SRS", () => {
   });
 
   it("sections not built yet cannot be marked", () => {
-    const t = section("services");
+    const t = section("esy");
     expect(t.built).toBe(false);
     expect(canMark(getPacket(sid()), t)).toBe(false);
     expect(setMarked(sid(), t, true, "Ms. A")).toBe(false);
@@ -86,7 +86,7 @@ describe("IEP for SRS", () => {
     expect(canUsePacket("paraprofessional")).toBe(false);
     const html = renderToString(createElement(SrsPacket, { studentId: sid() }));
     expect(html).toContain("IEP for SRS");
-    expect(html.replaceAll("<!-- -->", "")).toContain("0 of 11 sections marked pasted");
+    expect(html.replaceAll("<!-- -->", "")).toContain("0 of 12 sections marked pasted");
     expect(html).not.toMatch(/accepted|filed/i);
   });
 });
