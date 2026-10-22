@@ -30,7 +30,6 @@ import { PresentLevels, canUsePresentLevels } from "./ui/PresentLevels.tsx";
 import { AccessReview, StaffList } from "./ui/StaffList.tsx";
 import { Privacy, SignIn } from "./ui/SignIn.tsx";
 import { ProgressReport, canUseReports } from "./ui/ProgressReport.tsx";
-import { SrsPacket, canUsePacket } from "./ui/SrsPacket.tsx";
 import { getVersion, getWorkspace, setDelegated, setServed, subscribe } from "./data/workspace.ts";
 
 function useRoute(): string {
@@ -237,11 +236,6 @@ function StudentPage({ id }: { id: string }) {
             Present levels
           </a>
         )}{" "}
-        {canUsePacket(role) && (
-          <a className="btn" href={`#/student/${s.student.id}/srs`}>
-            IEP for SRS
-          </a>
-        )}{" "}
         {can(role, "editStudent") && (
           <a className="btn" href={`#/student/${s.student.id}/edit`}>
             Edit student
@@ -317,7 +311,6 @@ export function App() {
   const g = /^#\/student\/([^/]+)\/add-goal$/.exec(hash);
   const rp = /^#\/student\/([^/]+)\/report$/.exec(hash);
   const pl = /^#\/student\/([^/]+)\/present-levels$/.exec(hash);
-  const srs = /^#\/student\/([^/]+)\/srs$/.exec(hash);
   const es = /^#\/student\/([^/]+)\/edit$/.exec(hash);
   const eg = /^#\/student\/([^/]+)\/goal\/([^/]+)\/edit$/.exec(hash);
   const delegate = isDelegateRole(role);
@@ -330,7 +323,6 @@ export function App() {
     (role === "paraprofessional" && t?.[1] && t[2]);
   const brokenAddress = [
     pl?.[1],
-    srs?.[1],
     rp?.[1],
     glance?.[1],
     es?.[1],
@@ -399,8 +391,6 @@ export function App() {
     )
   ) : pl?.[1] ? (
     <PresentLevels studentId={decode(pl[1])} />
-  ) : srs?.[1] ? (
-    <SrsPacket studentId={decode(srs[1])} />
   ) : rp?.[1] ? (
     <ProgressReport studentId={decode(rp[1])} />
   ) : m?.[1] ? (
