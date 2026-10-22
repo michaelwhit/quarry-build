@@ -9,6 +9,7 @@ import {
   goals,
   kindLabel,
 } from "../data/library.ts";
+import { loadFavorites, saveFavorites, toggled, type Favorites } from "../data/libraryFavorites.ts";
 import { factsFor, fillFrom, fitsGrade, goalInput, oneTap } from "../data/libraryFill.ts";
 import { categoriesOf, filterAccommodations, filterGoals } from "../data/libraryFilter.ts";
 import {
@@ -43,16 +44,42 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
   const [kind, setKind] = useState("");
   const [category, setCategory] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [stars, setStars] = useState<Favorites>(() =>
+    loadFavorites(
+      goals.map((g) => g.id),
+      accommodations.map((a) => a.id),
+    ),
+  );
+  const [starsOnly, setStarsOnly] = useState(false);
+  const [starNote, setStarNote] = useState("");
 
-  const shownGoals = filterGoals(goals, { query, band, area });
-  const shownAccs = filterAccommodations(accommodations, { query, kind, category });
-  const filtering = tab === "goals" ? !!(query || band || area) : !!(query || kind || category);
+  const starSet = tab === "goals" ? stars.goals : stars.accommodations;
+  const only = starsOnly ? starSet : undefined;
+  const shownGoals = filterGoals(goals, { query, band, area, only });
+  const shownAccs = filterAccommodations(accommodations, { query, kind, category, only });
+  const filtering =
+    (tab === "goals" ? !!(query || band || area) : !!(query || kind || category)) || starsOnly;
+  const toggleStar = (id: string, title: string) => {
+    const next: Favorites =
+      tab === "goals"
+        ? { ...stars, goals: toggled(stars.goals, id) }
+        : { ...stars, accommodations: toggled(stars.accommodations, id) };
+    setStars(next);
+    setNote("");
+    const on = (tab === "goals" ? next.goals : next.accommodations).has(id);
+    setStarNote(
+      saveFavorites(next)
+        ? `${on ? "Saved" : "Removed"} "${title}" ${on ? "to" : "from"} your favorites.`
+        : `Could not keep "${title}" in your favorites; this browser would not save it.`,
+    );
+  };
   const clear = () => {
     setQuery("");
     setBand("");
     setArea("");
     setKind("");
     setCategory("");
+    setStarsOnly(false);
   };
   const role = getRole();
   const canAdd = !!role && can(role, "editGoal");
@@ -176,8 +203,16 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
           year's end date from {facts.name}'s record.
         </p>
       )}
+      <label className="check lib-starsonly">
+        <input
+          type="checkbox"
+          checked={starsOnly}
+          onChange={(e) => setStarsOnly(e.target.checked)}
+        />
+        Favorites only ({starSet.size})
+      </label>
       <p className="lib-note" role="status">
-        {note}
+        {note || starNote}
       </p>
       <p className="lib-count" role="status">
         {tab === "goals"
@@ -195,7 +230,16 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
       {tab === "goals" ? (
         <ul className="lib-list" aria-label="Goals">
           {shownGoals.map((g) => (
-            <li key={g.id}>
+            <li key={g.id} className="lib-item">
+              <button
+                type="button"
+                className="lib-star"
+                aria-pressed={stars.goals.has(g.id)}
+                aria-label={`Favorite: ${g.title}`}
+                onClick={() => toggleStar(g.id, g.title)}
+              >
+                {stars.goals.has(g.id) ? "★" : "☆"}
+              </button>
               <button type="button" aria-current={openId === g.id} onClick={() => setOpenId(g.id)}>
                 <strong>{g.title}</strong>
                 <span className="meta">
@@ -213,12 +257,27 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
               )}
             </li>
           ))}
-          {shownGoals.length === 0 && <li className="empty">No goals match.</li>}
+          {shownGoals.length === 0 && (
+            <li className="empty">
+              {starsOnly && !query && !band && !area
+                ? "No favorites yet. Tap a star to save a goal."
+                : "No goals match."}
+            </li>
+          )}
         </ul>
       ) : (
         <ul className="lib-list" aria-label="Accommodations">
           {shownAccs.map((a) => (
-            <li key={a.id}>
+            <li key={a.id} className="lib-item">
+              <button
+                type="button"
+                className="lib-star"
+                aria-pressed={stars.accommodations.has(a.id)}
+                aria-label={`Favorite: ${a.title}`}
+                onClick={() => toggleStar(a.id, a.title)}
+              >
+                {stars.accommodations.has(a.id) ? "★" : "☆"}
+              </button>
               <button type="button" aria-current={openId === a.id} onClick={() => setOpenId(a.id)}>
                 <strong>{a.title}</strong>
                 <span className="meta">
@@ -227,7 +286,13 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
               </button>
             </li>
           ))}
-          {shownAccs.length === 0 && <li className="empty">No accommodations match.</li>}
+          {shownAccs.length === 0 && (
+            <li className="empty">
+              {starsOnly && !query && !kind && !category
+                ? "No favorites yet. Tap a star to save an accommodation."
+                : "No accommodations match."}
+            </li>
+          )}
         </ul>
       )}
       {openGoal && (

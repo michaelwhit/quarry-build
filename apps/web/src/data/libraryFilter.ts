@@ -23,12 +23,16 @@ export interface GoalFilter {
   query: string;
   band: string;
   area: string;
+  /** When set, only these ids. */
+  only?: Set<string> | undefined;
 }
 
 export interface AccommodationFilter {
   query: string;
   kind: string;
   category: string;
+  /** When set, only these ids. */
+  only?: Set<string> | undefined;
 }
 
 const goalText = (g: GoalItem) =>
@@ -45,6 +49,7 @@ const goalText = (g: GoalItem) =>
 export const filterGoals = (all: GoalItem[], f: GoalFilter) =>
   all.filter(
     (g) =>
+      (!f.only || f.only.has(g.id)) &&
       (!f.band || g.grade_bands.some((b) => b === f.band)) &&
       (!f.area || g.area === f.area) &&
       matchesQuery(goalText(g), f.query),
@@ -53,6 +58,7 @@ export const filterGoals = (all: GoalItem[], f: GoalFilter) =>
 export const filterAccommodations = (all: AccommodationItem[], f: AccommodationFilter) =>
   all.filter(
     (a) =>
+      (!f.only || f.only.has(a.id)) &&
       (!f.kind || a.kind === f.kind) &&
       (!f.category || a.category === f.category) &&
       matchesQuery(`${a.title} ${a.description} ${a.category} ${a.frequency}`, f.query),
