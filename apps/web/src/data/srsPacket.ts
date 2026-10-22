@@ -1,6 +1,3 @@
-import { scrub, studentById } from "./district.ts";
-import { SLOTS, getPl } from "./presentLevels.ts";
-
 // "IEP for SRS" (practice data only). The teacher drafts the IEP here, then copies each section
 // into SRS by hand. Nothing is sent anywhere. The checklist keeps who marked a section pasted and
 // when, plus a fingerprint of the text; it never keeps the copied text itself.
@@ -50,56 +47,39 @@ export function fingerprint(parts: string[]): string {
   return h.toString(16).padStart(8, "0");
 }
 
-type Builder = (studentId: string) => PacketItem[];
+export type Builder = (studentId: string) => PacketItem[];
 
-const plaafp: Builder = (studentId) => {
-  const rec = getPl(studentId);
-  const s = studentById(studentId)?.student;
-  return SLOTS.map((def) => {
-    const slot = rec.slots[def.key];
-    if (!slot || slot.text.trim() === "")
-      return { id: def.key, label: def.label, blocked: "Nothing written yet." };
-    if (!slot.approved)
-      return { id: def.key, label: def.label, blocked: "Approve this in Present levels first." };
-    return { id: def.key, label: def.label, text: s ? scrub(slot.text, s) : slot.text };
-  });
-};
+/**
+ * A section is one file in src/data/srs/ that exports `section` (an id from SECTION_ORDER) and
+ * `items`. If its items depend on a store, it also exports `subscribe` and `version` so the page
+ * redraws. Adding a section means adding files, never editing a shared one. An edit form is a
+ * file in src/ui/srs/ (see SrsPacket.tsx).
+ */
+export interface SectionModule {
+  section: string;
+  items: Builder;
+  subscribe?: (l: () => void) => () => void;
+  version?: () => number;
+}
 
-const goals: Builder = (studentId) => {
-  const view = studentById(studentId);
-  if (!view) return [];
-  return view.goals.flatMap(({ goal, plan }, i) => {
-    const n = i + 1;
-    const unit = plan.unit ?? plan.type.replaceAll("_", " ");
-    return [
-      {
-        id: `${goal.id}.statement`,
-        label: `Goal ${n}: annual goal`,
-        text: scrub(goal.statement, view.student),
-      },
-      ...(goal.baseline.trim()
-        ? [
-            {
-              id: `${goal.id}.baseline`,
-              label: `Goal ${n}: baseline`,
-              text: scrub(goal.baseline, view.student),
-            },
-          ]
-        : []),
-      {
-        id: `${goal.id}.measure`,
-        label: `Goal ${n}: how progress is measured`,
-        text: `Target ${plan.target_value} ${unit}, recorded ${plan.frequency}.`,
-      },
-    ];
-  });
-};
+const MODULES = Object.values(import.meta.glob<SectionModule>("./srs/*.ts", { eager: true }));
+const BUILDERS = new Map<string, Builder>();
+for (const m of MODULES) {
+  if (!SECTION_ORDER.some((d) => d.id === m.section) || BUILDERS.has(m.section))
+    throw new Error(`Packet section "${m.section}" is unknown or registered twice`);
+  BUILDERS.set(m.section, m.items);
+}
 
-const BUILDERS: Record<string, Builder> = { plaafp, goals };
+/** Redraw when any section's store changes. */
+export function subscribeSections(l: () => void): () => void {
+  const offs = MODULES.map((m) => m.subscribe?.(l));
+  return () => offs.forEach((off) => off?.());
+}
+export const getSectionsVersion = () => MODULES.reduce((n, m) => n + (m.version?.() ?? 0), 0);
 
 export function buildPacket(studentId: string): PacketSection[] {
   return SECTION_ORDER.map((def) => {
-    const b = BUILDERS[def.id];
+    const b = BUILDERS.get(def.id);
     return { ...def, built: b !== undefined, items: b ? b(studentId) : [] };
   });
 }
