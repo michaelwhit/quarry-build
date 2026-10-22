@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   DATA_GAP_SCHOOL_DAYS,
   clearDue,
@@ -6,6 +6,7 @@ import {
   dueView,
   recordDueLoad,
   schoolDaysSince,
+  setSampleAnchor,
 } from "../src/data/due.ts";
 import { overdueList } from "../src/data/overdue.ts";
 import { setRole } from "../src/data/roles.ts";
@@ -13,7 +14,10 @@ import { setRole } from "../src/data/roles.ts";
 beforeEach(() => {
   setRole("sped_director");
   clearDue();
+  // Day one of the sample sessions: nothing is moved, so the dates below are fixed.
+  setSampleAnchor("2026-10-16");
 });
+afterEach(() => setSampleAnchor(null));
 
 const items = (v: ReturnType<typeof dueView>) =>
   v.managers.flatMap((m) => [...m.overdue, ...m.comingUp]);
@@ -87,6 +91,27 @@ describe("students who need data recorded", () => {
       expect(g.goalsWithoutData).toBeGreaterThan(0);
       expect(g.goalsWithoutData).toBeLessThanOrEqual(g.goalsTotal);
     }
+  });
+});
+
+describe("sample sessions moved forward for a demo", () => {
+  const gaps = (today: string, openedOn: string) =>
+    dueView(today, 180, openedOn).managers.flatMap((m) => m.needsData);
+
+  it("measures data to record from the moved sessions, so a demo day starts clear", () => {
+    // Opened Oct 30: the newest session moves to Thu Oct 29, two weeks later.
+    expect(gaps("2026-10-30", "2026-10-30")).toHaveLength(0);
+    expect(gaps("2026-10-30", "2026-10-16")).toHaveLength(12);
+    expect(gaps("2026-11-16", "2026-11-16")).toHaveLength(0);
+    for (const g of gaps("2026-11-09", "2026-10-30")) expect(g.lastRecorded).toMatch(/^2026-10-/);
+  });
+
+  it("still shows gaps when the practice date moves forward", () => {
+    // Last data Oct 29; the sixth school day without is Nov 6 (two goals: last Oct 27, Nov 4).
+    expect(gaps("2026-11-03", "2026-10-30")).toHaveLength(0);
+    expect(gaps("2026-11-04", "2026-10-30")).toHaveLength(2);
+    expect(gaps("2026-11-06", "2026-10-30")).toHaveLength(12);
+    expect(gaps("2026-11-06", "2026-10-30").map((g) => g.lastRecorded)).toContain("2026-10-29");
   });
 });
 

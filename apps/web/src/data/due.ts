@@ -10,7 +10,8 @@ import {
 } from "@synthetic/fixtures/demo-district.json";
 import { isSchoolDay, progressReportStatus } from "@synthetic/src/progress-reports.ts";
 import type { SchoolCalendar } from "@synthetic/src/types.ts";
-import { REPORTS, canSeeOverdue, currentState } from "./overdue.ts";
+import { freshened } from "./freshen.ts";
+import { REPORTS, canSeeOverdue, currentState, isoToday } from "./overdue.ts";
 import { getRole, subscribeRole } from "./roles.ts";
 
 // The director's "What's due" view: for each case manager, the reports and IEP dates that are
@@ -99,9 +100,18 @@ function holders(today: string): Map<string, string> {
   return held;
 }
 
-const lastPointByGoal = (): Map<string, string> => {
+// The sample loader moves the made-up sessions forward so the newest is recent (see freshen.ts).
+// Data to record uses the same moved sessions, measured from the day the app is opened, so this
+// screen and the student pages agree. Moving the practice date forward still shows gaps.
+let sampleAnchor: string | null = null;
+/** For tests: pin the day the sample sessions are moved up to; null goes back to today. */
+export const setSampleAnchor = (iso: string | null): void => {
+  sampleAnchor = iso;
+};
+
+const lastPointByGoal = (openedOn: string): Map<string, string> => {
   const last = new Map<string, string>();
-  for (const p of data_points) {
+  for (const p of freshened(data_points, openedOn)) {
     const day = p.observed_at.slice(0, 10);
     if (day > (last.get(p.goal_id) ?? "")) last.set(p.goal_id, day);
   }
@@ -109,7 +119,11 @@ const lastPointByGoal = (): Map<string, string> => {
 };
 
 /** Which reports and IEP dates are due, and whose data has gaps, as of `today`. */
-export function dueView(today: string, window: WindowDays = WINDOWS[0]): DueView {
+export function dueView(
+  today: string,
+  window: WindowDays = WINDOWS[0],
+  openedOn: string = sampleAnchor ?? isoToday(),
+): DueView {
   const held = holders(today);
   const until = addDays(today, window);
   const rows = new Map<string, CaseManagerDue>();
@@ -177,7 +191,7 @@ export function dueView(today: string, window: WindowDays = WINDOWS[0]): DueView
     }
   }
 
-  const last = lastPointByGoal();
+  const last = lastPointByGoal(openedOn);
   for (const iep of ieps) {
     const student = studentById.get(iep.student_id);
     const row = student && rowFor(student.id);
