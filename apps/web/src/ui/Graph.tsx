@@ -15,9 +15,19 @@ export function trendLine(series: SeriesPoint[]): { start: number; end: number }
   return { start: at(xs[0]!), end: at(xs[n - 1]!) };
 }
 
-const W = 640;
+// Drawn at roughly phone width so the labels stay readable when the picture is scaled to fit.
+const W = 360;
 const H = 220;
-const PAD = { l: 40, r: 56, t: 12, b: 26 };
+const PAD = { l: 34, r: 62, t: 14, b: 28 };
+
+/** Mean of the first three points, the same baseline the status uses. Needs two points to be worth a line. */
+export function baselineOf(series: SeriesPoint[]): number | undefined {
+  if (series.length < 2) return undefined;
+  const first = series.slice(0, 3);
+  return first.reduce((a, s) => a + s.value, 0) / first.length;
+}
+
+const round1 = (n: number) => Math.round(n * 10) / 10;
 
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
@@ -33,7 +43,8 @@ export function Graph({
   label: string;
   unit: string;
 }) {
-  const max = Math.max(target, ...series.map((s) => s.value)) * 1.1 || 1;
+  const baseline = baselineOf(series);
+  const max = Math.max(target, baseline ?? 0, ...series.map((s) => s.value)) * 1.1 || 1;
   const t0 = Date.parse(series[0]?.at ?? "");
   const t1 = Date.parse(series.at(-1)?.at ?? "") || t0 + 1;
   const x = (at: string) =>
@@ -44,6 +55,15 @@ export function Graph({
     .join(" ");
   const last = series.at(-1);
   const trend = trendLine(series);
+  const targetY = y(target);
+  // Keep the two right-hand labels from sitting on top of each other when the lines are close.
+  const baseLabelY = baseline === undefined ? 0 : y(baseline) + 4;
+  const baseLabelShift =
+    baseline !== undefined && Math.abs(baseLabelY - (targetY + 4)) < 13
+      ? baseLabelY >= targetY + 4
+        ? 13 - (baseLabelY - (targetY + 4))
+        : -(13 - (targetY + 4 - baseLabelY))
+      : 0;
   return (
     <>
       <svg
@@ -60,10 +80,23 @@ export function Graph({
         <text x={PAD.l - 6} y={y(max) + 12} textAnchor="end">
           {Math.round(max)}
         </text>
-        <line className="tgt" x1={PAD.l} x2={W - PAD.r} y1={y(target)} y2={y(target)} />
-        <text className="tgt-label" x={W - PAD.r + 6} y={y(target) + 4}>
-          goal {target}
+        <line className="tgt" x1={PAD.l} x2={W - PAD.r} y1={targetY} y2={targetY} />
+        <text className="tgt-label" x={W - PAD.r + 6} y={targetY + 4}>
+          goal {round1(target)}
         </text>
+        {baseline !== undefined && (
+          <>
+            <line className="base" x1={PAD.l} x2={W - PAD.r} y1={y(baseline)} y2={y(baseline)} />
+            <text className="base-label" x={W - PAD.r + 6} y={baseLabelY + baseLabelShift}>
+              start {round1(baseline)}
+            </text>
+          </>
+        )}
+        {series.length === 0 && (
+          <text className="empty-note" x={(PAD.l + W - PAD.r) / 2} y={H / 2} textAnchor="middle">
+            No sessions saved yet
+          </text>
+        )}
         {series.length > 0 && (
           <>
             {trend && (
@@ -76,15 +109,17 @@ export function Graph({
               />
             )}
             <path className="line" d={path} />
-            {series.map((s) => (
-              <circle key={s.at} className="dot" cx={x(s.at)} cy={y(s.value)} r={3} />
+            {series.map((s, i) => (
+              <circle key={`${s.at}-${i}`} className="dot" cx={x(s.at)} cy={y(s.value)} r={4} />
             ))}
-            <text x={PAD.l} y={H - 6}>
+            <text x={PAD.l} y={H - 8}>
               {fmtDate(series[0]!.at)}
             </text>
-            <text x={W - PAD.r} y={H - 6} textAnchor="end">
-              {fmtDate(last!.at)}
-            </text>
+            {series.length > 1 && (
+              <text x={W - PAD.r} y={H - 8} textAnchor="end">
+                {fmtDate(last!.at)}
+              </text>
+            )}
           </>
         )}
       </svg>
@@ -107,7 +142,19 @@ export function Graph({
           />
           Trend
         </span>
+        {baseline !== undefined && (
+          <span>
+            <i
+              className="sw"
+              style={{ borderTopColor: "var(--text-muted)", borderTopStyle: "dashed" }}
+            />
+            Start
+          </span>
+        )}
       </p>
+      {series.length > 0 && series.length < 3 && (
+        <p className="meta">The trend line appears after 3 sessions.</p>
+      )}
       <details>
         <summary>Data table</summary>
         <table>
@@ -118,8 +165,8 @@ export function Graph({
             </tr>
           </thead>
           <tbody>
-            {series.map((s) => (
-              <tr key={s.at}>
+            {series.map((s, i) => (
+              <tr key={`${s.at}-${i}`}>
                 <td>{fmtDate(s.at)}</td>
                 <td>{s.value}</td>
               </tr>

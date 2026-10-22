@@ -1,7 +1,7 @@
 import { setRole } from "../src/data/roles.ts";
 import { describe, expect, it } from "vitest";
 import { dueFor, progressFor, seriesFor, worstStatus } from "../src/data/derive.ts";
-import { trendLine } from "../src/ui/Graph.tsx";
+import { baselineOf, trendLine } from "../src/ui/Graph.tsx";
 import { dataTotals, goalCounts, students } from "../src/data/district.ts";
 import { loadSample } from "../src/data/workspace.ts";
 
@@ -96,5 +96,23 @@ describe("dueFor", () => {
   it("counts the calendar month for monthly goals", () => {
     expect(dueFor("monthly", [at(2026, 9, 2)], wed).due).toBe(false);
     expect(dueFor("monthly", [at(2026, 8, 30)], wed).due).toBe(true);
+  });
+});
+
+describe("baselineOf", () => {
+  const pt = (at: string, value: number) => ({ at, value });
+  it("needs two points", () => {
+    expect(baselineOf([])).toBeUndefined();
+    expect(baselineOf([pt("2026-09-01T00:00:00Z", 40)])).toBeUndefined();
+  });
+  it("is the mean of the first three points", () => {
+    const series = [
+      pt("2026-09-01T00:00:00Z", 30),
+      pt("2026-09-02T00:00:00Z", 40),
+      pt("2026-09-03T00:00:00Z", 50),
+      pt("2026-09-04T00:00:00Z", 90),
+    ];
+    expect(baselineOf(series)).toBe(40);
+    expect(baselineOf(series.slice(0, 2))).toBe(35);
   });
 });
