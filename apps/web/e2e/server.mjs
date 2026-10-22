@@ -1,15 +1,17 @@
 // Test-only static server for apps/web/dist. Like a static host it serves a folder's index.html
 // (so /tour/ is the tour) and answers 404 for anything missing; it sends the app's own
 // Content-Security-Policy so a policy violation shows up in the browser console during the tests.
-// Binds to loopback only. Usage: node e2e/server.mjs [port]
+// Binds to loopback only. Usage: node e2e/server.mjs [port] [folder] [api origin]. The sign-in build
+// (folder dist-signin) is served with the policy for the API origin it was built with.
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { CSP } from "../scripts/csp.mjs";
+import { cspFor } from "../scripts/csp.mjs";
 
-const root = fileURLToPath(new URL("../dist/", import.meta.url));
+const CSP = cspFor(process.argv[4] ?? "");
+const root = fileURLToPath(new URL(`../${process.argv[3] ?? "dist"}/`, import.meta.url));
 const TYPES = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",

@@ -12,7 +12,7 @@
     "test": "vitest run",
     "check:csp": "node scripts/check-csp.mjs",
     "check:bundle": "node scripts/check-public-bundle.mjs",
-    "test:e2e": "vite build && playwright test",
+    "test:e2e": "vite build && node e2e/build-signin.mjs && playwright test",
     "typecheck:e2e": "tsc -p e2e"
   },
   "dependencies": {
