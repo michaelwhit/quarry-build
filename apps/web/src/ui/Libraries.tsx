@@ -9,6 +9,7 @@ import {
   goals,
   kindLabel,
 } from "../data/library.ts";
+import { factsFor, fillFrom, fitsGrade, goalInput, oneTap } from "../data/libraryFill.ts";
 import { categoriesOf, filterAccommodations, filterGoals } from "../data/libraryFilter.ts";
 import {
   checks,
@@ -19,7 +20,6 @@ import {
   masteryLine,
   pieces,
   preview,
-  renderedText,
 } from "../data/libraryText.ts";
 import { can, getRole } from "../data/roles.ts";
 import { addAccommodation, addGoal, getWorkspace, removeAccommodation } from "../data/workspace.ts";
@@ -38,6 +38,8 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
   const [query, setQuery] = useState("");
   const [band, setBand] = useState("");
   const [area, setArea] = useState("");
+  const [forId, setForId] = useState("");
+  const [note, setNote] = useState("");
   const [kind, setKind] = useState("");
   const [category, setCategory] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
@@ -51,6 +53,29 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
     setArea("");
     setKind("");
     setCategory("");
+  };
+  const role = getRole();
+  const canAdd = !!role && can(role, "editGoal");
+  const facts = forId ? factsFor(forId) : null;
+  const today = todayIso();
+  const have = new Set(
+    (students.find((s) => s.student.id === forId)?.goals ?? []).map((g) => g.goal.statement),
+  );
+  const quick = (g: GoalItem) => {
+    if (!facts) return null;
+    const values = fillFrom(g, facts, today);
+    const input = oneTap(g, values, today) ? goalInput(g, values, facts.name) : null;
+    return input && !have.has(input.statement.trim()) ? { values, input } : null;
+  };
+  const addQuick = (g: GoalItem) => {
+    const q = quick(g);
+    if (!q || !facts) return;
+    try {
+      addGoal(forId, q.input);
+      setNote(`Added "${g.title}" to ${facts.name}.`);
+    } catch (err) {
+      setNote(err instanceof Error ? err.message : "Could not add the goal");
+    }
   };
   const openGoal = tab === "goals" ? goals.find((g) => g.id === openId) : undefined;
   const openAcc =
@@ -126,6 +151,34 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
           </>
         )}
       </div>
+      {tab === "goals" && canAdd && students.length > 0 && (
+        <div className="lib-filters">
+          <select
+            aria-label="Draft for a student"
+            value={forId}
+            onChange={(e) => {
+              setForId(e.target.value);
+              setNote("");
+            }}
+          >
+            <option value="">Draft for a student (optional)</option>
+            {students.map((s) => (
+              <option key={s.student.id} value={s.student.id}>
+                {displayName(s.student)}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+      {tab === "goals" && facts && (
+        <p className="meta">
+          Grade {facts.grade || "unknown"}. Goals marked "One tap" need nothing more than the plan
+          year's end date from {facts.name}'s record.
+        </p>
+      )}
+      <p className="lib-note" role="status">
+        {note}
+      </p>
       <p className="lib-count" role="status">
         {tab === "goals"
           ? `${shownGoals.length} of ${goals.length} goals`
@@ -149,7 +202,15 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
                   {goalAreaLabel[g.area]} · Grades {g.grade_bands.join(", ")}
                 </span>
                 <span className="meta">{preview(g.template_text)}</span>
+                {facts && fitsGrade(g, facts.grade) === false && (
+                  <span className="meta">Written for other grades</span>
+                )}
               </button>
+              {facts && canAdd && quick(g) && (
+                <button type="button" className="save" onClick={() => addQuick(g)}>
+                  One tap: add to {facts.name}
+                </button>
+              )}
             </li>
           ))}
           {shownGoals.length === 0 && <li className="empty">No goals match.</li>}
@@ -171,8 +232,9 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
       )}
       {openGoal && (
         <GoalDetail
-          key={openGoal.id}
+          key={`${openGoal.id}:${forId}`}
           goal={openGoal}
+          forStudentId={forId}
           onOpenAccommodation={(id) => {
             setTab("accommodations");
             setQuery("");
@@ -316,16 +378,23 @@ export function StudentAccommodations({ studentId }: { studentId: string }) {
 
 function GoalDetail({
   goal,
+  forStudentId,
   onOpenAccommodation,
 }: {
   goal: GoalItem;
+  forStudentId: string;
   onOpenAccommodation: (id: string) => void;
 }) {
-  const [values, setValues] = useState<Record<string, string>>(() => initialValues(goal));
-  const [studentId, setStudentId] = useState("");
+  const [values, setValues] = useState<Record<string, string>>(() => {
+    const f = forStudentId ? factsFor(forStudentId) : null;
+    return f ? fillFrom(goal, f, todayIso()) : initialValues(goal);
+  });
+  const [studentId, setStudentId] = useState(forStudentId);
   const [baseline, setBaseline] = useState("");
   const [message, setMessage] = useState("");
   const [planConfirmed, setPlanConfirmed] = useState(false);
+  const role = getRole();
+  const mayAdd = !!role && can(role, "editGoal");
   const student = students.find((s) => s.student.id === studentId)?.student;
   const studentName = student ? displayName(student) : null;
   const today = todayIso();
@@ -339,25 +408,9 @@ function GoalDetail({
   };
 
   const add = () => {
-    if (!student || !ready) return;
+    if (!student || !ready || !mayAdd) return;
     try {
-      const targetValue =
-        goal.target_value === "from_slot"
-          ? Number(values[goal.target_slot ?? ""] ?? "")
-          : goal.target_value;
-      addGoal(student.id, {
-        area: goal.area,
-        statement: renderedText(goal, values, studentName),
-        baseline,
-        criteria: masteryLine(goal.mastery, values),
-        type: goal.type,
-        unit: goal.unit,
-        targetValue,
-        trialsPerSession: goal.trials_per_session,
-        promptHierarchy: goal.prompt_hierarchy,
-        taskSteps: goal.task_steps,
-        frequency: "2x weekly",
-      });
+      addGoal(student.id, goalInput(goal, values, studentName, baseline));
       setMessage(`Added to ${studentName}.`);
       window.location.hash = `#/student/${student.id}`;
     } catch (err) {
@@ -469,10 +522,16 @@ function GoalDetail({
         ))}
       </ul>
       <div className="actions">
-        <button type="button" className="save" onClick={add} disabled={!ready || !student}>
+        <button
+          type="button"
+          className="save"
+          onClick={add}
+          disabled={!ready || !student || !mayAdd}
+        >
           Add to student's goals
         </button>
       </div>
+      {!mayAdd && <p className="meta">Your role can read the library but not add goals.</p>}
       {students.length === 0 && (
         <p className="meta">Add a made-up student on the caseload page first.</p>
       )}
