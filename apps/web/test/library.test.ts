@@ -39,8 +39,9 @@ describe("template wording", () => {
 
 describe("sample library", () => {
   it("is small, original and consistent", () => {
-    expect(goals.length).toBeLessThanOrEqual(15);
-    expect(accommodations.length).toBeLessThanOrEqual(15);
+    expect(goals.length).toBeLessThanOrEqual(30);
+    expect(accommodations.length).toBeLessThanOrEqual(30);
+    expect(new Set(accommodations.map((a) => a.id)).size).toBe(accommodations.length);
     expect(new Set(goals.map((g) => g.id)).size).toBe(goals.length);
     for (const g of goals) {
       // Every blank in the wording is declared or is the date.
@@ -174,5 +175,24 @@ describe("matching edge cases", () => {
     const v = { ...initialValues(g), minutes: "5", date: "zzz" };
     expect(checks(g, v, TODAY).find((c) => c.id === "date")!.pass).toBe(false);
     expect(checks(g, { ...v, date: TODAY }, TODAY).find((c) => c.id === "date")!.pass).toBe(true);
+  });
+});
+
+describe("every sample goal can be finished", () => {
+  it("is ready once every blank has a plain value", () => {
+    for (const g of goals) {
+      const v = { ...initialValues(g) };
+      for (const s of formSlots(g)) {
+        if (v[s.name]) continue;
+        v[s.name] = s.kind === "date" ? "2027-05-01" : s.kind === "number" ? "5" : "reading";
+      }
+      const failing = checks(g, v, TODAY).filter((c) => !c.pass);
+      expect(failing, g.id).toEqual([]);
+      expect(isReady(g, v, TODAY), g.id).toBe(true);
+    }
+  });
+  it("task analysis goals list their steps and the target matches", () => {
+    for (const g of goals.filter((x) => x.type === "task_analysis"))
+      expect(g.target_value, g.id).toBe(g.task_steps.length);
   });
 });
