@@ -1,5 +1,6 @@
 import type { GoalArea, MeasurementType } from "@synthetic/src/types.ts";
 import type { DraftTemplate, Mastery, Slot } from "./libraryText.ts";
+import { moreAccommodations, moreGoals } from "./libraryMore.ts";
 
 // A small sample library for the practice app. Every item is original, made-up wording written only
 // for practice. It has not been reviewed by a specialist and is not district content.
@@ -49,7 +50,7 @@ const m = (
 
 const dateSlot: Slot = { name: "date", kind: "date" };
 
-export const goals: GoalItem[] = [
+const coreGoals: GoalItem[] = [
   {
     id: "g-cvc",
     title: "Read short words by sounding them out",
@@ -392,7 +393,7 @@ export interface AccommodationItem {
   duration: string;
 }
 
-export const accommodations: AccommodationItem[] = [
+const coreAccommodations: AccommodationItem[] = [
   {
     id: "a-time",
     title: "Extra time on tasks",
@@ -497,6 +498,9 @@ export const accommodations: AccommodationItem[] = [
     duration: "For the duration of this plan",
   },
 ];
+
+export const goals: GoalItem[] = [...coreGoals, ...moreGoals];
+export const accommodations: AccommodationItem[] = [...coreAccommodations, ...moreAccommodations];
 
 export const goalAreaLabel: Record<string, string> = {
   reading: "Reading",
