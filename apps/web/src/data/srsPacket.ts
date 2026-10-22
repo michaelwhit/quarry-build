@@ -12,31 +12,32 @@ export interface PacketItem {
   pick?: string;
   /** Why the item cannot be pasted yet. */
   blocked?: string;
+  /** An extra way to copy the same content; marking a section pasted does not wait for it. */
+  optional?: boolean;
 }
 
 export interface PacketSection {
   id: string;
   title: string;
-  /** The NDE model IEP reference. */
-  nde: string;
   /** Where the content is written in GoalLine; absent when it is not built yet. */
   built: boolean;
   items: PacketItem[];
 }
 
-/** One place for the SRS order. A SPED director checks it against the SRS screens; a fix is a move in this list. */
-export const SECTION_ORDER: { id: string; title: string; nde: string }[] = [
-  { id: "student", title: "Student information and IEP type", nde: "007.03, C2" },
-  { id: "team", title: "IEP team and excusals", nde: "007.03" },
-  { id: "factors", title: "Special factors", nde: "007.07C" },
-  { id: "plaafp", title: "Present levels", nde: "007.07A1, B" },
-  { id: "transition", title: "Transition (age 14 and up)", nde: "Version 2" },
-  { id: "goals", title: "Annual goals", nde: "007.07A2 to A4" },
-  { id: "assessment", title: "Assessment participation", nde: "007.07A7" },
-  { id: "services", title: "Services", nde: "007.07A5" },
-  { id: "accommodations", title: "Accommodations and supplementary aids", nde: "007.07A8" },
-  { id: "esy", title: "Extended school year", nde: "007.07C5b" },
-  { id: "placement", title: "Placement considerations", nde: "007.07" },
+/** One place for the SRS order (from a finalized SRS print). A fix is a move in this list. */
+export const SECTION_ORDER: { id: string; title: string }[] = [
+  { id: "header", title: "Header and effective dates" },
+  { id: "attendance", title: "Meeting attendance" },
+  { id: "considerations", title: "Special considerations" },
+  { id: "plaafp", title: "Present level of academic achievement and functional performance" },
+  { id: "lre", title: "Least restrictive environment placement" },
+  { id: "health_pe", title: "Health and self-care; Physical Education" },
+  { id: "goals", title: "Goals" },
+  { id: "services", title: "Services and supports" },
+  { id: "transportation", title: "Transportation" },
+  { id: "alt_assessment", title: "Alternate assessment" },
+  { id: "esy", title: "Extended school year" },
+  { id: "pwn", title: "Prior Written Notice" },
 ];
 
 /** Small checksum for "did the text change since it was copied". Not security. */
@@ -212,7 +213,7 @@ export const canMark = (rec: PacketRecord, s: PacketSection) =>
   s.built &&
   s.items.length > 0 &&
   !s.items.some((i) => i.blocked) &&
-  s.items.every((i) => i.text === undefined || isCopied(rec, i));
+  s.items.every((i) => i.optional || i.text === undefined || isCopied(rec, i));
 
 export function setMarked(
   studentId: string,
