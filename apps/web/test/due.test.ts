@@ -1,3 +1,5 @@
+import { createElement } from "react";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   DATA_GAP_SCHOOL_DAYS,
@@ -8,8 +10,9 @@ import {
   schoolDaysSince,
   setSampleAnchor,
 } from "../src/data/due.ts";
-import { overdueList } from "../src/data/overdue.ts";
+import { overdueList, setPracticeDate } from "../src/data/overdue.ts";
 import { setRole } from "../src/data/roles.ts";
+import { Due } from "../src/ui/Due.tsx";
 
 beforeEach(() => {
   setRole("sped_director");
@@ -107,7 +110,8 @@ describe("sample sessions moved forward for a demo", () => {
   });
 
   it("still shows gaps when the practice date moves forward", () => {
-    // Last data Oct 29; the sixth school day without is Nov 6 (two goals: last Oct 27, Nov 4).
+    // Two goals last recorded Oct 27 reach six school days without data on Nov 4. The rest, last
+    // recorded Oct 29, reach it on Nov 6.
     expect(gaps("2026-11-03", "2026-10-30")).toHaveLength(0);
     expect(gaps("2026-11-04", "2026-10-30")).toHaveLength(2);
     expect(gaps("2026-11-06", "2026-10-30")).toHaveLength(12);
@@ -158,5 +162,31 @@ describe("what the view keeps", () => {
     expect(dueAuditRows).toHaveLength(1);
     setRole("case_manager");
     expect(dueAuditRows).toHaveLength(0);
+  });
+});
+
+describe("the page", () => {
+  const html = (date: string) => {
+    setPracticeDate(date);
+    return renderToString(createElement(Due)).replaceAll("<!-- -->", "");
+  };
+
+  it("shows one card per case manager with plain headings and counts", () => {
+    const page = html("2026-10-30");
+    expect(page).toContain("What&#x27;s due");
+    expect(page).toContain("6 overdue");
+    const managers = dueView("2026-10-30").managers;
+    expect(page.match(/<section class="card"/g)).toHaveLength(managers.length);
+    for (const m of managers) expect(page).toContain(m.caseManager);
+    expect(page).toContain("Data to record");
+    expect(page).toContain("last recorded Oct 15");
+  });
+
+  it("is read only: no button, export, print, share, send or AI words, and never late", () => {
+    const page = html("2026-10-30");
+    expect(page).not.toContain("<button");
+    expect(page.toLowerCase()).not.toMatch(
+      /\blate\b|\bbehind\b|export|print|share|email|send|\bai\b/,
+    );
   });
 });

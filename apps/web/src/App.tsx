@@ -23,6 +23,7 @@ import { safeDecode } from "./data/hash.ts";
 import { pageTitle } from "./data/title.ts";
 import { canSeeOverdue } from "./data/overdue.ts";
 import { AtAGlance, MyStudents } from "./ui/Glance.tsx";
+import { Due } from "./ui/Due.tsx";
 import { Overdue } from "./ui/Overdue.tsx";
 import { Evaluation } from "./ui/Evaluation.tsx";
 import { PresentLevels, canUsePresentLevels } from "./ui/PresentLevels.tsx";
@@ -349,6 +350,12 @@ export function App() {
       <MyStudents />
     ) : (
       <Today />
+    )
+  ) : hash === "#/due" ? (
+    canSeeOverdue(role) ? (
+      <Due />
+    ) : (
+      <NotAllowed />
     )
   ) : hash === "#/overdue" ? (
     canSeeOverdue(role) ? (
