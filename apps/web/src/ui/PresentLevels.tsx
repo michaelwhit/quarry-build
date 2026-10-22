@@ -69,7 +69,11 @@ function ScoreForm({
         <legend>{initial.measure ? "Edit score" : "Add a score"}</legend>
         <label>
           <span>Section</span>
-          <select value={s.source} onChange={(e) => set({ source: e.target.value as Source })}>
+          <select
+            autoFocus
+            value={s.source}
+            onChange={(e) => set({ source: e.target.value as Source })}
+          >
             {SOURCES.map((x) => (
               <option key={x.id} value={x.id}>
                 {x.label}
@@ -150,11 +154,13 @@ function ScoreForm({
             onChange={(e) => set({ testedOn: e.target.value })}
           />
         </label>
-        {problems.map((p) => (
-          <p className="form-error" key={p}>
-            {p}
-          </p>
-        ))}
+        <div aria-live="polite">
+          {problems.map((p) => (
+            <p className="form-error" key={p}>
+              {p}
+            </p>
+          ))}
+        </div>
         <div className="actions stack">
           <button
             type="button"
@@ -201,6 +207,7 @@ function StatementForm({
         <label>
           <span>Kind</span>
           <select
+            autoFocus
             value={s.kind}
             onChange={(e) => set({ kind: e.target.value as "strength" | "need" })}
           >
@@ -268,11 +275,13 @@ function StatementForm({
             ))}
           </fieldset>
         )}
-        {problems.map((p) => (
-          <p className="form-error" key={p}>
-            {p}
-          </p>
-        ))}
+        <div aria-live="polite">
+          {problems.map((p) => (
+            <p className="form-error" key={p}>
+              {p}
+            </p>
+          ))}
+        </div>
         <div className="actions stack">
           <button
             type="button"
@@ -302,6 +311,8 @@ export function PresentLevels({ studentId }: { studentId: string }) {
   const [form, setForm] = useState<{ score?: EvScore; statement?: EvStatement } | null>(null);
   const [busy, setBusy] = useState(false);
   const [notes, setNotes] = useState<Record<string, string[]>>({});
+  // Said aloud to screen-reader users; the buttons that cause these changes disappear or change.
+  const [said, setSaid] = useState("");
   const role = getRole();
   const s = studentById(studentId);
   if (!canUsePresentLevels(role))
@@ -328,6 +339,7 @@ export function PresentLevels({ studentId }: { studentId: string }) {
   const draftOne = async (key: string) => {
     const out = await draftSlot(getPl(studentId), key, first, rosterNames(), mockDrafter, ctx);
     setNotes((n) => ({ ...n, [key]: out }));
+    setSaid(`${SLOTS.find((x) => x.key === key)?.label ?? "Section"}: draft saved`);
   };
   const draftAll = async () => {
     setBusy(true);
@@ -338,6 +350,18 @@ export function PresentLevels({ studentId }: { studentId: string }) {
     }
   };
   const reqs = requiredContent(rec);
+  // A closed form or a removed row would drop keyboard focus to the top of the page.
+  const focusEvidence = () =>
+    queueMicrotask(() => document.getElementById("pl-evidence")?.focus({ preventScroll: true }));
+  const closeForm = () => {
+    setForm(null);
+    focusEvidence();
+  };
+  const removeAndSay = (id: string, text: string) => {
+    removeEvidence(getPl(studentId), id, ctx);
+    setSaid(text);
+    focusEvidence();
+  };
 
   return (
     <>
@@ -345,6 +369,9 @@ export function PresentLevels({ studentId }: { studentId: string }) {
         ← {displayName(s.student)}
       </a>
       <h2 className="page-title">Present levels</h2>
+      <p className="sr-only" role="status">
+        {said}
+      </p>
       <p className="form-warn" role="note">
         Practice only. Do not type real names or details. Use made-up text.
       </p>
@@ -355,7 +382,7 @@ export function PresentLevels({ studentId }: { studentId: string }) {
       </p>
 
       <section className="card" aria-labelledby="pl-evidence">
-        <h3 className="sec" id="pl-evidence">
+        <h3 className="sec" id="pl-evidence" tabIndex={-1}>
           1. Evidence you confirm
         </h3>
         <p className="meta">
@@ -382,10 +409,18 @@ export function PresentLevels({ studentId }: { studentId: string }) {
                 <span className="meta">Kept on file. Not used in drafts.</span>
               )}
               <span>
-                <button type="button" onClick={() => setForm({ score: x })}>
+                <button
+                  type="button"
+                  aria-label={`Edit score: ${x.measure}`}
+                  onClick={() => setForm({ score: x })}
+                >
                   Edit
                 </button>{" "}
-                <button type="button" onClick={() => removeEvidence(getPl(studentId), x.id, ctx)}>
+                <button
+                  type="button"
+                  aria-label={`Remove score: ${x.measure}`}
+                  onClick={() => removeAndSay(x.id, `Removed score: ${x.measure}`)}
+                >
                   Remove
                 </button>
               </span>
@@ -400,10 +435,20 @@ export function PresentLevels({ studentId }: { studentId: string }) {
               <span>{x.text}</span>
               {x.state === "draft" && <span className="form-error">Not confirmed yet.</span>}
               <span>
-                <button type="button" onClick={() => setForm({ statement: x })}>
+                <button
+                  type="button"
+                  aria-label={`Edit ${x.kind === "need" ? "need" : "strength"}: ${x.text}`}
+                  onClick={() => setForm({ statement: x })}
+                >
                   Edit
                 </button>{" "}
-                <button type="button" onClick={() => removeEvidence(getPl(studentId), x.id, ctx)}>
+                <button
+                  type="button"
+                  aria-label={`Remove ${x.kind === "need" ? "need" : "strength"}: ${x.text}`}
+                  onClick={() =>
+                    removeAndSay(x.id, `Removed ${x.kind === "need" ? "need" : "strength"}`)
+                  }
+                >
                   Remove
                 </button>
               </span>
@@ -416,7 +461,7 @@ export function PresentLevels({ studentId }: { studentId: string }) {
             initial={form.score}
             studentId={studentId}
             who={who}
-            onDone={() => setForm(null)}
+            onDone={closeForm}
           />
         ) : form?.statement ? (
           <StatementForm
@@ -425,7 +470,7 @@ export function PresentLevels({ studentId }: { studentId: string }) {
             scores={confirmedScores}
             studentId={studentId}
             who={who}
-            onDone={() => setForm(null)}
+            onDone={closeForm}
           />
         ) : (
           <div className="actions stack">
@@ -476,7 +521,7 @@ export function PresentLevels({ studentId }: { studentId: string }) {
           const red = problems.some((p) => p.severity === "red");
           const empty = def.ai && ev.scores.length === 0 && ev.statements.length === 0;
           return (
-            <section className="goal" key={def.key} aria-label={def.label}>
+            <section className="goal" key={def.key} aria-label={def.label} aria-busy={busy}>
               <h3>{def.label}</h3>
               <p className="meta">
                 {def.ai ? "Draft, you approve." : "You write this section."} ·{" "}
@@ -524,7 +569,13 @@ export function PresentLevels({ studentId }: { studentId: string }) {
                   </button>
                 )}
                 {slot?.approved ? (
-                  <button type="button" onClick={() => reopenSlot(getPl(studentId), def.key, ctx)}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      reopenSlot(getPl(studentId), def.key, ctx);
+                      setSaid(`${def.label}: open for editing`);
+                    }}
+                  >
                     Edit again
                   </button>
                 ) : (
@@ -532,7 +583,10 @@ export function PresentLevels({ studentId }: { studentId: string }) {
                     type="button"
                     className="save"
                     disabled={!slot || slot.text.trim() === "" || red}
-                    onClick={() => approveSlot(getPl(studentId), def.key, ctx, today())}
+                    onClick={() => {
+                      approveSlot(getPl(studentId), def.key, ctx, today());
+                      setSaid(`${def.label}: approved`);
+                    }}
                   >
                     Approve this section
                   </button>
