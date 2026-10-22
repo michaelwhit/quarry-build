@@ -206,6 +206,11 @@ function save() {
   }
 }
 
+/** The state of a report the teacher has worked on here, or undefined if none was started. */
+export function storedState(studentId: string, periodId: string): ReportState | undefined {
+  return records.get(`${studentId}|${periodId}`)?.state;
+}
+
 export function getRecord(studentId: string, periodId: string): ReportRecord {
   return (
     records.get(`${studentId}|${periodId}`) ?? {
