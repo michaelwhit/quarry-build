@@ -90,3 +90,35 @@
   margin: 0 0 8px;
   min-height: 1.2em;
 }
+.lib-item {
+  position: relative;
+  display: grid;
+  gap: 8px;
+}
+.lib-item > button[aria-current] {
+  padding-right: 56px;
+}
+.lib-list .lib-star {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  font-size: 1.4rem;
+  line-height: 1;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  color: var(--muted);
+}
+.lib-list .lib-star[aria-pressed="true"] {
+  color: var(--warn, #b7791f);
+}
+.lib-starsonly {
+  margin: 0 0 8px;
+}
