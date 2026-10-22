@@ -98,7 +98,7 @@ export const REPORTS: readonly SampleReport[] = buildReports();
  * A report worked on in the paste kit on this browser counts with the state the kit holds (the
  * kit's "Quarter 1" is the period id "q1"); otherwise the sample state stands.
  */
-const currentState = (r: SampleReport): ReportState => {
+export const currentState = (r: SampleReport): ReportState => {
   const n = /^Quarter (\d+)$/.exec(r.period)?.[1];
   return (n && storedState(r.studentId, `q${n}`)) || r.state;
 };
