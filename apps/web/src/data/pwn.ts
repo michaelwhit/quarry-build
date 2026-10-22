@@ -58,6 +58,8 @@ export interface PwnInput {
   evaluations: string[];
   /** Other factors the teacher wants in the notice, one line each. */
   otherFactors: string[];
+  /** The teacher's own one-line reasons for the proposed or stopped actions; nothing is invented. */
+  reasons?: string[];
   contact: { name: string; role: string; phone?: string };
 }
 
@@ -190,7 +192,9 @@ export function draftPwn(input: PwnInput): PwnDraft {
       ? ["No extended school year services at this time"]
       : []),
   ];
+  const teacherReasons = (input.reasons ?? []).map((r) => r.trim()).filter(Boolean);
   const why: string[] = [
+    ...teacherReasons,
     ...notNeeded.map((c) => `${c.label}: ${(c.reason ?? "").trim()}`),
     ...(input.esy.choice === "considered_not_needed"
       ? [`Extended school year: ${(input.esy.reason ?? "").trim()}`]
@@ -198,6 +202,12 @@ export function draftPwn(input: PwnInput): PwnDraft {
   ];
 
   const blockedWhy: string[] = [];
+  if (
+    why.length === 0 ||
+    (teacherReasons.length === 0 && (proposed.length > 0 || refused.length > 0))
+  ) {
+    blockedWhy.push("Add the team's reason for the action in your own words.");
+  }
   for (const c of notNeeded) {
     if (!(c.reason ?? "").trim())
       blockedWhy.push(`${c.label}: add the one-line reason it is not needed.`);
@@ -247,9 +257,7 @@ export function draftPwn(input: PwnInput): PwnDraft {
     {
       id: "why",
       label: BOX_LABEL.why,
-      text: why.length
-        ? bullets(why)
-        : "The team made these changes based on the student's present levels and goals.",
+      text: bullets(why),
       blocked: [...blockedWhy, ...considerationBlocked],
     },
     {
