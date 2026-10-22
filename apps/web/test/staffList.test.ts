@@ -1,7 +1,6 @@
-import { readFileSync } from "node:fs";
 import { createElement } from "react";
-import { renderToString } from "react-dom/server";
-import { beforeEach, describe, expect, it } from "vitest";
+import { renderToReadableStream, renderToString } from "react-dom/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Home } from "../src/ui/Home.tsx";
 import { AccessReview, StaffList } from "../src/ui/StaffList.tsx";
 import { can, setRole } from "../src/data/roles.ts";
@@ -117,11 +116,27 @@ describe("staff screens and access", () => {
     expect(renderToString(createElement(Home))).not.toContain("#/access-review");
   });
 
-  it("show no sign-up approval panel in the practice build, and gate it on the server address", () => {
-    const list = renderToString(createElement(StaffList));
-    expect(list).not.toContain("Invite a new staff member");
-    const src = readFileSync(new URL("../src/ui/StaffList.tsx", import.meta.url), "utf8");
-    expect(src).toMatch(/import\.meta\.env\.VITE_GOALLINE_API_ORIGIN\s*\?\s*lazy\(/);
+  it("shows the sign-up approval panel only in a build with a sign-in server address", async () => {
+    // The panel is chosen when the screen's module loads, so each build setting gets a fresh load.
+    const render = async (origin: string) => {
+      vi.stubEnv("VITE_GOALLINE_API_ORIGIN", origin);
+      vi.resetModules();
+      const { StaffList: Fresh } = await import("../src/ui/StaffList.tsx");
+      const stream = await renderToReadableStream(createElement(Fresh));
+      await stream.allReady;
+      return new Response(stream).text();
+    };
+    try {
+      const practice = await render("");
+      expect(practice).toContain("Staff and roles");
+      expect(practice).not.toContain("Invite a new staff member");
+      const served = await render("https://api.example.test");
+      expect(served).toContain("Staff and roles");
+      expect(served).toContain("Invite a new staff member");
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
   });
 
   it("render with the read-only note and the CSV button", () => {
