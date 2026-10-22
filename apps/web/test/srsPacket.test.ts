@@ -1,3 +1,4 @@
+import { PARENT_REPORTS, SCHEDULES, updateGoalExtras } from "../src/data/goalExtras.ts";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -58,6 +59,13 @@ describe("IEP for SRS", () => {
   });
 
   it("marking needs every item copied; a change unticks the section", () => {
+    for (const { goal } of students[0]!.goals)
+      updateGoalExtras(goal.id, (r) => ({
+        ...r,
+        schedule: SCHEDULES[0],
+        responsible: "Case manager",
+        parentReport: PARENT_REPORTS[0],
+      }));
     const g = section("goals");
     expect(canMark(getPacket(sid()), g)).toBe(false);
     for (const i of g.items) markCopied(sid(), i);
