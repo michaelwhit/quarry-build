@@ -94,6 +94,17 @@ describe("services and supports rows", () => {
     expect(canMark(getPacket(sid()), sec())).toBe(false);
   });
 
+  it("numbers labels within each kind", () => {
+    addServiceRow(sid(), good);
+    addServiceRow(sid(), { ...good, kind: "accommodation", title: "Extra time" });
+    addServiceRow(sid(), { ...good, kind: "accommodation", title: "Quiet space" });
+    const labels = sec().items.map((i) => i.label);
+    expect(labels).toContain("Special education service 1: service");
+    expect(labels).toContain("Accommodation 1: service");
+    expect(labels).toContain("Accommodation 2: service");
+    expect(labels.some((l) => l.startsWith("Accommodation 3"))).toBe(false);
+  });
+
   it("keeps no last name in copy text", () => {
     const last = students[0]!.student.last_name;
     addServiceRow(sid(), { ...good, title: `Reading with ${last}` });
