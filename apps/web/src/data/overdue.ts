@@ -10,6 +10,7 @@ import {
 } from "@synthetic/fixtures/demo-district.json";
 import { progressReportStatus, waitingLabel } from "@synthetic/src/progress-reports.ts";
 import type { ProgressReportState, SchoolCalendar } from "@synthetic/src/types.ts";
+import { storedState } from "./reports.ts";
 import { getRole, subscribeRole } from "./roles.ts";
 
 // The director's "Progress reports to file" view. Read only: it reads report states and says what
@@ -93,10 +94,21 @@ export interface OverdueList {
 
 export const REPORTS: readonly SampleReport[] = buildReports();
 
+/**
+ * A report worked on in the paste kit on this browser counts with the state the kit holds (the
+ * kit's "Quarter 1" is the period id "q1"); otherwise the sample state stands.
+ */
+const currentState = (r: SampleReport): ReportState => {
+  const n = /^Quarter (\d+)$/.exec(r.period)?.[1];
+  return (n && storedState(r.studentId, `q${n}`)) || r.state;
+};
+
 const waiting = (today: string): WaitingReport[] =>
-  REPORTS.filter(
-    (r) => progressReportStatus({ state: r.state, due_date: r.dueDate }, today, calendar).overdue,
-  ).map((r) => ({ ...r, words: waitingLabel(r.state) ?? "" }));
+  REPORTS.map((r) => ({ ...r, state: currentState(r) }))
+    .filter(
+      (r) => progressReportStatus({ state: r.state, due_date: r.dueDate }, today, calendar).overdue,
+    )
+    .map((r) => ({ ...r, words: waitingLabel(r.state) ?? "" }));
 
 /** How many reports are waiting past their due date, across every period (the Home number). */
 export const overdueCount = (today: string): number => waiting(today).length;

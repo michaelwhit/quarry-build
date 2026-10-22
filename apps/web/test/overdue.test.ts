@@ -15,6 +15,14 @@ import {
   viewDate,
 } from "../src/data/overdue.ts";
 import { ROLES, setRole } from "../src/data/roles.ts";
+import {
+  approve,
+  attest,
+  getRecord,
+  markCopied,
+  resetReportsForTests,
+  useReportStorage,
+} from "../src/data/reports.ts";
 import { Overdue, OverdueHomeLine, dueWords, sharedDueDate } from "../src/ui/Overdue.tsx";
 
 beforeEach(() => {
@@ -170,5 +178,36 @@ describe("what the view keeps", () => {
     setPracticeDate("2026-11-16");
     setRole(null);
     expect(viewDate()).not.toBe("2026-11-16");
+  });
+});
+
+describe("reports worked on in the paste kit", () => {
+  const ctx = { who: "Practice Director", hash: "abc12345" };
+  beforeEach(() => {
+    useReportStorage({ getItem: () => null, setItem: () => undefined });
+    resetReportsForTests();
+  });
+
+  it("leave the waiting list once attested, and show the kit's state while in progress", () => {
+    const today = "2026-10-30";
+    const before = overdueList(today);
+    const first = before.buildings[0]!.managers[0]!.reports[0]!;
+    const q = first.period.replace("Quarter ", "q");
+
+    approve(getRecord(first.studentId, q), [], ctx);
+    const approved = overdueList(today)
+      .buildings.flatMap((b) => b.managers.flatMap((m) => m.reports))
+      .find((r) => r.id === first.id);
+    expect(approved?.words).toBe("Approved, ready to copy");
+    expect(overdueCount(today)).toBe(before.total);
+
+    markCopied(getRecord(first.studentId, q), "g", 1, ["g"], "yesNo", ["yesNo"], ctx);
+    attest(getRecord(first.studentId, q), ctx);
+    expect(overdueCount(today)).toBe(before.total - 1);
+    expect(
+      overdueList(today)
+        .buildings.flatMap((b) => b.managers.flatMap((m) => m.reports))
+        .some((r) => r.id === first.id),
+    ).toBe(false);
   });
 });
