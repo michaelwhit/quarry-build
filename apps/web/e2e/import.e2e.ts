@@ -125,13 +125,13 @@ test.describe("CSV roster import", () => {
       .locator('input[type="file"]')
       .setInputFiles(csv("Kid,Family,Level\nAvery,Examplewood,3\n"));
     await expect(
-      page.getByText("Choose a column for first name, last name and grade."),
+      page.getByText(/^Choose a column for grade, and either a first and a last name column/),
     ).toBeVisible();
     await expect(page.getByRole("button", { name: "Add students" })).toHaveCount(0);
     const selects = page.locator("form select");
     await selects.nth(0).selectOption({ label: "Kid" });
     await selects.nth(1).selectOption({ label: "Family" });
-    await selects.nth(3).selectOption({ label: "Level" });
+    await selects.nth(4).selectOption({ label: "Level" });
     await expect(page.getByRole("status")).toContainText("1 to add");
   });
 

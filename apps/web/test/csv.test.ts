@@ -6,6 +6,8 @@ import {
   detectMapping,
   isComplete,
   normalizeGrade,
+  detectDelimiter,
+  splitFullName,
   parseCsv,
   planImport,
   readyRows,
@@ -122,5 +124,112 @@ describe("line numbers", () => {
       [],
     );
     expect(plan[0]!.line).toBe(2);
+  });
+});
+
+describe("flexible files", () => {
+  it("reads semicolon, tab and pipe separated files", () => {
+    for (const d of [";", "\t", "|"]) {
+      const t = table(
+        ["First", "Last", "Grade"].join(d) + "\n" + ["Ava", "Stone", "3"].join(d) + "\n",
+      );
+      expect(t.headers).toEqual(["First", "Last", "Grade"]);
+      expect(t.rows).toEqual([["Ava", "Stone", "3"]]);
+    }
+  });
+  it("keeps commas inside quotes when the separator is a semicolon", () => {
+    const t = table('Name;Grade\n"Stone, Ava";3\n');
+    expect(t.rows).toEqual([["Stone, Ava", "3"]]);
+  });
+  it("counts CRLF as one break, so a title line and blank lines do not hide the separator", () => {
+    for (const nl of ["\r\n", "\r", "\n"]) {
+      const text = ["Caseload report", "", "", "", "First;Last;Grade", "Ava;Stone;3", ""].join(nl);
+      expect(detectDelimiter(text)).toBe(";");
+      const tabbed = text.replaceAll(";", "\t");
+      const parsed = parseCsv(tabbed);
+      expect(parsed.ok && parsed.table.headers).toEqual(["First", "Last", "Grade"]);
+    }
+  });
+
+  it("is not fooled by a title line above the header", () => {
+    expect(detectDelimiter("Caseload report\nFirst;Last;Grade\nAva;Stone;3\n")).toBe(";");
+    expect(detectDelimiter("just one column\nAva\n")).toBe(",");
+  });
+  it("finds the header below a title and blank lines, with line numbers from the file", () => {
+    const t = table(
+      "Caseload report,\n,\n\nStudent First Name,Student Last Name,Grade Level\nAva,Stone,3\nBen,Reed,K\n",
+    );
+    expect(t.headers).toEqual(["Student First Name", "Student Last Name", "Grade Level"]);
+    expect(t.headerLine).toBe(4);
+    expect(t.lines).toEqual([5, 6]);
+    const plan = planImport(t, detectMapping(t.headers), []);
+    expect(plan.map((r) => [r.line, r.firstName, r.lastName, r.grade])).toEqual([
+      [5, "Ava", "Stone", "3"],
+      [6, "Ben", "Reed", "K"],
+    ]);
+  });
+  it("has no headerLine when the header is the first line", () => {
+    expect(table("First,Last,Grade\nA,B,3\n").headerLine).toBeUndefined();
+  });
+  it("recognises header names with spaces, punctuation and case", () => {
+    expect(
+      detectMapping(["STUDENT FIRST-NAME", "student_last_name", "Grade (Current)", "Nickname"]),
+    ).toEqual({
+      firstName: 0,
+      lastName: 1,
+      preferredName: 3,
+    });
+    expect(detectMapping(["Grade Level (Current)"])).toEqual({ grade: 0 });
+  });
+});
+
+describe("one full-name column", () => {
+  it("splits last-comma-first and first-last, and flags a single word", () => {
+    expect(splitFullName("Stone, Ava")).toEqual({ firstName: "Ava", lastName: "Stone" });
+    expect(splitFullName("  Ava   van der Berg ")).toEqual({
+      firstName: "Ava",
+      lastName: "van der Berg",
+    });
+    expect(splitFullName("Cher")).toEqual({ firstName: "Cher", lastName: "" });
+    expect(splitFullName("Stone,")).toEqual({ firstName: "", lastName: "Stone" });
+    expect(splitFullName("")).toEqual({ firstName: "", lastName: "" });
+  });
+  it("is used only when there are no separate first and last name columns", () => {
+    expect(detectMapping(["Student Name", "Grade"])).toEqual({ fullName: 0, grade: 1 });
+    expect(detectMapping(["Name", "First", "Last", "Grade"])).toEqual({
+      firstName: 1,
+      lastName: 2,
+      grade: 3,
+    });
+    expect(isComplete({ fullName: 0, grade: 1 })).toBe(true);
+    expect(isComplete({ fullName: 0 })).toBe(false);
+    expect(isComplete({ firstName: 0, grade: 1 })).toBe(false);
+  });
+  it("plans rows from a mixed full-name column", () => {
+    const plan = planFor('Student,Gr\n"Stone, Ava",03\nBen Reed,3rd grade\nCher,4\n');
+    expect(plan.map((r) => [r.firstName, r.lastName, r.grade, r.status.kind])).toEqual([
+      ["Ava", "Stone", "3", "ready"],
+      ["Ben", "Reed", "3", "ready"],
+      ["Cher", "", "4", "problem"],
+    ]);
+    expect(plan[2]?.status).toEqual({ kind: "problem", why: "No last name." });
+  });
+});
+
+describe("more grade wordings", () => {
+  it("accepts ordinal words, 'grade' before or after, and GR with no space", () => {
+    for (const [text, want] of [
+      ["Third", "3"],
+      ["third grade", "3"],
+      ["Grade: 3", "3"],
+      ["GR3", "3"],
+      ["Gr. 11", "11"],
+      ["twelfth", "12"],
+      ["3rd Grade", "3"],
+      ["Grade K", "K"],
+    ] as const)
+      expect(normalizeGrade(text), text).toBe(want);
+    for (const bad of ["Grade 13", "grade", "fifteenth", "green", "0"])
+      expect(normalizeGrade(bad), bad).toBeNull();
   });
 });
