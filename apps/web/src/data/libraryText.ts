@@ -21,7 +21,7 @@ export function segments(template: string): Segment[] {
         if (buffer) out.push({ kind: "text", text: buffer });
         buffer = "";
         out.push(
-          Number.isFinite(Number(name)) ? { kind: "number", text: name } : { kind: "slot", name },
+          /^\d+(\.\d+)?$/.test(name) ? { kind: "number", text: name } : { kind: "slot", name },
         );
         i = close + 1;
         continue;
@@ -113,7 +113,7 @@ export interface DraftValues {
   values: Record<string, string>;
 }
 
-/** The blanks the form shows: every one in the wording, in order, then any declared but unused. */
+/** The blanks the form shows: those in the wording, in order. A declared blank the wording never uses is left out. */
 export function formSlots(t: DraftTemplate): Slot[] {
   const declared = new Map(t.slots.map((s) => [s.name, s]));
   return slotNames(t.template_text).map(
@@ -209,8 +209,10 @@ const normalized = (s: string) =>
     .join(" ");
 
 /** True when the wording says "as needed" or a relative, which the rules do not allow. */
-export const vagueFrequency = (text: string) =>
-  VAGUE_FREQUENCIES.some((v) => normalized(text).includes(v));
+export const vagueFrequency = (text: string) => {
+  const padded = ` ${normalized(text)} `;
+  return VAGUE_FREQUENCIES.some((v) => padded.includes(` ${v} `));
+};
 
 /** `today` is yyyy-mm-dd, passed in so tests do not depend on the clock. */
 export function checks(t: DraftTemplate, values: Record<string, string>, today: string): Check[] {
@@ -266,18 +268,23 @@ export function checks(t: DraftTemplate, values: Record<string, string>, today: 
 
   const dateSlots = slots.filter((s) => s.kind === "date");
   const dates = dateSlots.map((s) => val(values, s.name)).filter(Boolean);
+  const badDate = dates.some((d) => !/^\d{4}-\d{2}-\d{2}$/.test(d));
   const past = dates.some((d) => d < today);
   out.push({
     id: "date",
     label: "Has a date to be met by",
-    pass: dates.length > 0 && !past,
-    fix: past ? "That date has already passed." : "Pick the date the goal should be met by.",
+    pass: dates.length > 0 && !past && !badDate,
+    fix: badDate
+      ? "Pick the date from the calendar."
+      : past
+        ? "That date has already passed."
+        : "Pick the date the goal should be met by.",
   });
 
   const freeText = slots
     .filter((s) => s.kind === "text")
     .map((s) => normalized(val(values, s.name)));
-  if (freeText.some((x) => VAGUE_FREQUENCIES.some((v) => x.includes(v))))
+  if (freeText.some((x) => vagueFrequency(x)))
     out.push({
       id: "frequency",
       label: "Says how often, with a number",
