@@ -20,8 +20,11 @@ const fmtDate = (d: string) =>
 export const items: Builder = (studentId) => {
   const s = studentById(studentId)?.student;
   const clean = (t: string) => (s ? scrub(t, s) : t).trim();
-  return getServices(studentId).rows.flatMap((r, i): PacketItem[] => {
-    const n = `${kindLabel(r.kind)} ${i + 1}`;
+  const seen = new Map<string, number>();
+  return getServices(studentId).rows.flatMap((r): PacketItem[] => {
+    const count = (seen.get(r.kind) ?? 0) + 1;
+    seen.set(r.kind, count);
+    const n = `${kindLabel(r.kind)} ${count}`;
     const problem = rowProblem(r);
     if (problem !== undefined)
       return [
