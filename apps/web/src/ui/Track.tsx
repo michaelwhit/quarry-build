@@ -14,6 +14,7 @@ import { DeleteButton } from "./Forms.tsx";
 import { Chip } from "./Chip.tsx";
 import { GoalPanel } from "./GoalPanel.tsx";
 import { Graph } from "./Graph.tsx";
+import { count, gradeWords, metaLine } from "../data/wording.ts";
 
 export function TrackPicker() {
   const [studentId, setStudentId] = useState<string | null>(null);
@@ -28,13 +29,14 @@ export function TrackPicker() {
           <button type="button" className="back" onClick={() => setStudentId(null)}>
             ← Students
           </button>
+          {s.goals.length === 0 && <p className="empty">No goals yet for this student.</p>}
           <ul className="pick">
             {s.goals.map((g) => (
               <li key={g.goal.id}>
                 <a className="pick-btn" href={`#/track/${s.student.id}/${g.goal.id}`}>
                   <strong style={{ textTransform: "capitalize" }}>{goalLabel(g.goal)}</strong>
                   <span>{g.goal.statement}</span>
-                  <span className="meta">{g.series.length} data points</span>
+                  <span className="meta">{count(g.series.length, "data point")}</span>
                 </a>
               </li>
             ))}
@@ -61,7 +63,7 @@ export function TrackPicker() {
               <button type="button" className="pick-btn" onClick={() => setStudentId(x.student.id)}>
                 <strong>{displayName(x.student)}</strong>
                 <span className="meta">
-                  Grade {x.student.grade} · {x.goals.length} goals
+                  {metaLine(gradeWords(x.student.grade), count(x.goals.length, "goal"))}
                 </span>
               </button>
             </li>
