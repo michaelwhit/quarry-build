@@ -1,4 +1,5 @@
 import { displayName, studentById, students } from "../data/district.ts";
+import { count, gradeWords, metaLine } from "../data/wording.ts";
 
 const words = (t: string) => t.replaceAll("_", " ");
 const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
@@ -21,8 +22,7 @@ export function MyStudents() {
                 <a className="pick-btn" href={`#/glance/${encodeURIComponent(s.student.id)}`}>
                   <strong>{displayName(s.student)}</strong>
                   <span className="meta">
-                    {s.student.grade ? `Grade ${s.student.grade} · ` : ""}
-                    {s.goals.length} goal{s.goals.length === 1 ? "" : "s"}
+                    {metaLine(gradeWords(s.student.grade), count(s.goals.length, "goal"))}
                   </span>
                   <span aria-hidden="true" className="chev">
                     ›
@@ -56,10 +56,11 @@ export function AtAGlance({ studentId }: { studentId: string }) {
       </a>
       <h2 className="page-title">{displayName(s.student)}</h2>
       <p className="meta">
-        {s.student.grade ? `Grade ${s.student.grade}. ` : ""}Read only. Ask the case manager if
-        something looks wrong.
+        {gradeWords(s.student.grade) ? `${gradeWords(s.student.grade)}. ` : ""}Read only. Ask the
+        case manager if something looks wrong.
       </p>
       <h3 className="sec">Goals</h3>
+      {s.goals.length === 0 && <p className="empty">No goals are shared with you yet.</p>}
       <ul className="pick">
         {s.goals.map((g) => (
           <li key={g.goal.id} className="card">
