@@ -157,3 +157,22 @@ describe("typed targets", () => {
       expect(crit({ ...base, minutes: bad }).pass).toBe(false);
   });
 });
+
+describe("matching edge cases", () => {
+  it("only a whole phrase counts as a vague frequency", () => {
+    expect(vagueFrequency("Daily, as needed.")).toBe(true);
+    expect(vagueFrequency("elif needed")).toBe(false);
+    expect(vagueFrequency("Twice a day, as needed by the teacher")).toBe(true);
+  });
+  it("only plain numbers in braces are shown as is", () => {
+    expect(segments("a {95} b")[1]).toEqual({ kind: "number", text: "95" });
+    expect(segments("a { } b").some((x) => x.kind === "number")).toBe(false);
+    expect(segments("a {1e3} b").some((x) => x.kind === "number")).toBe(false);
+  });
+  it("a date that is not yyyy-mm-dd does not pass", () => {
+    const g = goals.find((x) => x.id === "g-onTask")!;
+    const v = { ...initialValues(g), minutes: "5", date: "zzz" };
+    expect(checks(g, v, TODAY).find((c) => c.id === "date")!.pass).toBe(false);
+    expect(checks(g, { ...v, date: TODAY }, TODAY).find((c) => c.id === "date")!.pass).toBe(true);
+  });
+});
