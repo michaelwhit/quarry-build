@@ -24,10 +24,10 @@ export const sharedDueDate = (dates: string[]): string | undefined =>
 export function OverdueHomeLine() {
   const n = overdueList(viewDate()).total;
   return (
-    <a className="card numbers" href="#/overdue" aria-label="Open the progress reports to file">
+    <a className="card numbers" href="#/due" aria-label="Open what is due">
       <div className="name">{homeLine(viewDate())}</div>
       <div className="meta">
-        {n === 0 ? "Everything due so far is filed." : "Tap to see who to ask."}
+        {n === 0 ? "Everything due so far is filed." : "Tap to see what is due and who to ask."}
       </div>
     </a>
   );
