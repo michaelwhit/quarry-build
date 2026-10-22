@@ -116,7 +116,7 @@ describe("draftPwn", () => {
     i.rows[0]!.frequency = "as needed";
     i.rows[1]!.location = " ";
     i.considerations[0]!.reason = "";
-    delete i.esy.reason;
+    delete i.esy!.reason;
     const d = draftPwn(i);
     expect(d.blocked).toContain("Reading instruction: frequency needs a count or a condition.");
     expect(d.blocked).toContain("Speech therapy: location is missing.");
@@ -270,6 +270,16 @@ describe("why box with nothing to say", () => {
     const d = draftPwn(i);
     expect(d.blocked).toContain("Add the team's reason for the action in your own words.");
     expect(copyText(d, "why")).toBeNull();
+  });
+});
+
+describe("unanswered extended school year", () => {
+  it("blocks the refused box instead of assuming an answer", () => {
+    const i = base();
+    delete i.esy;
+    const d = draftPwn(i);
+    expect(d.blocked).toContain("Extended school year: choose not needed or needed.");
+    expect(copyText(d, "refused")).toBeNull();
   });
 });
 
