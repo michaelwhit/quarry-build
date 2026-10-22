@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { fakeApi, person, SIGNIN_URL, token, type Handler } from "./fakeApi.ts";
+import { fakeApi, openLanding, person, SIGNIN_URL, token, type Handler } from "./fakeApi.ts";
 import { header, watchErrors } from "./helpers.ts";
 
 // The real sign-in screens, in the build made with a sign-in server address. The server is
@@ -13,7 +13,7 @@ const ok: Record<string, Handler> = {
 };
 
 async function openSignIn(page: Page) {
-  await page.goto("/");
+  await openLanding(page);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Sign in", level: 2 })).toBeVisible();
 }
@@ -46,7 +46,8 @@ test.describe("password sign-in", () => {
     expect(calls.find((c) => c.path === "/v0/me")?.auth).toBe("Bearer test-access-token");
     await header(page).getByRole("button", { name: "Sign out" }).click();
     await expect(page.getByRole("heading", { name: "GoalLine", level: 2 })).toBeVisible();
-    expect(calls.some((c) => c.path === "/v0/auth/web/logout")).toBe(true);
+    // The page shows the landing screen first and tells the server a moment later.
+    await expect.poll(() => calls.some((c) => c.path === "/v0/auth/web/logout")).toBe(true);
     // Not the signed-out 401 the page expects on load: the page's own policy must allow every call.
     expect(
       errors.filter((e) => /Content Security Policy|pageerror|request failed/.test(e)),
