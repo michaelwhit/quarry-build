@@ -507,8 +507,8 @@ export function ImportStudents() {
         Practice only: use made-up names. Do not enter a real student.
       </p>
       <p className="meta">
-        Use a spreadsheet saved as CSV with one student per row and a header row. Nothing is added
-        until you confirm.
+        Use a spreadsheet saved as CSV (commas, semicolons or tabs) with one student per row and a
+        header row. Nothing is added until you confirm.
       </p>
       <div className="actions">
         <label className="btn file-btn">
@@ -532,6 +532,11 @@ export function ImportStudents() {
       )}
       {table && (
         <form className="form" onSubmit={(e) => e.preventDefault()}>
+          {table.headerLine !== undefined && (
+            <p className="meta">
+              The header row is on line {table.headerLine}. The lines above it were skipped.
+            </p>
+          )}
           <h4 className="sec">Which column is which</h4>
           {FIELDS.map((f) => (
             <label key={f.key}>
@@ -556,7 +561,10 @@ export function ImportStudents() {
             </label>
           ))}
           {!isComplete(mapping) && (
-            <p className="meta">Choose a column for first name, last name and grade.</p>
+            <p className="meta">
+              Choose a column for grade, and either a first and a last name column or one full-name
+              column.
+            </p>
           )}
         </form>
       )}

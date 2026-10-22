@@ -12,15 +12,60 @@ export interface CsvTable {
   rows: string[][];
   /** The line of the file where each row starts (the header is line 1), when known. */
   lines?: number[];
+  /** The line the header row was found on, when it is not the first line. */
+  headerLine?: number;
 }
 
 export type ParseResult = { ok: true; table: CsvTable } | { ok: false; message: string };
 
 const fail = (message: string): ParseResult => ({ ok: false, message });
 
-/** Reads comma-separated text: quoted cells, doubled quotes, line breaks in quotes, any line ending. */
+/** Lines read when guessing the separator, so a title line above the header does not hide it. */
+const DELIMITER_LINES = 5;
+
+const DELIMITERS = [",", ";", "\t", "|"] as const;
+
+/** The separator a spreadsheet used, found by counting on the first few lines outside quotes. Comma if unsure. */
+export function detectDelimiter(text: string): string {
+  const counts = new Map<string, number>();
+  let inQuotes = false;
+  let lines = 0;
+  let hasContent = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text.charAt(i);
+    if (ch === '"') {
+      inQuotes = !inQuotes;
+      hasContent = true;
+    } else if (!inQuotes && (ch === "\n" || ch === "\r")) {
+      // CRLF is one line break, and blank lines do not use up the sample.
+      if (ch === "\r" && text[i + 1] === "\n") i++;
+      if (hasContent && ++lines >= DELIMITER_LINES) break;
+      hasContent = false;
+    } else {
+      hasContent = true;
+      if (!inQuotes && (DELIMITERS as readonly string[]).includes(ch))
+        counts.set(ch, (counts.get(ch) ?? 0) + 1);
+    }
+  }
+  let best = ",";
+  let most = 0;
+  for (const d of DELIMITERS) {
+    const n = counts.get(d) ?? 0;
+    if (n > most) {
+      best = d;
+      most = n;
+    }
+  }
+  return best;
+}
+
+/** How many leading lines may be a report title or blank notes above the real header row. */
+const HEADER_SEARCH = 10;
+
+/** Reads delimited text: quoted cells, doubled quotes, line breaks in quotes, any line ending. */
 export function parseCsv(input: string): ParseResult {
   const text = input.charCodeAt(0) === 0xfeff ? input.slice(1) : input;
+  const delimiter = detectDelimiter(text);
   const records: string[][] = [];
   let row: string[] = [];
   let field = "";
@@ -70,7 +115,7 @@ export function parseCsv(input: string): ParseResult {
     } else if (ch === '"' && field === "" && !wasQuoted) {
       inQuotes = true;
       wasQuoted = true;
-    } else if (ch === ",") bad = endField();
+    } else if (ch === delimiter) bad = endField();
     else if (ch === "\n" || ch === "\r") {
       if (ch === "\r" && text[i + 1] === "\n") i++;
       line++;
@@ -85,17 +130,24 @@ export function parseCsv(input: string): ParseResult {
     const bad = endRow();
     if (bad) return fail(bad);
   }
-  const head = records[0];
-  if (!head) return fail("The file is empty.");
-  const headers = head.map((h) => h.trim());
-  const rows = records.slice(1).map((r) => headers.map((_, i) => (r[i] ?? "").trim()));
-  return { ok: true, table: { headers, rows, lines: starts.slice(1) } };
+  if (records.length === 0) return fail("The file is empty.");
+  const at = headerRowAt(records);
+  const headers = (records[at] as string[]).map((h) => h.trim());
+  const rows = records.slice(at + 1).map((r) => headers.map((_, i) => (r[i] ?? "").trim()));
+  const table: CsvTable = { headers, rows, lines: starts.slice(at + 1) };
+  if (at > 0) table.headerLine = starts[at] as number;
+  return { ok: true, table };
 }
 
-export type ImportField = "firstName" | "lastName" | "preferredName" | "grade";
+export type ImportField = "firstName" | "lastName" | "fullName" | "preferredName" | "grade";
 export const FIELDS: { key: ImportField; title: string; required: boolean }[] = [
   { key: "firstName", title: "First name", required: true },
   { key: "lastName", title: "Last name", required: true },
+  {
+    key: "fullName",
+    title: "Full name in one column (instead of first and last)",
+    required: false,
+  },
   { key: "preferredName", title: "Preferred name", required: false },
   { key: "grade", title: "Grade", required: true },
 ];
@@ -103,14 +155,64 @@ export const FIELDS: { key: ImportField; title: string; required: boolean }[] = 
 /** The column number for each field, or undefined when the file has no such column. */
 export type Mapping = Partial<Record<ImportField, number>>;
 
+// Header names are compared after dropping case, spaces and punctuation, so "Student First Name",
+// "student_first_name" and "STUDENT FIRST-NAME" are the same.
 const ALIASES: Record<ImportField, string[]> = {
-  firstName: ["firstname", "first", "givenname", "fname"],
-  lastName: ["lastname", "last", "surname", "familyname", "lname"],
-  preferredName: ["preferredname", "preferred", "nickname", "goesby"],
-  grade: ["grade", "gradelevel", "gr", "currentgrade"],
+  firstName: [
+    "firstname",
+    "first",
+    "givenname",
+    "given",
+    "fname",
+    "studentfirstname",
+    "studentfirst",
+    "legalfirstname",
+    "legalfirst",
+    "firstnamestudent",
+  ],
+  lastName: [
+    "lastname",
+    "last",
+    "surname",
+    "familyname",
+    "lname",
+    "studentlastname",
+    "studentlast",
+    "legallastname",
+    "legallast",
+    "lastnamestudent",
+  ],
+  fullName: [
+    "name",
+    "fullname",
+    "studentname",
+    "student",
+    "legalname",
+    "pupilname",
+    "studentfullname",
+  ],
+  preferredName: [
+    "preferredname",
+    "preferred",
+    "preferredfirstname",
+    "nickname",
+    "goesby",
+    "studentpreferredname",
+  ],
+  grade: [
+    "grade",
+    "gradelevel",
+    "gr",
+    "currentgrade",
+    "studentgrade",
+    "enrolledgrade",
+    "gradelvl",
+    "grd",
+    "gradelevelcurrent",
+  ],
 };
 
-const headerKey = (h: string) => h.toLowerCase().replace(/[ _-]/g, "");
+const headerKey = (h: string) => h.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
 
 /** Guesses which column is which from the header row. A column fills at most one field. */
 export function detectMapping(headers: string[]): Mapping {
@@ -118,6 +220,9 @@ export function detectMapping(headers: string[]): Mapping {
   const taken = new Set<number>();
   const mapping: Mapping = {};
   for (const { key } of FIELDS) {
+    // One "Name" column is only taken when the file has no separate first and last name columns.
+    if (key === "fullName" && (mapping.firstName !== undefined || mapping.lastName !== undefined))
+      continue;
     const at = keys.findIndex((k, i) => !taken.has(i) && ALIASES[key].includes(k));
     if (at >= 0) {
       mapping[key] = at;
@@ -127,15 +232,60 @@ export function detectMapping(headers: string[]): Mapping {
   return mapping;
 }
 
-export const isComplete = (m: Mapping) =>
-  FIELDS.filter((f) => f.required).every((f) => m[f.key] !== undefined);
+/** The first line that looks like a header (two or more known columns), within the first few lines. */
+function headerRowAt(records: string[][]): number {
+  for (let i = 0; i < Math.min(records.length, HEADER_SEARCH); i++) {
+    const found = Object.keys(detectMapping((records[i] as string[]).map((h) => h.trim()))).length;
+    if (found >= 2) return i;
+  }
+  return 0;
+}
 
-/** Turns what a spreadsheet says ("3rd", "Grade 03", "Kindergarten") into PK, K or 1 to 12. */
+/** Needs a grade and either a full-name column or both first and last name columns. */
+export const isComplete = (m: Mapping) =>
+  m.grade !== undefined &&
+  (m.fullName !== undefined || (m.firstName !== undefined && m.lastName !== undefined));
+
+/**
+ * Splits one name cell. "Stone, Ava" is last name first; "Ava Stone" is first name first, with
+ * everything after the first word as the last name ("Ava van der Berg"). One word has no last name.
+ */
+export function splitFullName(text: string): { firstName: string; lastName: string } {
+  const t = text.trim().replace(/\s+/g, " ");
+  const comma = t.indexOf(",");
+  if (comma >= 0)
+    return { lastName: t.slice(0, comma).trim(), firstName: t.slice(comma + 1).trim() };
+  const space = t.indexOf(" ");
+  if (space < 0) return { firstName: t, lastName: "" };
+  return { firstName: t.slice(0, space), lastName: t.slice(space + 1).trim() };
+}
+
+const GRADE_WORDS = [
+  "FIRST",
+  "SECOND",
+  "THIRD",
+  "FOURTH",
+  "FIFTH",
+  "SIXTH",
+  "SEVENTH",
+  "EIGHTH",
+  "NINTH",
+  "TENTH",
+  "ELEVENTH",
+  "TWELFTH",
+];
+
+/** Turns what a spreadsheet says ("3rd", "Grade 03", "Third grade", "Kindergarten") into PK, K or 1 to 12. */
 export function normalizeGrade(text: string): string | null {
-  let v = text.trim().toUpperCase();
-  v = v.replace(/^(GRADE |GR\. |GR )/, "").trim();
+  let v = text.trim().toUpperCase().replace(/\s+/g, " ");
+  v = v
+    .replace(/^(GRADE|GR)[ .:-]*/, "")
+    .replace(/ GRADE$/, "")
+    .trim();
   if (["PK", "PRE-K", "PREK", "PRESCHOOL", "PRE K"].includes(v)) return "PK";
   if (["K", "KG", "KINDERGARTEN"].includes(v)) return "K";
+  const word = GRADE_WORDS.indexOf(v);
+  if (word >= 0) return String(word + 1);
   v = v.replace(/(ST|ND|RD|TH)$/, "");
   if (!/^\d{1,2}$/.test(v)) return null;
   const n = Number(v);
@@ -176,8 +326,10 @@ export function planImport(
     return at === undefined ? "" : (row[at] ?? "");
   };
   return table.rows.map((row, i) => {
-    const firstName = cell(row, "firstName");
-    const lastName = cell(row, "lastName");
+    const useSeparate = mapping.firstName !== undefined && mapping.lastName !== undefined;
+    const split = useSeparate ? null : splitFullName(cell(row, "fullName"));
+    const firstName = split ? split.firstName : cell(row, "firstName");
+    const lastName = split ? split.lastName : cell(row, "lastName");
     const preferredName = cell(row, "preferredName");
     const gradeText = cell(row, "grade");
     const grade = normalizeGrade(gradeText);
