@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { signIn, tabBar, watchErrors } from "./helpers.ts";
+import { loadSamplesAsDirector, signIn, tabBar, watchErrors } from "./helpers.ts";
 
 test.describe("keyboard and screen-reader basics", () => {
   test("moving to another tab puts focus on that screen's heading and names the page", async ({
@@ -63,4 +63,41 @@ test.describe("desktop widths", () => {
       }
     });
   }
+});
+
+test.describe("present levels screen", () => {
+  test("focus, names and announcements work from the keyboard", async ({ page }) => {
+    const errors = watchErrors(page);
+    await loadSamplesAsDirector(page);
+    await signIn(page, "director");
+    await tabBar(page).getByRole("link", { name: "Caseload" }).click();
+    await page.locator('a[href^="#/student/"]').first().click();
+    await page
+      .getByRole("link", { name: /Present levels/ })
+      .first()
+      .click();
+    await expect(page.getByRole("heading", { level: 2, name: "Present levels" })).toBeVisible();
+
+    // Opening a form puts focus inside it; closing it puts focus back on the evidence section.
+    await page.getByRole("button", { name: "+ Add a need or strength" }).click();
+    await expect(page.getByLabel("Kind")).toBeFocused();
+    await page
+      .getByLabel("In your words, one sentence (do not type real names or details)")
+      .fill("Reads short sentences with help.");
+    await page.getByRole("button", { name: "This matches the report" }).click();
+    await expect(page.locator("#pl-evidence")).toBeFocused();
+
+    // Each row's buttons say which row they act on, and removing says so aloud.
+    const remove = page.getByRole("button", {
+      name: "Remove need: Reads short sentences with help.",
+    });
+    await expect(remove).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Edit need: Reads short sentences with help." }),
+    ).toBeVisible();
+    await remove.click();
+    await expect(page.getByRole("status").filter({ hasText: "Removed need" })).toHaveCount(1);
+    await expect(page.locator("#pl-evidence")).toBeFocused();
+    expect(errors).toEqual([]);
+  });
 });
