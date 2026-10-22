@@ -234,3 +234,13 @@ describe("printed label is compared as a whole label", () => {
     expect(await relabel("Average", "Maria scored 88.5, below average.")).toBe(false);
   });
 });
+
+describe("equivalents in a filled draft", () => {
+  it("never prints an age or grade equivalent, even for a guessed id", () => {
+    const s = addScore({ kind: "gradeEquivalent", value: "2.5", measure: "Equiv" });
+    const ev = slotEvidence(getPl(SID), READ);
+    const r = fill([{ template: `Read at {{value:${s.id}}}.`, cites: [] }], ev, "Maria");
+    expect(r.sentences).toEqual([]);
+    expect(r.dropped).toHaveLength(1);
+  });
+});
