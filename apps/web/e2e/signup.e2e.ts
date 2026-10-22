@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { fakeApi, person, SIGNIN_URL, token, type Handler } from "./fakeApi.ts";
+import { fakeApi, openLanding, person, SIGNIN_URL, token, type Handler } from "./fakeApi.ts";
 
 // Sign-up in the build made with a sign-in server address (server answered by the test). Nobody
 // types a password to sign up: the director's setup code is how they set one later.
@@ -19,7 +19,7 @@ const SCHOOLS = {
 };
 
 async function openSchoolSignup(page: Page) {
-  await page.goto("/");
+  await openLanding(page);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.getByRole("button", { name: "Sign up with my school" }).click();
   await expect(page.getByRole("heading", { name: "Sign up with my school" })).toBeVisible();
@@ -103,7 +103,7 @@ test.describe("sign up with my school", () => {
 
 test.describe("sign up with an invite code", () => {
   async function openInvite(page: Page) {
-    await page.goto("/");
+    await openLanding(page);
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
     await page.getByRole("button", { name: "I have an invite code" }).click();
   }

@@ -65,3 +65,14 @@ export async function fakeApi(page: Page, handlers: Record<string, Handler>): Pr
   });
   return calls;
 }
+
+/**
+ * Opens the landing page and waits until the page has heard back from the server about a live
+ * session. A click on "Sign in" before that answer arrives can be lost, which is not what these
+ * tests are about.
+ */
+export async function openLanding(page: Page) {
+  const checked = page.waitForResponse((r) => r.url().endsWith("/v0/auth/web/refresh"));
+  await page.goto("/");
+  await checked;
+}
