@@ -59,6 +59,7 @@ function base(): PwnInput {
     ],
     evaluations: ["Oral reading probe", "Math facts probe"],
     otherFactors: ["Family prefers morning services."],
+    reasons: ["Progress data show the student needs daily small-group reading practice."],
     contact: { name: "Pat Example", role: "Case manager", phone: "555-0100" },
   };
 }
@@ -238,6 +239,37 @@ describe("removed goals", () => {
     const i = base();
     i.goals = [{ area: " ", change: "removed" }];
     expect(draftPwn(i).blocked).toContain("A goal needs a short area label.");
+  });
+});
+
+describe("reasons", () => {
+  it("lists the teacher's reasons and never invents one", () => {
+    const d = draftPwn(base());
+    expect(d.boxes.find((b) => b.id === "why")!.text).toContain(
+      "daily small-group reading practice",
+    );
+  });
+
+  it("blocks the why box when an action has no reason", () => {
+    const i = base();
+    i.reasons = [" "];
+    const d = draftPwn(i);
+    expect(d.blocked).toContain("Add the team's reason for the action in your own words.");
+    expect(d.boxes.find((b) => b.id === "why")!.text).not.toContain("The team made");
+  });
+});
+
+describe("why box with nothing to say", () => {
+  it("is blocked, not an empty ready box, when there are no actions and no reasons", () => {
+    const i = base();
+    i.rows = [];
+    i.goals = [];
+    i.considerations = [];
+    i.esy = { choice: "needed" };
+    delete i.reasons;
+    const d = draftPwn(i);
+    expect(d.blocked).toContain("Add the team's reason for the action in your own words.");
+    expect(copyText(d, "why")).toBeNull();
   });
 });
 
