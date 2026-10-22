@@ -2,6 +2,7 @@ import { useState } from "react";
 import { dueFor } from "../data/derive.ts";
 import { type Action, can, getRole, isDelegateRole, roleById, setRole } from "../data/roles.ts";
 import { displayName, districtName, goalCounts, students } from "../data/district.ts";
+import { clearMyGoals } from "../data/myItems.ts";
 import { canSeeOverdue } from "../data/overdue.ts";
 import { OverdueHomeLine } from "./Overdue.tsx";
 import { ReportsDue } from "./ProgressReport.tsx";
@@ -288,7 +289,11 @@ export function More() {
           <div className="actions stack">
             {armed === "clear" ? (
               <>
-                <button type="button" className="save" onClick={() => (clearAll(), setArmed(null))}>
+                <button
+                  type="button"
+                  className="save"
+                  onClick={() => (clearAll(), clearMyGoals(), setArmed(null))}
+                >
                   Yes, clear practice data
                 </button>
                 <button type="button" onClick={() => setArmed(null)}>
@@ -334,7 +339,11 @@ export function More() {
             )}
             {armed === "clear" ? (
               <>
-                <button type="button" className="save" onClick={() => (clearAll(), setArmed(null))}>
+                <button
+                  type="button"
+                  className="save"
+                  onClick={() => (clearAll(), clearMyGoals(), setArmed(null))}
+                >
                   Yes, clear practice data
                 </button>
                 <button type="button" onClick={() => setArmed(null)}>

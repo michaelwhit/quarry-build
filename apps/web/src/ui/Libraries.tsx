@@ -22,8 +22,10 @@ import {
   pieces,
   preview,
 } from "../data/libraryText.ts";
+import { removeMyGoal, useMyGoals } from "../data/myItems.ts";
 import { can, getRole } from "../data/roles.ts";
 import { addAccommodation, addGoal, getWorkspace, removeAccommodation } from "../data/workspace.ts";
+import { DeleteButton } from "./Forms.tsx";
 import "./libraries.css";
 
 const todayIso = () => {
@@ -51,13 +53,19 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
     ),
   );
   const [starsOnly, setStarsOnly] = useState(false);
+  const [mineOnly, setMineOnly] = useState(false);
+  const mine = useMyGoals();
+  const allGoals = [...goals, ...mine];
 
   const starSet = tab === "goals" ? stars.goals : stars.accommodations;
-  const only = starsOnly ? starSet : undefined;
-  const shownGoals = filterGoals(goals, { query, band, area, only });
+  const only =
+    tab === "goals" && mineOnly ? new Set(mine.map((g) => g.id)) : starsOnly ? starSet : undefined;
+  const shownGoals = filterGoals(allGoals, { query, band, area, only });
   const shownAccs = filterAccommodations(accommodations, { query, kind, category, only });
   const filtering =
-    (tab === "goals" ? !!(query || band || area) : !!(query || kind || category)) || starsOnly;
+    (tab === "goals" ? !!(query || band || area) : !!(query || kind || category)) ||
+    starsOnly ||
+    (tab === "goals" && mineOnly);
   const toggleStar = (id: string, title: string) => {
     const next: Favorites =
       tab === "goals"
@@ -78,6 +86,7 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
     setKind("");
     setCategory("");
     setStarsOnly(false);
+    setMineOnly(false);
     setStatus("");
   };
   const role = getRole();
@@ -103,7 +112,7 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
       setStatus(err instanceof Error ? err.message : "Could not add the goal");
     }
   };
-  const openGoal = tab === "goals" ? goals.find((g) => g.id === openId) : undefined;
+  const openGoal = tab === "goals" ? allGoals.find((g) => g.id === openId) : undefined;
   const openAcc =
     tab === "accommodations" ? accommodations.find((a) => a.id === openId) : undefined;
 
@@ -211,12 +220,22 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
         />
         Favorites only ({starSet.size})
       </label>
+      {tab === "goals" && (
+        <label className="check lib-starsonly">
+          <input
+            type="checkbox"
+            checked={mineOnly}
+            onChange={(e) => setMineOnly(e.target.checked)}
+          />
+          My items only ({mine.length})
+        </label>
+      )}
       <p className="lib-note" role="status">
         {status}
       </p>
       <p className="lib-count" role="status">
         {tab === "goals"
-          ? `${shownGoals.length} of ${goals.length} goals`
+          ? `${shownGoals.length} of ${allGoals.length} goals`
           : `${shownAccs.length} of ${accommodations.length} accommodations`}
         {filtering && (
           <>
@@ -231,19 +250,23 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
         <ul className="lib-list" aria-label="Goals">
           {shownGoals.map((g) => (
             <li key={g.id} className="lib-item">
-              <button
-                type="button"
-                className="lib-star"
-                aria-pressed={stars.goals.has(g.id)}
-                aria-label={`Favorite: ${g.title}`}
-                onClick={() => toggleStar(g.id, g.title)}
-              >
-                {stars.goals.has(g.id) ? "★" : "☆"}
-              </button>
+              {!g.id.startsWith("my-") && (
+                <button
+                  type="button"
+                  className="lib-star"
+                  aria-pressed={stars.goals.has(g.id)}
+                  aria-label={`Favorite: ${g.title}`}
+                  onClick={() => toggleStar(g.id, g.title)}
+                >
+                  {stars.goals.has(g.id) ? "★" : "☆"}
+                </button>
+              )}
               <button type="button" aria-current={openId === g.id} onClick={() => setOpenId(g.id)}>
                 <strong>{g.title}</strong>
                 <span className="meta">
-                  {goalAreaLabel[g.area]} · Grades {g.grade_bands.join(", ")}
+                  {g.id.startsWith("my-") ? "My item · " : ""}
+                  {goalAreaLabel[g.area]}
+                  {g.grade_bands.length > 0 ? ` · Grades ${g.grade_bands.join(", ")}` : ""}
                 </span>
                 <span className="meta">{preview(g.template_text)}</span>
                 {facts && fitsGrade(g, facts.grade) === false && (
@@ -259,9 +282,11 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
           ))}
           {shownGoals.length === 0 && (
             <li className="empty">
-              {starsOnly && !query && !band && !area
-                ? "No favorites yet. Tap a star to save a goal."
-                : "No goals match."}
+              {mineOnly && !query && !band && !area
+                ? 'Nothing in My items yet. When you add a goal, tick "Also add this wording to my goal library".'
+                : starsOnly && !query && !band && !area
+                  ? "No favorites yet. Tap a star to save a goal."
+                  : "No goals match."}
             </li>
           )}
         </ul>
@@ -304,6 +329,17 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
             setTab("accommodations");
             setQuery("");
             setOpenId(id);
+          }}
+        />
+      )}
+      {openGoal?.id.startsWith("my-") && (
+        <DeleteButton
+          label="Remove from My items"
+          ask="Yes, remove it from My items"
+          onDelete={() => {
+            removeMyGoal(openGoal.id);
+            setOpenId(null);
+            setStatus(`Removed "${openGoal.title}" from My items.`);
           }}
         />
       )}
