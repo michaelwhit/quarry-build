@@ -15,7 +15,7 @@ import {
   viewDate,
 } from "../src/data/overdue.ts";
 import { ROLES, setRole } from "../src/data/roles.ts";
-import { Overdue, OverdueHomeLine } from "../src/ui/Overdue.tsx";
+import { Overdue, OverdueHomeLine, dueWords, sharedDueDate } from "../src/ui/Overdue.tsx";
 
 beforeEach(() => {
   setRole("sped_director");
@@ -122,6 +122,21 @@ describe("the page", () => {
     );
     expect(html).not.toContain("<button");
     expect(html.toLowerCase()).not.toMatch(/\blate\b|export|print|share|email|send|\bai\b/);
+  });
+
+  it("names the due date in the summary only when every waiting report shares it", () => {
+    setPracticeDate("2026-10-30");
+    const html = renderToString(createElement(Overdue)).replaceAll("<!-- -->", "");
+    expect(html).toContain("6 waiting past their due date · Quarter 1 report, due Oct 23");
+    expect(sharedDueDate(["2026-10-23", "2026-10-23"])).toBe("2026-10-23");
+    expect(sharedDueDate(["2026-10-23", "2026-10-30"])).toBeUndefined();
+    expect(sharedDueDate([])).toBeUndefined();
+  });
+
+  it("writes dates from the text, so the day never moves", () => {
+    expect(dueWords("2026-10-23")).toBe("Oct 23");
+    expect(dueWords("2027-01-05")).toBe("Jan 5");
+    expect(dueWords("2026-12-31")).toBe("Dec 31");
   });
 
   it("shows the empty wording when nothing is waiting", () => {

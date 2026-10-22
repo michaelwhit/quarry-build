@@ -8,12 +8,17 @@ import {
   viewDate,
 } from "../data/overdue.ts";
 
-const dueWords = (iso: string): string =>
-  new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  });
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** "Oct 26" from "2026-10-26", read from the text so no time zone can move the day. */
+export const dueWords = (iso: string): string => {
+  const [, month, day] = iso.split("-").map(Number);
+  return `${MONTHS[(month ?? 1) - 1] ?? ""} ${day}`.trim();
+};
+
+/** The one due date every waiting report shares, or undefined when they differ (or none wait). */
+export const sharedDueDate = (dates: string[]): string | undefined =>
+  dates.length > 0 && dates.every((d) => d === dates[0]) ? dates[0] : undefined;
 
 /** The director's Home line; opens the list. Zero is shown calmly, not hidden. */
 export function OverdueHomeLine() {
@@ -39,7 +44,9 @@ export function Overdue() {
     recordListLoad(list);
   }, [list]);
   const label = all.periods.find((p) => p.id === period)?.label;
-  const due = list.buildings[0]?.managers[0]?.reports[0]?.dueDate;
+  const due = sharedDueDate(
+    list.buildings.flatMap((b) => b.managers.flatMap((m) => m.reports.map((r) => r.dueDate))),
+  );
   return (
     <>
       <a className="btn" href="#/">
@@ -52,7 +59,7 @@ export function Overdue() {
       ) : (
         <p className="name">
           {list.total} waiting past their due date
-          {label && due ? ` · ${label} report, due ${dueWords(due)}` : ""}
+          {label ? ` · ${label} report${due ? `, due ${dueWords(due)}` : ""}` : ""}
         </p>
       )}
       <div className="card">
