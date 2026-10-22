@@ -5,7 +5,13 @@ import { displayName, districtName, goalCounts, students } from "../data/distric
 import { canSeeOverdue } from "../data/overdue.ts";
 import { OverdueHomeLine } from "./Overdue.tsx";
 import { ReportsDue } from "./ProgressReport.tsx";
-import { clearAll, exportText, getWorkspace, importText, loadSample } from "../data/workspace.ts";
+import {
+  clearAll,
+  exportText,
+  getWorkspace,
+  importText,
+  loadSampleAsOf,
+} from "../data/workspace.ts";
 
 interface Tile {
   title: string;
@@ -94,7 +100,7 @@ export function Home() {
               Add a student
             </a>
             {can(getRole(), "manageData") && (
-              <button type="button" onClick={loadSample}>
+              <button type="button" onClick={() => loadSampleAsOf()}>
                 Load sample students
               </button>
             )}
@@ -310,7 +316,7 @@ export function More() {
                 <button
                   type="button"
                   className="save"
-                  onClick={() => (loadSample(), setArmed(null))}
+                  onClick={() => (loadSampleAsOf(), setArmed(null))}
                 >
                   Replace with sample students
                 </button>
@@ -319,7 +325,10 @@ export function More() {
                 </button>
               </>
             ) : (
-              <button type="button" onClick={() => (hasData ? setArmed("sample") : loadSample())}>
+              <button
+                type="button"
+                onClick={() => (hasData ? setArmed("sample") : loadSampleAsOf())}
+              >
                 Load sample students
               </button>
             )}

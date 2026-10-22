@@ -6,6 +6,7 @@ import {
   students as sampleStudents,
   synthetic,
 } from "@synthetic/fixtures/demo-district.json";
+import { freshened } from "./freshen.ts";
 import type {
   DataPoint,
   Goal,
@@ -74,7 +75,7 @@ export const emptyWorkspace = (): Workspace => ({
 });
 
 /** The sample students, with a few served and delegated so every practice role has something. */
-const sampleWorkspace = (): Workspace => {
+const sampleWorkspace = (today?: string): Workspace => {
   const students = sampleDistrict.students;
   const firstGoalOf = (studentId: string) => {
     const iep = sampleDistrict.ieps.find((i) => i.student_id === studentId);
@@ -87,7 +88,7 @@ const sampleWorkspace = (): Workspace => {
     ieps: sampleDistrict.ieps,
     goals: sampleDistrict.goals,
     plans: sampleDistrict.measurement_plans,
-    points: sampleDistrict.data_points,
+    points: today ? freshened(sampleDistrict.data_points, today) : sampleDistrict.data_points,
     accommodations: [],
     served: students.slice(0, 5).map((s) => s.id),
     delegated: students
@@ -413,6 +414,16 @@ export function addPoint(goalId: string, value: number, note: string) {
 
 export function loadSample() {
   commit(sampleWorkspace());
+}
+
+const localToday = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+/** The sample students with their sessions moved forward so the newest is recent, for a demo. */
+export function loadSampleAsOf(today: string = localToday()) {
+  commit(sampleWorkspace(today));
 }
 
 export function clearAll() {
