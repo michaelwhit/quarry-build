@@ -182,4 +182,83 @@ describe("public tour page", () => {
     expect(attrs).toMatch(/rel="noopener noreferrer"/);
     expect(html).not.toMatch(/href="\.\.\/[?#]/);
   });
+
+  describe("arrow keys", () => {
+    type Handler = (e: Record<string, unknown>) => void;
+
+    /** Runs tour.js against a stand-in page with three screens and returns a way to press keys. */
+    function page() {
+      const handlers: Record<string, Handler> = {};
+      const attrs: Record<string, string> = { "data-device": "computer" };
+      const el = (extra: Record<string, unknown> = {}) => ({
+        hidden: true,
+        disabled: false,
+        textContent: "",
+        value: "",
+        addEventListener() {},
+        querySelectorAll: () => [],
+        querySelector: () => null,
+        classList: { toggle() {} },
+        ...extra,
+      });
+      const count = el();
+      const byId: Record<string, unknown> = {
+        count,
+        back: el(),
+        next: el(),
+        device: el({ parentNode: el() }),
+      };
+      const doc = {
+        documentElement: {
+          getAttribute: (k: string) => attrs[k] ?? null,
+          setAttribute: (k: string, v: string) => (attrs[k] = v),
+        },
+        querySelectorAll: (q: string) => (q === ".panel" ? [el(), el(), el()] : []),
+        querySelector: () => el(),
+        getElementById: (id: string) => byId[id],
+        addEventListener: (type: string, h: Handler) => (handlers[type] = h),
+      };
+      new Function("document", read("tour.js"))(doc);
+      return {
+        shown: () => count.textContent,
+        press: (key: string, extra: Record<string, unknown> = {}) =>
+          handlers.keydown?.({
+            key,
+            defaultPrevented: false,
+            target: { tagName: "BODY" },
+            ...extra,
+          }),
+      };
+    }
+
+    it("move between screens from the page", () => {
+      const t = page();
+      expect(t.shown()).toBe("1 of 3");
+      t.press("ArrowRight");
+      expect(t.shown()).toBe("2 of 3");
+      t.press("ArrowLeft");
+      expect(t.shown()).toBe("1 of 3");
+    });
+
+    it("leave the device list and typed-in fields alone", () => {
+      const t = page();
+      for (const tagName of ["SELECT", "INPUT", "TEXTAREA"])
+        t.press("ArrowRight", { target: { tagName } });
+      t.press("ArrowRight", { target: { tagName: "DIV", isContentEditable: true } });
+      expect(t.shown()).toBe("1 of 3");
+    });
+
+    it("leave browser shortcuts and handled keys alone", () => {
+      const t = page();
+      for (const extra of [
+        { altKey: true },
+        { ctrlKey: true },
+        { metaKey: true },
+        { shiftKey: true },
+        { defaultPrevented: true },
+      ])
+        t.press("ArrowRight", extra);
+      expect(t.shown()).toBe("1 of 3");
+    });
+  });
 });

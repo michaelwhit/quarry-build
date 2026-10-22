@@ -75,7 +75,17 @@
       show(i + 1);
     });
   });
+  // The arrow keys belong to the device list and to anything being typed in; browser shortcuts such
+  // as Alt+Left are left alone too.
+  function keepsKeys(t) {
+    var tag = t && t.tagName;
+    return (
+      tag === "SELECT" || tag === "INPUT" || tag === "TEXTAREA" || !!(t && t.isContentEditable)
+    );
+  }
   document.addEventListener("keydown", function (e) {
+    if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    if (keepsKeys(e.target)) return;
     if (e.key === "ArrowRight") show(i + 1);
     if (e.key === "ArrowLeft") show(i - 1);
   });
