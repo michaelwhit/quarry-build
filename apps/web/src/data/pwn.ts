@@ -52,7 +52,8 @@ export interface PwnInput {
   rows: ServiceRowInput[];
   goals: GoalInput[];
   considerations: ConsiderationInput[];
-  esy: { choice: ConsiderationChoice; reason?: string };
+  /** Absent until the team answers the extended school year question; the notice is then blocked. */
+  esy?: { choice: ConsiderationChoice; reason?: string };
   alternatives: AlternativeInput[];
   /** Instrument names from confirmed evidence rows (names only, never scores). */
   evaluations: string[];
@@ -188,7 +189,7 @@ export function draftPwn(input: PwnInput): PwnDraft {
     ...removed.map((r) => `Stop ${r.title} (${KIND_LABEL[r.kind]})`),
     ...goalsGone.map((g) => `Stop the annual goal: ${g.area}`),
     ...notNeeded.map((c) => `No ${c.label.toLowerCase()} supports at this time`),
-    ...(input.esy.choice === "considered_not_needed"
+    ...(input.esy?.choice === "considered_not_needed"
       ? ["No extended school year services at this time"]
       : []),
   ];
@@ -196,8 +197,8 @@ export function draftPwn(input: PwnInput): PwnDraft {
   const why: string[] = [
     ...teacherReasons,
     ...notNeeded.map((c) => `${c.label}: ${(c.reason ?? "").trim()}`),
-    ...(input.esy.choice === "considered_not_needed"
-      ? [`Extended school year: ${(input.esy.reason ?? "").trim()}`]
+    ...(input.esy?.choice === "considered_not_needed"
+      ? [`Extended school year: ${(input.esy?.reason ?? "").trim()}`]
       : []),
   ];
 
@@ -212,7 +213,7 @@ export function draftPwn(input: PwnInput): PwnDraft {
     if (!(c.reason ?? "").trim())
       blockedWhy.push(`${c.label}: add the one-line reason it is not needed.`);
   }
-  if (input.esy.choice === "considered_not_needed" && !(input.esy.reason ?? "").trim()) {
+  if (input.esy?.choice === "considered_not_needed" && !(input.esy?.reason ?? "").trim()) {
     blockedWhy.push("Extended school year: add the data-based reason it is not needed.");
   }
 
@@ -252,7 +253,7 @@ export function draftPwn(input: PwnInput): PwnDraft {
       id: "refused",
       label: BOX_LABEL.refused,
       text: refused.length ? bullets(refused) : "No action is refused.",
-      blocked: [],
+      blocked: input.esy ? [] : ["Extended school year: choose not needed or needed."],
     },
     {
       id: "why",
