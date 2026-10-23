@@ -185,3 +185,58 @@ export function isStale(
   if (since === null) return false;
   return schoolDaysSince(since, asOf, cal) >= 10;
 }
+
+export interface PhaseEvent {
+  date: string;
+  voided?: boolean;
+}
+
+export interface Gated {
+  /** The unchanged four-point rule result, kept for audit. */
+  raw: Advice;
+  /** What the screen shows. */
+  shown: Advice;
+  /** Set when a message is held back: the change date and the points recorded since. */
+  waiting: { since: string; have: number } | null;
+}
+
+/**
+ * Section 2.7 display gate: a message waits for four points on or after the latest strategy change.
+ * Only changes that are not voided and are dated after the goal's first data point count.
+ */
+export function phaseGate(
+  points: readonly Point[],
+  aim: readonly number[],
+  direction: ">=" | "<=",
+  events: readonly PhaseEvent[],
+  gate: "on" | "off" = "on",
+): Gated {
+  const raw = fourPointRule(
+    points.map((p) => p[1]),
+    aim,
+    direction,
+  );
+  const first = points[0]?.[0];
+  const counted = events
+    .filter((e) => !e.voided && first !== undefined && e.date > first)
+    .map((e) => e.date)
+    .sort();
+  const since = counted[counted.length - 1];
+  if (gate === "off" || raw === "none" || since === undefined)
+    return { raw, shown: raw, waiting: null };
+  const have = points.filter((p) => p[0] >= since).length;
+  return have >= 4
+    ? { raw, shown: raw, waiting: null }
+    : { raw, shown: "none", waiting: { since, have } };
+}
+
+/**
+ * The prompted-response decision with MA-2: a goal not written with prompting counts independent corrects only; one written
+ * with prompting counts corrects at or below its ceiling. All trials stay in the denominator.
+ */
+export function goalSessionValue(
+  trials: readonly (readonly [prompt: string, correct: boolean])[],
+  promptCeiling: string | null,
+): number {
+  return sessionValueWithCeiling(trials, promptCeiling ?? "independent");
+}

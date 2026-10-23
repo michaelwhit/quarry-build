@@ -1,0 +1,478 @@
+{
+  "spec": "Phase-gate display (instruction planning and guided flow spec, 2.7)",
+  "rule": "The four-point rule is unchanged and runs on the latest 4 points of the whole series, needing at least 6 points. The gate only decides what is shown. A strategy-change event counts only if it is not voided and is dated after the date of the goal's first data point. Of the events that count, the latest by date is the one the gate uses. A point counts as 'since the change' when its date is on or after the event date. If the rule's result is a message (change_instruction, raise_goal or lower_target) and fewer than 4 points are on or after that event date, the message is not shown (shown = none) and a waiting line carries the event date and how many points have been recorded since (waiting.have). With 4 or more points since, or no counting event, or the gate off, shown equals the raw result and there is no waiting line. 'raw' is the unchanged rule result and is kept for audit.",
+  "assumptions": [
+    "The default is gate on (a district setting). The vectors with gate 'off' show the wrapper switched off; nothing else changes.",
+    "All three messages are held back, not only 'Consider changing instruction'. The spec table says 'the message'.",
+    "The waiting line is shown only when the rule's result is a message. When the rule says nothing, nothing is shown, whatever the change. The spec does not say.",
+    "A planned change dated after the last point has 0 points since and holds the message back, the same as a change made today. The spec draws a planned event dotted but does not say whether it gates before its date."
+  ],
+  "open_questions": [],
+  "cases": [
+    {
+      "name": "no change recorded: the raw message is shown",
+      "direction": ">=",
+      "points": [
+        ["2026-10-01", 30],
+        ["2026-10-02", 32],
+        ["2026-10-05", 35],
+        ["2026-10-06", 31],
+        ["2026-10-07", 33],
+        ["2026-10-08", 29],
+        ["2026-10-09", 34],
+        ["2026-10-12", 30]
+      ],
+      "events": [],
+      "gate": "on",
+      "raw": "change_instruction",
+      "shown": "change_instruction",
+      "waiting": null
+    },
+    {
+      "name": "change on the 9th, 2 points since: waiting, 2 so far",
+      "direction": ">=",
+      "points": [
+        ["2026-10-01", 30],
+        ["2026-10-02", 32],
+        ["2026-10-05", 35],
+        ["2026-10-06", 31],
+        ["2026-10-07", 33],
+        ["2026-10-08", 29],
+        ["2026-10-09", 34],
+        ["2026-10-12", 30]
+      ],
+      "events": [
+        {
+          "date": "2026-10-09"
+        }
+      ],
+      "gate": "on",
+      "raw": "change_instruction",
+      "shown": "none",
+      "waiting": {
+        "since": "2026-10-09",
+        "have": 2
+      }
+    },
+    {
+      "name": "change on the 12th, 1 point since",
+      "direction": ">=",
+      "points": [
+        ["2026-10-01", 30],
+        ["2026-10-02", 32],
+        ["2026-10-05", 35],
+        ["2026-10-06", 31],
+        ["2026-10-07", 33],
+        ["2026-10-08", 29],
+        ["2026-10-09", 34],
+        ["2026-10-12", 30]
+      ],
+      "events": [
+        {
+          "date": "2026-10-12"
+        }
+      ],
+      "gate": "on",
+      "raw": "change_instruction",
+      "shown": "none",
+      "waiting": {
+        "since": "2026-10-12",
+        "have": 1
+      }
+    },
+    {
+      "name": "change on the 13th, after the last point: 0 so far",
+      "direction": ">=",
+      "points": [
+        ["2026-10-01", 30],
+        ["2026-10-02", 32],
+        ["2026-10-05", 35],
+        ["2026-10-06", 31],
+        ["2026-10-07", 33],
+        ["2026-10-08", 29],
+        ["2026-10-09", 34],
+        ["2026-10-12", 30]
+      ],
+      "events": [
+        {
+          "date": "2026-10-13"
+        }
+      ],
+      "gate": "on",
+      "raw": "change_instruction",
+      "shown": "none",
+      "waiting": {
+        "since": "2026-10-13",
+        "have": 0
+      }
+    },
+    {
+      "name": "change on the 7th, exactly 4 points since: the message shows",
+      "direction": ">=",
+      "points": [
+        ["2026-10-01", 30],
+        ["2026-10-02", 32],
+        ["2026-10-05", 35],
+        ["2026-10-06", 31],
+        ["2026-10-07", 33],
+        ["2026-10-08", 29],
+        ["2026-10-09", 34],
+        ["2026-10-12", 30]
+      ],
+      "events": [
+        {
+          "date": "2026-10-07"
+        }
+      ],
+      "gate": "on",
+      "raw": "change_instruction",
+      "shown": "change_instruction",
+      "waiting": null
+    },
+    {
+      "name": "change on the 6th, 5 points since: the message shows",
+      "direction": ">=",
+      "points": [
+        ["2026-10-01", 30],
+        ["2026-10-02", 32],
+        ["2026-10-05", 35],
+        ["2026-10-06", 31],
+        ["2026-10-07", 33],
+        ["2026-10-08", 29],
+        ["2026-10-09", 34],
+        ["2026-10-12", 30]
+      ],
+      "events": [
+        {
+          "date": "2026-10-06"
+        }
+      ],
+      "gate": "on",
+      "raw": "change_instruction",
+      "shown": "change_instruction",
+      "waiting": null
+    },
+    {
+      "name": "a point dated on the change day counts as after it",
+      "direction": ">=",
+      "points": [
+        ["2026-10-01", 30],
+        ["2026-10-02", 32],
+        ["2026-10-05", 35],
+        ["2026-10-06", 31],
+        ["2026-10-07", 33],
+        ["2026-10-08", 29],
+        ["2026-10-09", 34],
+        ["2026-10-12", 30]
+      ],
+      "events": [
+        {
+          "date": "2026-10-08"
+        }
+      ],
+      "gate": "on",
+      "raw": "change_instruction",
+      "shown": "none",
+      "waiting": {
+        "since": "2026-10-08",
+        "have": 3
+      }
+    },
+    {
+      "name": "change on the day of the first point is not a line: no gate",
+      "direction": ">=",
+      "points": [
+        ["2026-10-01", 30],
+        ["2026-10-02", 32],
+        ["2026-10-05", 35],
+        ["2026-10-06", 31],
+        ["2026-10-07", 33],
+        ["2026-10-08", 29],
+        ["2026-10-09", 34],
+        ["2026-10-12", 30]
+      ],
+      "events": [
+        {
+          "date": "2026-10-01"
+        }
+      ],
+      "gate": "on",
+      "raw": "change_instruction",
+      "shown": "change_instruction",
+      "waiting": null
+    },
+    {
+      "name": "change before the first point is not a line: no gate",
+      "direction": ">=",
+      "points": [
+        ["2026-10-01", 30],
+        ["2026-10-02", 32],
+        ["2026-10-05", 35],
+        ["2026-10-06", 31],
+        ["2026-10-07", 33],
+        ["2026-10-08", 29],
+        ["2026-10-09", 34],
+        ["2026-10-12", 30]
+      ],
+      "events": [
+        {
+          "date": "2026-09-28"
+        }
+      ],
+      "gate": "on",
+      "raw": "change_instruction",
+      "shown": "change_instruction",
+      "waiting": null
+    },
+    {
+      "name": "a voided change is ignored",
+      "direction": ">=",
+      "points": [
+        ["2026-10-01", 30],
+        ["2026-10-02", 32],
+        ["2026-10-05", 35],
+        ["2026-10-06", 31],
+        ["2026-10-07", 33],
+        ["2026-10-08", 29],
+        ["2026-10-09", 34],
+        ["2026-10-12", 30]
+      ],
+      "events": [
+        {
+          "date": "2026-10-09",
+          "voided": true
+        }
+      ],
+      "gate": "on",
+      "raw": "change_instruction",
+      "shown": "change_instruction",
+      "waiting": null
+    },
+    {
+      "name": "two changes: the latest one counts",
+      "direction": ">=",
+      "points": [
+        ["2026-10-01", 30],
+        ["2026-10-02", 32],
+        ["2026-10-05", 35],
+        ["2026-10-06", 31],
+        ["2026-10-07", 33],
+        ["2026-10-08", 29],
+        ["2026-10-09", 34],
+        ["2026-10-12", 30]
+      ],
+      "events": [
+        {
+          "date": "2026-10-02"
+        },
+        {
+          "date": "2026-10-09"
+        }
+      ],
+      "gate": "on",
+      "raw": "change_instruction",
+      "shown": "none",
+      "waiting": {
+        "since": "2026-10-09",
+        "have": 2
+      }
+    },
+    {
+      "name": "two changes listed latest first: the latest by date still counts",
+      "direction": ">=",
+      "points": [
+        ["2026-10-01", 30],
+        ["2026-10-02", 32],
+        ["2026-10-05", 35],
+        ["2026-10-06", 31],
+        ["2026-10-07", 33],
+        ["2026-10-08", 29],
+        ["2026-10-09", 34],
+        ["2026-10-12", 30]
+      ],
+      "events": [
+        {
+          "date": "2026-10-09"
+        },
+        {
+          "date": "2026-10-07"
+        }
+      ],
+      "gate": "on",
+      "raw": "change_instruction",
+      "shown": "none",
+      "waiting": {
+        "since": "2026-10-09",
+        "have": 2
+      }
+    },
+    {
+      "name": "two changes, the latest voided: the earlier one counts",
+      "direction": ">=",
+      "points": [
+        ["2026-10-01", 30],
+        ["2026-10-02", 32],
+        ["2026-10-05", 35],
+        ["2026-10-06", 31],
+        ["2026-10-07", 33],
+        ["2026-10-08", 29],
+        ["2026-10-09", 34],
+        ["2026-10-12", 30]
+      ],
+      "events": [
+        {
+          "date": "2026-10-02"
+        },
+        {
+          "date": "2026-10-09",
+          "voided": true
+        }
+      ],
+      "gate": "on",
+      "raw": "change_instruction",
+      "shown": "change_instruction",
+      "waiting": null
+    },
+    {
+      "name": "four favourable points are held back too",
+      "direction": ">=",
+      "points": [
+        ["2026-10-01", 70],
+        ["2026-10-02", 72],
+        ["2026-10-05", 75],
+        ["2026-10-06", 71],
+        ["2026-10-07", 73],
+        ["2026-10-08", 69],
+        ["2026-10-09", 74],
+        ["2026-10-12", 70]
+      ],
+      "events": [
+        {
+          "date": "2026-10-09"
+        }
+      ],
+      "gate": "on",
+      "raw": "raise_goal",
+      "shown": "none",
+      "waiting": {
+        "since": "2026-10-09",
+        "have": 2
+      }
+    },
+    {
+      "name": "a goal that should fall: four points above the aim line, held back",
+      "direction": "<=",
+      "points": [
+        ["2026-10-01", 70],
+        ["2026-10-02", 72],
+        ["2026-10-05", 75],
+        ["2026-10-06", 71],
+        ["2026-10-07", 73],
+        ["2026-10-08", 69],
+        ["2026-10-09", 74],
+        ["2026-10-12", 70]
+      ],
+      "events": [
+        {
+          "date": "2026-10-09"
+        }
+      ],
+      "gate": "on",
+      "raw": "change_instruction",
+      "shown": "none",
+      "waiting": {
+        "since": "2026-10-09",
+        "have": 2
+      }
+    },
+    {
+      "name": "a goal that should fall: 4 points since, the message shows",
+      "direction": "<=",
+      "points": [
+        ["2026-10-01", 70],
+        ["2026-10-02", 72],
+        ["2026-10-05", 75],
+        ["2026-10-06", 71],
+        ["2026-10-07", 73],
+        ["2026-10-08", 69],
+        ["2026-10-09", 74],
+        ["2026-10-12", 70]
+      ],
+      "events": [
+        {
+          "date": "2026-10-07"
+        }
+      ],
+      "gate": "on",
+      "raw": "change_instruction",
+      "shown": "change_instruction",
+      "waiting": null
+    },
+    {
+      "name": "no rule result, nothing to hold back",
+      "direction": ">=",
+      "points": [
+        ["2026-10-01", 30],
+        ["2026-10-02", 60],
+        ["2026-10-05", 35],
+        ["2026-10-06", 31],
+        ["2026-10-07", 70],
+        ["2026-10-08", 29],
+        ["2026-10-09", 34],
+        ["2026-10-12", 55]
+      ],
+      "events": [
+        {
+          "date": "2026-10-09"
+        }
+      ],
+      "gate": "on",
+      "raw": "none",
+      "shown": "none",
+      "waiting": null
+    },
+    {
+      "name": "fewer than 6 points: no rule result at all",
+      "direction": ">=",
+      "points": [
+        ["2026-10-01", 30],
+        ["2026-10-02", 32],
+        ["2026-10-05", 35],
+        ["2026-10-06", 31],
+        ["2026-10-07", 33]
+      ],
+      "events": [
+        {
+          "date": "2026-10-05"
+        }
+      ],
+      "gate": "on",
+      "raw": "none",
+      "shown": "none",
+      "waiting": null
+    },
+    {
+      "name": "gate off: the raw message shows whatever the change",
+      "direction": ">=",
+      "points": [
+        ["2026-10-01", 30],
+        ["2026-10-02", 32],
+        ["2026-10-05", 35],
+        ["2026-10-06", 31],
+        ["2026-10-07", 33],
+        ["2026-10-08", 29],
+        ["2026-10-09", 34],
+        ["2026-10-12", 30]
+      ],
+      "events": [
+        {
+          "date": "2026-10-09"
+        }
+      ],
+      "gate": "off",
+      "raw": "change_instruction",
+      "shown": "change_instruction",
+      "waiting": null
+    }
+  ]
+}

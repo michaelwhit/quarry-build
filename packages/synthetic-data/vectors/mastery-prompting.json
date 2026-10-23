@@ -1,0 +1,199 @@
+{
+  "spec": "Mastery with prompted responses (rule decision MA-2 and the later prompted-response decision)",
+  "rule": "A prompted correct response counts toward mastery only when the goal is written with prompting. A goal not written with prompting counts independent corrects only. A goal written with prompting carries a prompt ceiling (order: independent, gestural, verbal, model, partial_physical, full_physical) and a correct counts when its prompt is at or below the ceiling. Every trial stays in the denominator (MA-2). The session value is percent counted, and mastery then runs on session values as in mastery.json.",
+  "note": "'written_with_prompting' is a placeholder for the goal-level setting; its name and place in the goal editor are still being decided. Every case here also carries the ceiling so the case reads the same once the setting is named. Where the goal is not written with prompting, prompt_ceiling is null and means independent only.",
+  "open_questions": [],
+  "value_cases": [
+    {
+      "name": "goal not written with prompting: only independent corrects count",
+      "written_with_prompting": false,
+      "prompt_ceiling": null,
+      "trials": [
+        ["independent", true],
+        ["independent", true],
+        ["independent", true],
+        ["independent", true],
+        ["independent", true],
+        ["independent", true],
+        ["verbal", true],
+        ["verbal", true],
+        ["verbal", true],
+        ["verbal", false]
+      ],
+      "value": 60
+    },
+    {
+      "name": "goal written with prompting up to verbal: independent and verbal corrects count",
+      "written_with_prompting": true,
+      "prompt_ceiling": "verbal",
+      "trials": [
+        ["independent", true],
+        ["independent", true],
+        ["independent", true],
+        ["independent", true],
+        ["independent", true],
+        ["independent", true],
+        ["verbal", true],
+        ["verbal", true],
+        ["verbal", true],
+        ["verbal", false]
+      ],
+      "value": 90
+    },
+    {
+      "name": "goal written with prompting up to gestural: a verbal correct does not count",
+      "written_with_prompting": true,
+      "prompt_ceiling": "gestural",
+      "trials": [
+        ["independent", true],
+        ["independent", true],
+        ["independent", true],
+        ["independent", true],
+        ["independent", true],
+        ["independent", true],
+        ["verbal", true],
+        ["verbal", true],
+        ["verbal", true],
+        ["verbal", false]
+      ],
+      "value": 60
+    },
+    {
+      "name": "goal written with prompting up to full physical: every correct counts",
+      "written_with_prompting": true,
+      "prompt_ceiling": "full_physical",
+      "trials": [
+        ["independent", true],
+        ["independent", true],
+        ["independent", true],
+        ["independent", true],
+        ["independent", true],
+        ["independent", true],
+        ["verbal", true],
+        ["verbal", true],
+        ["verbal", true],
+        ["verbal", false]
+      ],
+      "value": 90
+    },
+    {
+      "name": "all corrects were prompted and the goal is not written with prompting",
+      "written_with_prompting": false,
+      "prompt_ceiling": null,
+      "trials": [
+        ["model", true],
+        ["verbal", true],
+        ["gestural", true],
+        ["independent", false]
+      ],
+      "value": 0
+    },
+    {
+      "name": "a wrong answer never counts, whatever the prompt",
+      "written_with_prompting": true,
+      "prompt_ceiling": "full_physical",
+      "trials": [
+        ["independent", false],
+        ["verbal", false]
+      ],
+      "value": 0
+    },
+    {
+      "name": "no trials: zero",
+      "written_with_prompting": false,
+      "prompt_ceiling": null,
+      "trials": [],
+      "value": 0
+    }
+  ],
+  "mastery_cases": [
+    {
+      "name": "three days of 5 of 5 where 2 corrects were verbal: mastered only if the goal is written with prompting",
+      "criterion": {
+        "threshold": 80,
+        "comparator": ">=",
+        "window_kind": "consecutive",
+        "window": {
+          "n": 3
+        }
+      },
+      "days": [
+        [
+          ["independent", true],
+          ["independent", true],
+          ["independent", true],
+          ["verbal", true],
+          ["verbal", true]
+        ],
+        [
+          ["independent", true],
+          ["independent", true],
+          ["independent", true],
+          ["verbal", true],
+          ["verbal", true]
+        ],
+        [
+          ["independent", true],
+          ["independent", true],
+          ["independent", true],
+          ["verbal", true],
+          ["verbal", true]
+        ]
+      ],
+      "with_prompting": {
+        "prompt_ceiling": "verbal",
+        "values": [100, 100, 100],
+        "mastered": true
+      },
+      "without_prompting": {
+        "prompt_ceiling": null,
+        "values": [60, 60, 60],
+        "mastered": false
+      }
+    },
+    {
+      "name": "the same goal with independent corrects only: mastered either way",
+      "criterion": {
+        "threshold": 80,
+        "comparator": ">=",
+        "window_kind": "consecutive",
+        "window": {
+          "n": 3
+        }
+      },
+      "days": [
+        [
+          ["independent", true],
+          ["independent", true],
+          ["independent", true],
+          ["independent", true],
+          ["independent", false]
+        ],
+        [
+          ["independent", true],
+          ["independent", true],
+          ["independent", true],
+          ["independent", true],
+          ["independent", false]
+        ],
+        [
+          ["independent", true],
+          ["independent", true],
+          ["independent", true],
+          ["independent", true],
+          ["independent", false]
+        ]
+      ],
+      "with_prompting": {
+        "prompt_ceiling": "verbal",
+        "values": [80, 80, 80],
+        "mastered": true
+      },
+      "without_prompting": {
+        "prompt_ceiling": null,
+        "values": [80, 80, 80],
+        "mastered": true
+      }
+    }
+  ]
+}
