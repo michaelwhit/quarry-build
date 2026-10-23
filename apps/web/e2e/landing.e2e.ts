@@ -20,6 +20,15 @@ test.describe("landing page, picker and tour", () => {
     expect(errors).toEqual([]);
   });
 
+  test("the practice build has a Sign in button only: there are no accounts to sign up for", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Sign up", exact: true })).toHaveCount(0);
+    await expect(page.getByText(/New here\?/)).toHaveCount(0);
+  });
+
   test("the slogan is followed by the not-affiliated line", async ({ page }) => {
     await page.goto("/");
     const order = await page.locator("main").evaluate((m) => {

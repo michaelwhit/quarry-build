@@ -10,9 +10,12 @@ const SessionCheck = import.meta.env.VITE_GOALLINE_API_ORIGIN
   ? lazy(() => import("../auth/AuthPanel.tsx").then((m) => ({ default: m.SessionCheck })))
   : null;
 
-/** First screen when signed out: logo, name, slogan and one Sign in button. */
+/**
+ * First screen when signed out: logo, name, slogan and a Sign in button. A build with a sign-in
+ * server also has a Sign up button; the practice build has no accounts, so it has none.
+ */
 export function SignIn() {
-  const [step, setStep] = useState<"landing" | "pick">("landing");
+  const [step, setStep] = useState<"landing" | "pick" | "signup">("landing");
   if (step === "landing")
     return (
       <main id="main" className="signin landing">
@@ -33,6 +36,14 @@ export function SignIn() {
         >
           Sign in
         </button>
+        {AuthPanel && (
+          <>
+            <button type="button" className="signin-main alt" onClick={() => setStep("signup")}>
+              Sign up
+            </button>
+            <p className="meta landing-new">New here? Sign up. Your director will approve you.</p>
+          </>
+        )}
         <a className="btn tour-link" href="tour/">
           See how it works
         </a>
@@ -41,7 +52,10 @@ export function SignIn() {
   if (AuthPanel)
     return (
       <Suspense fallback={null}>
-        <AuthPanel onBack={() => setStep("landing")} />
+        <AuthPanel
+          start={step === "signup" ? "signup" : "signin"}
+          onBack={() => setStep("landing")}
+        />
       </Suspense>
     );
   return <PracticePeople onBack={() => setStep("landing")} />;
