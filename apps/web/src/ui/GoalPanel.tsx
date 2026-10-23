@@ -1,4 +1,5 @@
 import type { Goal, MeasurementPlan } from "@synthetic/src/types.ts";
+import { targetText } from "../data/targetText.ts";
 
 const TYPE_LABEL: Record<string, string> = {
   percent_correct: "Percent correct",
@@ -23,7 +24,6 @@ export function GoalPanel({
   plan: MeasurementPlan;
   capHeight?: boolean;
 }) {
-  const unit = plan.unit ? ` ${plan.unit}` : "";
   return (
     <details
       className={capHeight ? "whole cap" : "whole"}
@@ -41,10 +41,7 @@ export function GoalPanel({
         <dt>Baseline</dt>
         <dd>{goal.baseline}</dd>
         <dt>Target</dt>
-        <dd>
-          {goal.target} ({plan.target_value}
-          {unit})
-        </dd>
+        <dd>{targetText(goal.target, plan.target_value, plan.unit)}</dd>
         <dt>Criteria</dt>
         <dd>{goal.criteria}</dd>
         {plan.prompt_hierarchy.length > 0 && (
