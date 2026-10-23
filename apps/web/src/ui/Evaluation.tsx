@@ -49,7 +49,11 @@ export function Evaluation() {
       <a className="back btn" href="#/">
         ← Home
       </a>
-      <h2 className="page-title">Draft from evaluation</h2>
+      <h2 className="page-title">Draft from evaluation (Planned)</h2>
+      <p role="note">
+        Planned feature: this page shows how drafting from an evaluation will work. Nothing here
+        replaces the team's own review.
+      </p>
       <p className="form-warn" role="note">
         Practice only. Do not type real names or details. Use made-up text.
       </p>
