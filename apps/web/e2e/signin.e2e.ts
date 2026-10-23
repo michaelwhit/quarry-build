@@ -30,6 +30,26 @@ const signedIn = (page: Page) =>
 /** The student-privacy notice every sign-in meets first. */
 const understand = (page: Page) => page.getByRole("button", { name: "I understand" }).click();
 
+test.describe("the landing page with a sign-in server", () => {
+  test("has Sign in and Sign up, and Sign up opens the invite form with no password box", async ({
+    page,
+  }) => {
+    await fakeApi(page, ok);
+    await openLanding(page);
+    await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Sign up", exact: true })).toBeVisible();
+    await expect(
+      page.getByText("New here? Sign up. Your director will approve you."),
+    ).toBeVisible();
+    // No practice shortcut beside a real sign-in.
+    await expect(page.getByText(/sign in as a sample user/i)).toHaveCount(0);
+    await page.getByRole("button", { name: "Sign up", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Sign up with an invite code" })).toBeVisible();
+    await expect(page.getByLabel("Invite code")).toBeVisible();
+    await expect(page.getByLabel(/password/i)).toHaveCount(0);
+  });
+});
+
 test.describe("password sign-in", () => {
   test("a good password signs in, asks for the person, and sign-out tells the server", async ({
     page,

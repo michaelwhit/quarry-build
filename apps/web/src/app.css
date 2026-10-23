@@ -861,6 +861,17 @@ h2.page-title {
   min-height: 48px;
 }
 
+.landing .signin-main.alt {
+  margin-top: 0;
+  background: transparent;
+  color: var(--text);
+  border: 2px solid var(--primary);
+  font-weight: 700;
+}
+.landing-new {
+  margin: 0 0 4px;
+  font-size: 0.85rem;
+}
 .landing .tour-link {
   margin-top: 12px;
   width: 100%;

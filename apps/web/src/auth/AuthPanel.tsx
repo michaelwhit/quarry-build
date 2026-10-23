@@ -376,8 +376,14 @@ function SchoolSignup({ onPending, onBack }: { onPending: () => void; onBack: ()
 }
 
 /** Email and password, the setup-code screen, and sign-up with an invite code. */
-export function AuthPanel({ onBack }: { onBack: () => void }) {
-  const [mode, setMode] = useState<Mode>("signin");
+export function AuthPanel({
+  onBack,
+  start = "signin",
+}: {
+  onBack: () => void;
+  start?: "signin" | "signup";
+}) {
+  const [mode, setMode] = useState<Mode>(start);
   const [email, setEmail] = useState("");
   const [password, setPw] = useState("");
   const [code, setCode] = useState("");
