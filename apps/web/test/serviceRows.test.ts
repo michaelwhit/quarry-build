@@ -121,3 +121,16 @@ describe("services and supports rows", () => {
     expect(html).toContain("Frequency");
   });
 });
+
+describe("Services page", () => {
+  it("shows the form for the director and refuses other roles", async () => {
+    const { Services, canUseServices } = await import("../src/ui/Services.tsx");
+    expect(canUseServices("sped_director")).toBe(true);
+    expect(canUseServices("paraprofessional")).toBe(false);
+    const html = renderToString(createElement(Services, { studentId: sid() }));
+    expect(html).toContain("Add from the accommodation library");
+    expect(renderToString(createElement(Services, { studentId: "nobody" }))).toContain(
+      "Student not found",
+    );
+  });
+});
