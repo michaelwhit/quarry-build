@@ -29,6 +29,7 @@ import { Evaluation } from "./ui/Evaluation.tsx";
 import { PresentLevels, canUsePresentLevels } from "./ui/PresentLevels.tsx";
 import { AccessReview, StaffList } from "./ui/StaffList.tsx";
 import { Privacy, SignIn } from "./ui/SignIn.tsx";
+import { Services, canUseServices } from "./ui/Services.tsx";
 import { ProgressReport, canUseReports } from "./ui/ProgressReport.tsx";
 import { getVersion, getWorkspace, setDelegated, setServed, subscribe } from "./data/workspace.ts";
 
@@ -236,6 +237,11 @@ function StudentPage({ id }: { id: string }) {
             Present levels
           </a>
         )}{" "}
+        {canUseServices(role) && (
+          <a className="btn" href={`#/student/${s.student.id}/services`}>
+            Services
+          </a>
+        )}{" "}
         {can(role, "editStudent") && (
           <a className="btn" href={`#/student/${s.student.id}/edit`}>
             Edit student
@@ -311,6 +317,7 @@ export function App() {
   const g = /^#\/student\/([^/]+)\/add-goal$/.exec(hash);
   const rp = /^#\/student\/([^/]+)\/report$/.exec(hash);
   const pl = /^#\/student\/([^/]+)\/present-levels$/.exec(hash);
+  const sv = /^#\/student\/([^/]+)\/services$/.exec(hash);
   const es = /^#\/student\/([^/]+)\/edit$/.exec(hash);
   const eg = /^#\/student\/([^/]+)\/goal\/([^/]+)\/edit$/.exec(hash);
   const delegate = isDelegateRole(role);
@@ -323,6 +330,7 @@ export function App() {
     (role === "paraprofessional" && t?.[1] && t[2]);
   const brokenAddress = [
     pl?.[1],
+    sv?.[1],
     rp?.[1],
     glance?.[1],
     es?.[1],
@@ -391,6 +399,8 @@ export function App() {
     )
   ) : pl?.[1] ? (
     <PresentLevels studentId={decode(pl[1])} />
+  ) : sv?.[1] ? (
+    <Services studentId={decode(sv[1])} />
   ) : rp?.[1] ? (
     <ProgressReport studentId={decode(rp[1])} />
   ) : m?.[1] ? (
