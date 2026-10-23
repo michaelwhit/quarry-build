@@ -115,7 +115,9 @@ test.describe("password sign-in", () => {
     });
     await openSignIn(page);
     await typePassword(page);
-    await expect(page.getByRole("heading", { name: "Thanks. Waiting for approval" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Waiting for approval", exact: true }),
+    ).toBeVisible();
     await page.getByRole("button", { name: "Back to sign in" }).click();
     await expect(page.getByRole("heading", { name: "Sign in", level: 2 })).toBeVisible();
   });

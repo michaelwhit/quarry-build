@@ -46,7 +46,13 @@ test.describe("sign up with my school", () => {
     await page.getByLabel("Your name").fill("Sample Person");
     await page.getByLabel("Work email").fill("sample@example.test");
     await page.getByRole("button", { name: "Request access" }).click();
-    await expect(page.getByRole("heading", { name: "Thanks. Waiting for approval" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Waiting for approval", exact: true }),
+    ).toBeVisible();
+    await expect(page.getByTestId("waiting-account")).toHaveText(
+      "Signed up as sample@example.test",
+    );
+    await expect(page.getByRole("button", { name: "I have a setup code" })).toBeVisible();
     const sent = calls.find((c) => c.path === "/v0/auth/signup");
     expect(sent?.body).toMatchObject({
       schoolId: "s1",
@@ -119,7 +125,9 @@ test.describe("sign up with an invite code", () => {
     await page.getByLabel("Your name").fill("Sample Person");
     await page.getByLabel("Work email").fill("sample@example.test");
     await page.getByRole("button", { name: "Request access" }).click();
-    await expect(page.getByRole("heading", { name: "Thanks. Waiting for approval" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Waiting for approval", exact: true }),
+    ).toBeVisible();
     expect(calls.find((c) => c.path === "/v0/auth/signup")?.body).toMatchObject({
       code: "INVITE-1234",
       email: "sample@example.test",

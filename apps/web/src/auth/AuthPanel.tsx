@@ -12,6 +12,7 @@ import {
 } from "./client.ts";
 import type { Confirm, Enrol, Me, Outcome, School } from "./client.ts";
 import { restore, begin } from "./session.ts";
+import { Waiting } from "./Waiting.tsx";
 import { NO_SCHOOLS, NO_SERVER, START_OVER, recoveryLeftMessage } from "./messages.ts";
 
 const RULES =
@@ -263,7 +264,13 @@ function Enrolment(props: {
 }
 
 /** Sign-up by picking a school: search after 3 letters, about half a second after the last key. */
-function SchoolSignup({ onPending, onBack }: { onPending: () => void; onBack: () => void }) {
+function SchoolSignup({
+  onPending,
+  onBack,
+}: {
+  onPending: (email: string) => void;
+  onBack: () => void;
+}) {
   const [q, setQ] = useState("");
   const [found, setFound] = useState<School[] | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -304,7 +311,7 @@ function SchoolSignup({ onPending, onBack }: { onPending: () => void; onBack: ()
     const res = await signUpSchool(school.id, email, name);
     setBusy(false);
     // Every outcome after the checks is the same waiting screen.
-    if (res.kind === "pending") onPending();
+    if (res.kind === "pending") onPending(email);
     else setOut(res);
   };
 
@@ -388,6 +395,7 @@ export function AuthPanel({
   const [password, setPw] = useState("");
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
+  const [waitingEmail, setWaitingEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [out, setOut] = useState<Outcome | null>(null);
   // Kept in memory only: the step-up challenge, and who is signed in while a notice is read.
@@ -415,8 +423,10 @@ export function AuthPanel({
     setBusy(false);
     setPw("");
     if (res.kind === "signed_in") begin(res.me);
-    else if (res.kind === "pending") setMode("waiting");
-    else if (res.kind === "second_factor" || res.kind === "enrol") {
+    else if (res.kind === "pending") {
+      setWaitingEmail(mode === "signup" ? email : "");
+      setMode("waiting");
+    } else if (res.kind === "second_factor" || res.kind === "enrol") {
       setChallenge(res.challenge);
       setOut(null);
       setMode(res.kind === "enrol" ? "enrol" : "factor");
@@ -430,7 +440,15 @@ export function AuthPanel({
   };
 
   if (mode === "school")
-    return <SchoolSignup onPending={() => setMode("waiting")} onBack={() => go("signin")} />;
+    return (
+      <SchoolSignup
+        onPending={(who) => {
+          setWaitingEmail(who);
+          setMode("waiting");
+        }}
+        onBack={() => go("signin")}
+      />
+    );
   if (mode === "factor")
     return (
       <SecondFactor
@@ -470,16 +488,7 @@ export function AuthPanel({
 
   if (mode === "waiting")
     return (
-      <main id="main" className="signin">
-        <h2 className="page-title">Thanks. Waiting for approval</h2>
-        <p>
-          Your director will check your request. Once approved, they&apos;ll give you a setup code
-          in person. Use it to set your password and your authenticator.
-        </p>
-        <button type="button" className="save signin-main" onClick={() => go("signin")}>
-          Back to sign in
-        </button>
-      </main>
+      <Waiting email={waitingEmail} onSetupCode={() => go("setpw")} onBack={() => go("signin")} />
     );
 
   const title =
