@@ -95,8 +95,11 @@ public struct OverdueReportsView: View {
 
     private func topLine(_ list: OverdueList, period: String?) -> String {
         var line = "\(list.total) waiting past their due date"
-        if let period, let due = list.buildings.first?.managers.first?.reports.first?.dueDate {
-            line += " · \(period) report, due \(Self.short(due))"
+        if let period {
+            line += " · \(period) report"
+            // One due date in the line only when every waiting report shares it.
+            let dates = list.buildings.flatMap { $0.managers.flatMap { $0.reports.map(\.dueDate) } }
+            if let due = WhatsDue.sharedDueDate(dates) { line += ", due \(Self.short(due))" }
         }
         return line
     }
@@ -136,7 +139,7 @@ public struct OverdueHomeLine: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(count == 0 ? "No progress reports overdue" : "\(count) progress report\(count == 1 ? "" : "s") overdue")
                     .font(.headline).foregroundStyle(Theme.ink)
-                Text(count == 0 ? "Everything due so far is filed." : "Tap to see who to ask.")
+                Text(count == 0 ? "Everything due so far is filed." : "Tap to see what is due and who to ask.")
                     .font(.footnote).foregroundStyle(Theme.muted)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -144,7 +147,7 @@ public struct OverdueHomeLine: View {
             .accessibilityElement(children: .combine)
         }
         .buttonStyle(.plain)
-        .accessibilityHint("Opens the progress reports to file")
+        .accessibilityHint("Opens what is due")
         .accessibilityIdentifier("overdue-home-line")
     }
 }
