@@ -57,6 +57,7 @@ struct AppShell: View {
     /// The audit rows the overdue view wrote while this person is signed in. Until the audit queue
     /// is wired to the app these live only for the session, like the view itself.
     @State private var overdueAudit = OverdueAuditLog()
+    @State private var dueAudit = WhatsDueAuditLog()
     @Environment(PrototypeStore.self) private var store
     let screens: ShellScreens
 
@@ -114,9 +115,11 @@ struct AppShell: View {
             }
             .sheet(isPresented: $showingOverdue) {
                 NavigationStack {
-                    OverdueReportsView(
-                        load: { store.overdueList(today: $0, period: $1) },
-                        recordLoad: { overdueAudit.record($0) },
+                    WhatsDueView(
+                        load: { store.whatsDue(today: $0, windowDays: $1) },
+                        recordLoad: { dueAudit.record($0) },
+                        loadOverdue: { store.overdueList(today: $0, period: $1) },
+                        recordOverdueLoad: { overdueAudit.record($0) },
                         openStudent: { id in
                             showingOverdue = false
                             selection = id
