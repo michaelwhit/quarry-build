@@ -41,6 +41,7 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
   const [area, setArea] = useState("");
   const [forId, setForId] = useState("");
   const [status, setStatus] = useState("");
+  const [startHref, setStartHref] = useState("");
   const [kind, setKind] = useState("");
   const [category, setCategory] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
@@ -80,6 +81,7 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
     setCategory("");
     setStarsOnly(false);
     setStatus("");
+    setStartHref("");
     // The button that was pressed goes away, so keyboard focus moves to the search box.
     searchRef.current?.focus();
   };
@@ -100,9 +102,11 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
     const q = quick(g);
     if (!q || !facts) return;
     try {
-      addGoal(forId, q.input);
-      setStatus(`Added "${g.title}" to ${facts.name}.`);
+      const goalId = addGoal(forId, q.input);
+      setStatus(`Added "${g.title}" to ${facts.name}'s goals.`);
+      setStartHref(`#/track/${forId}/${goalId}`);
     } catch (err) {
+      setStartHref("");
       setStatus(err instanceof Error ? err.message : "Could not add the goal");
     }
   };
@@ -126,6 +130,7 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
               setTab(t);
               setOpenId(null);
               setStatus("");
+              setStartHref("");
             }}
           >
             {t === "goals" ? "Goals" : "Accommodations"}
@@ -190,6 +195,7 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
             onChange={(e) => {
               setForId(e.target.value);
               setStatus("");
+              setStartHref("");
             }}
           >
             <option value="">Draft for a student (optional)</option>
@@ -217,6 +223,12 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
       </label>
       <p className="lib-note" role="status">
         {status}
+        {startHref ? (
+          <>
+            {" "}
+            <a href={startHref}>Start collecting data</a>
+          </>
+        ) : null}
       </p>
       <p className="lib-count" role="status">
         {tab === "goals"
@@ -484,7 +496,7 @@ function GoalDetail({
     if (!student || !ready || !mayAdd) return;
     try {
       addGoal(student.id, goalInput(goal, values, studentName, baseline));
-      setMessage(`Added to ${studentName}.`);
+      setMessage(`Added to ${studentName}'s goals.`);
       window.location.hash = `#/student/${student.id}`;
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Could not add the goal");
