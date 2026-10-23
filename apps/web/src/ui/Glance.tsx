@@ -89,3 +89,25 @@ export function AtAGlance({ studentId }: { studentId: string }) {
     </>
   );
 }
+
+/**
+ * A paraprofessional's At a glance is built for the iPhone app only (a gap logged on purpose), so
+ * the web says so instead of showing nothing. It names no student and reads no student data.
+ */
+export function AtAGlanceForParas() {
+  return (
+    <>
+      <h2 className="page-title">At a glance</h2>
+      <div className="card planned-card">
+        <span className="planned-tag">Planned</span>
+        <p>
+          At a glance for paraprofessionals is planned for the iPhone app. It is not on the web yet.
+          The goals you were given to record are on your Today tab.
+        </p>
+        <a className="btn" href="#/today">
+          ← Today
+        </a>
+      </div>
+    </>
+  );
+}

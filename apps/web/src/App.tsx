@@ -22,7 +22,7 @@ import {
 import { safeDecode } from "./data/hash.ts";
 import { pageTitle } from "./data/title.ts";
 import { canSeeOverdue } from "./data/overdue.ts";
-import { AtAGlance, MyStudents } from "./ui/Glance.tsx";
+import { AtAGlance, AtAGlanceForParas, MyStudents } from "./ui/Glance.tsx";
 import { Due } from "./ui/Due.tsx";
 import { Overdue } from "./ui/Overdue.tsx";
 import { Evaluation } from "./ui/Evaluation.tsx";
@@ -345,6 +345,8 @@ export function App() {
     <MyStudents />
   ) : role === "gen_ed_teacher" && glance?.[1] ? (
     <AtAGlance studentId={decode(glance[1])} />
+  ) : role === "paraprofessional" && glance?.[1] ? (
+    <AtAGlanceForParas />
   ) : delegate && !delegateOk ? (
     delegateFallback(role) === "my_students" ? (
       <MyStudents />

@@ -78,4 +78,21 @@ test.describe("paraprofessional limits", () => {
     await page.evaluate(() => (window.location.hash = "#/track/not-a-student/not-a-goal"));
     await expect(page.getByRole("region", { name: "Record data" })).toHaveCount(0);
   });
+
+  test("At a glance by address says it is planned for the iPhone app and shows no student", async ({
+    page,
+  }) => {
+    const errors = watchErrors(page);
+    await loadSamplesAsDirector(page);
+    const names = await directorNames(page);
+    await signIn(page, "para");
+    await page.evaluate(() => (window.location.hash = "#/glance/any-student"));
+    await expect(page.getByRole("heading", { name: "At a glance", level: 2 })).toBeVisible();
+    await expect(page.getByText("planned for the iPhone app")).toBeVisible();
+    await expect(page.getByText("Planned", { exact: true })).toBeVisible();
+    await expectNoLastNames(page, names);
+    await page.getByRole("link", { name: "← Today" }).click();
+    await expect(page.getByRole("heading", { name: "Your goals today", level: 2 })).toBeVisible();
+    expect(errors).toEqual([]);
+  });
 });
