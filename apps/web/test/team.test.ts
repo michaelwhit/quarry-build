@@ -3,7 +3,7 @@ import { renderToString } from "react-dom/server";
 import { caseload_assignments, staff } from "@synthetic/fixtures/demo-district.json";
 import { beforeEach, describe, expect, it } from "vitest";
 import { setRole } from "../src/data/roles.ts";
-import { teamFor } from "../src/data/team.ts";
+import { rank, teamFor, tieLabel } from "../src/data/team.ts";
 import { TeamSection } from "../src/ui/TeamSection.tsx";
 
 const TODAY = "2026-10-21";
@@ -42,5 +42,15 @@ describe("student team", () => {
     );
     setRole("paraprofessional");
     expect(renderToString(createElement(TeamSection, { studentId: withTeam }))).toBe("");
+  });
+});
+
+describe("unknown relationships", () => {
+  it("sort after every known one and get a readable label", () => {
+    expect(rank("caseload")).toBe(0);
+    expect(rank("delegated")).toBe(3);
+    expect(rank("something_new")).toBeGreaterThan(rank("delegated"));
+    expect(tieLabel("something_new")).toBe("On the team");
+    expect(tieLabel("service")).toBe("Provides services");
   });
 });
