@@ -1,9 +1,9 @@
 import { useSyncExternalStore } from "react";
+import { dateWithYear } from "../data/dates.ts";
 import { recentNotes } from "../data/recentNotes.ts";
 import { getVersion, subscribe } from "../data/workspace.ts";
 
-const day = (iso: string) =>
-  new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+const day = dateWithYear;
 
 /** The last few session notes for a student, newest first. */
 export function RecentNotes({ studentId }: { studentId: string }) {
