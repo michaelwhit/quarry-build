@@ -80,6 +80,13 @@ function CopyRow({
                 : `Copy ${item.label}`}
           </button>{" "}
           {copied ? "✓ copied" : ""}
+          <span className="sr-only" role="status">
+            {state === "done"
+              ? `${item.label} copied`
+              : state === "failed"
+                ? `Could not copy ${item.label}`
+                : ""}
+          </span>
         </>
       )}
       {item.pick !== undefined && <p>Pick in SRS: {item.pick}</p>}
