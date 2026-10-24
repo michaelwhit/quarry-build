@@ -98,4 +98,9 @@ describe("IEP for SRS", () => {
     expect(html.replaceAll("<!-- -->", "")).toContain("0 of 12 sections marked pasted");
     expect(html).not.toMatch(/accepted|filed/i);
   });
+
+  it("gives each copy row an empty status region for screen readers", () => {
+    const html = renderToString(createElement(SrsPacket, { studentId: sid() }));
+    expect(html).toContain('class="sr-only" role="status"></span>');
+  });
 });
