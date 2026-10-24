@@ -122,6 +122,8 @@ export function onSignOut(h: (() => void) | null) {
 }
 export function setRole(next: RoleId | null) {
   if (next === null && current !== null) signOutHook?.();
+  // The next person starts at Home, not on the page the last person left open.
+  if (next !== current && typeof window !== "undefined") window.location.replace("#/");
   current = next;
   version++;
   for (const l of listeners) l();
