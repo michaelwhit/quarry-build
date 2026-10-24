@@ -76,6 +76,8 @@ export function TrackPicker() {
   );
 }
 
+const LEAVE_ASK = "This session is not saved yet. Leave without saving it?";
+
 function fmtTime(sec: number) {
   return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
 }
@@ -90,6 +92,15 @@ export function TrackGoal({ studentId, goalId }: { studentId: string; goalId: st
   const [flash, setFlash] = useState("");
   const [asking, setAsking] = useState("");
   const tick = useRef<number | undefined>(undefined);
+  const unsaved = !!plan && !!s && hasInput(plan, s);
+
+  // Closing or reloading the tab with a session that was not saved asks first.
+  useEffect(() => {
+    if (!unsaved) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [unsaved]);
 
   useEffect(() => {
     if (!running) return;
@@ -152,7 +163,13 @@ export function TrackGoal({ studentId, goalId }: { studentId: string; goalId: st
 
   return (
     <>
-      <a className="btn back" href="#/track">
+      <a
+        className="btn back"
+        href="#/track"
+        onClick={(e) => {
+          if (unsaved && !window.confirm(LEAVE_ASK)) e.preventDefault();
+        }}
+      >
         ← Change goal
       </a>
       <h2
@@ -304,6 +321,7 @@ export function TrackGoal({ studentId, goalId }: { studentId: string; goalId: st
             Save session{value !== null ? `: ${value} ${unit}` : ""}
           </button>
         </div>
+        {unsaved && !asking && <p className="meta">This session is not saved yet.</p>}
         {asking && (
           <div role="alert">
             <p>{asking}</p>
