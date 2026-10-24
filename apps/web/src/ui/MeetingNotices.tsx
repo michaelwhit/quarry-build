@@ -38,14 +38,15 @@ const TABS: { id: Tab; label: string }[] = [
 /** Tick and Copy for one box of text. A change to the text takes the tick away. */
 export function TickCopy({ label, text }: { label: string; text: string }) {
   const [read, setRead] = useState("");
-  const [flash, setFlash] = useState("");
+  // The message belongs to the text it was about; once the text changes it goes away.
+  const [done, setDone] = useState({ text: "", message: "" });
   const ticked = read === text;
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(text);
-      setFlash(`Copied ${label}`);
+      setDone({ text, message: `Copied ${label}` });
     } catch {
-      setFlash("Could not copy. Select the text and copy it yourself.");
+      setDone({ text, message: "Could not copy. Select the text and copy it yourself." });
     }
   };
   return (
@@ -62,7 +63,7 @@ export function TickCopy({ label, text }: { label: string; text: string }) {
         Copy {label}
       </button>
       <p className="saved" role="status">
-        {flash}
+        {done.text === text ? done.message : ""}
       </p>
     </>
   );
