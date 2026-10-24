@@ -14,6 +14,7 @@ import {
   readyRows,
 } from "../data/csv.ts";
 import { EXAMPLE_FILE, EXAMPLE_FILE_NAME } from "../data/importExample.ts";
+import { sampleLine } from "../data/importGuide.ts";
 import {
   addGoal,
   addStudent,
@@ -581,6 +582,7 @@ export function ImportStudents() {
               <span>{f.required ? f.title : `${f.title} (optional)`}</span>
               <select
                 value={mapping[f.key] ?? ""}
+                aria-describedby={`import-sample-${f.key}`}
                 onChange={(e) => {
                   const next = { ...mapping };
                   if (e.target.value === "") delete next[f.key];
@@ -596,6 +598,9 @@ export function ImportStudents() {
                   </option>
                 ))}
               </select>
+              <span className="meta" id={`import-sample-${f.key}`}>
+                {sampleLine(table, mapping[f.key])}
+              </span>
             </label>
           ))}
           {!isComplete(mapping) && (
@@ -614,6 +619,13 @@ export function ImportStudents() {
               ? `${added} student${added === 1 ? "" : "s"} added.`
               : `${ready.length} to add, ${plan.filter((r) => r.status.kind === "duplicate").length} already on the list, ${plan.filter((r) => r.status.kind === "problem").length} to fix in the file`}
           </p>
+          {added !== null && (
+            <p>
+              <a className="btn" href="#/caseload">
+                View the caseload
+              </a>
+            </p>
+          )}
           {added === null && (
             <ul className="import-list">
               {plan.map((r) => (

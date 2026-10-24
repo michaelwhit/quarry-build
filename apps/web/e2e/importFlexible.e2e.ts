@@ -36,9 +36,15 @@ test.describe("flexible roster file", () => {
     await expect(page.getByRole("status")).toContainText(
       "3 to add, 0 already on the list, 0 to fix",
     );
-    await expect(page.getByText("Avery Examplewood")).toBeVisible();
-    await expect(page.getByText("Blake Samplefield")).toBeVisible();
-    await expect(page.getByText("Casey Teststone")).toBeVisible();
+    await expect(
+      page.getByRole("region", { name: "Preview" }).getByText("Avery Examplewood"),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("region", { name: "Preview" }).getByText("Blake Samplefield"),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("region", { name: "Preview" }).getByText("Casey Teststone"),
+    ).toBeVisible();
     await page.getByRole("button", { name: "Add students" }).click();
     await expect(page.getByRole("status")).toContainText("3 students added.");
     await tabBar(page).getByRole("link", { name: "Caseload" }).click();
