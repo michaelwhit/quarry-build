@@ -36,6 +36,16 @@ describe("school days", () => {
   });
 });
 
+describe("names", () => {
+  it("uses the name the caseload shows, in What's due and the overdue list", () => {
+    const names = items(dueView("2026-10-30")).map((i) => i.student);
+    expect(names).toContain("Xan P.");
+    expect(names).toContain("Cal F.");
+    expect(names.join(" ")).not.toMatch(/Xander|Calla/);
+    expect(JSON.stringify(overdueList("2026-10-30"))).not.toMatch(/Xander|Calla/);
+  });
+});
+
 describe("overdue reports", () => {
   it("lists the same reports as the overdue view, grouped by case manager", () => {
     const view = dueView("2026-10-30");

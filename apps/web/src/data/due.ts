@@ -86,8 +86,8 @@ export interface DueView {
 const studentById = new Map(students.map((s) => [s.id, s]));
 const staffById = new Map(staff.map((s) => [s.id, s]));
 const schoolById = new Map(schools.map((s) => [s.id, s]));
-const shortName = (s: { first_name: string; last_name: string }) =>
-  `${s.first_name} ${s.last_name.charAt(0)}.`;
+const shortName = (s: { first_name: string; preferred_name?: string | null; last_name: string }) =>
+  `${s.preferred_name ?? s.first_name} ${s.last_name.charAt(0)}.`;
 
 /** The case manager each student is on the caseload of, today. */
 function holders(today: string): Map<string, string> {

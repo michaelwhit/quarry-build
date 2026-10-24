@@ -60,7 +60,7 @@ function buildReports(): SampleReport[] {
       {
         id: r.id,
         studentId: student.id,
-        student: `${student.first_name} ${student.last_name.charAt(0)}.`,
+        student: `${student.preferred_name ?? student.first_name} ${student.last_name.charAt(0)}.`,
         grade: student.grade,
         building: (schoolById.get(student.school_id)?.name ?? "").replace(" (synthetic)", ""),
         caseManager: staffById.get(holder.staff_id)?.display_name ?? "the case manager",
