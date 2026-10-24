@@ -111,6 +111,9 @@ export async function recordSimpleSession(page: Page): Promise<boolean> {
     if ((await o.count()) > 0) {
       await o.first().click();
       await pad.getByRole("button", { name: /Save session/ }).click();
+      // A value far from the recent ones is asked about once; confirm it.
+      const sure = pad.getByRole("button", { name: "Yes, save it" });
+      if ((await sure.count()) > 0) await sure.click();
       return true;
     }
   }

@@ -15,6 +15,7 @@ import { Chip } from "./Chip.tsx";
 import { GoalPanel } from "./GoalPanel.tsx";
 import { Graph } from "./Graph.tsx";
 import { count, gradeWords, metaLine } from "../data/wording.ts";
+import { checkOutlier, outlierQuestion } from "../data/outlier.ts";
 
 export function TrackPicker() {
   const [studentId, setStudentId] = useState<string | null>(null);
@@ -86,6 +87,7 @@ export function TrackGoal({ studentId, goalId }: { studentId: string; goalId: st
   const [note, setNote] = useState("");
   const [running, setRunning] = useState(false);
   const [flash, setFlash] = useState("");
+  const [asking, setAsking] = useState("");
   const tick = useRef<number | undefined>(undefined);
 
   useEffect(() => {
@@ -107,12 +109,14 @@ export function TrackGoal({ studentId, goalId }: { studentId: string; goalId: st
   const kind = inputKind(plan);
 
   const change = (next: SessionState) => {
+    setAsking("");
     setHistory((h) => [...h, s]);
     setS(next);
   };
   const undo = () => {
     const prev = history.at(-1);
     if (!prev) return;
+    setAsking("");
     setHistory((h) => h.slice(0, -1));
     setS(prev);
   };
@@ -122,8 +126,20 @@ export function TrackGoal({ studentId, goalId }: { studentId: string; goalId: st
   const value = sessionValue(plan, s);
   const unit = plan.unit ?? plan.type.replaceAll("_", " ");
 
-  const save = () => {
+  const save = (confirmed = false) => {
     if (value === null) return;
+    if (!confirmed) {
+      const check = checkOutlier(
+        series.map((p) => p.value),
+        value,
+        plan.target_value,
+      );
+      if (check.ask) {
+        setAsking(outlierQuestion(value, unit, check));
+        return;
+      }
+    }
+    setAsking("");
     addPoint(goalId, value, note);
     setS(emptySession(plan));
     setHistory([]);
@@ -278,10 +294,28 @@ export function TrackGoal({ studentId, goalId }: { studentId: string; goalId: st
           <button type="button" onClick={undo} disabled={history.length === 0}>
             Undo
           </button>
-          <button type="button" className="save" onClick={save} disabled={!hasInput(plan, s)}>
+          <button
+            type="button"
+            className="save"
+            onClick={() => save()}
+            disabled={!hasInput(plan, s)}
+          >
             Save session{value !== null ? `: ${value} ${unit}` : ""}
           </button>
         </div>
+        {asking && (
+          <div role="alert">
+            <p>{asking}</p>
+            <div className="actions">
+              <button type="button" className="save" onClick={() => save(true)}>
+                Yes, save it
+              </button>
+              <button type="button" onClick={() => setAsking("")}>
+                No, let me change it
+              </button>
+            </div>
+          </div>
+        )}
         <p className="saved" role="status">
           {flash}
         </p>
