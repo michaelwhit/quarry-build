@@ -135,7 +135,7 @@ export function Form({ studentId }: { studentId: string }) {
       <button
         type="button"
         className="btn"
-        disabled={d.title.trim() === ""}
+        disabled={problem !== undefined}
         onClick={() => {
           addServiceRow(studentId, d);
           setD(EMPTY);
