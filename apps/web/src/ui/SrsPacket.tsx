@@ -16,6 +16,7 @@ import {
   subscribePacket,
 } from "../data/srsPacket.ts";
 import { canUsePresentLevels } from "./PresentLevels.tsx";
+import { PrintDraft } from "./SrsPrint.tsx";
 import { getVersion, subscribe } from "../data/workspace.ts";
 
 // An edit form is a file in src/ui/srs/ that exports `section` and `Form`. The page shows it in
@@ -128,6 +129,7 @@ export function SrsPacket({ studentId }: { studentId: string }) {
         the checklist only records that you marked a section pasted. The browser keeps copied text
         on the clipboard until you copy something else.
       </p>
+      <PrintDraft student={s.student} sections={sections} />
       <p>
         <strong>
           {pasted} of {sections.length} sections marked pasted

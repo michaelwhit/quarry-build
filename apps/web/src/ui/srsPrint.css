@@ -1,0 +1,55 @@
+/* The printed draft is on the page only when printing. */
+.srs-print-root {
+  display: none;
+}
+
+@media print {
+  #root {
+    display: none !important;
+  }
+  .srs-print-root {
+    display: block;
+    color: #000;
+    background: #fff;
+    font-size: 11pt;
+    line-height: 1.4;
+  }
+  .srs-print-root h1 {
+    font-size: 16pt;
+    margin: 0 0 4pt;
+  }
+  .srs-print-root h2 {
+    font-size: 13pt;
+    margin: 14pt 0 4pt;
+    border-bottom: 1px solid #000;
+    break-after: avoid;
+  }
+  .srs-print-root h3 {
+    font-size: 11pt;
+    margin: 8pt 0 2pt;
+    break-after: avoid;
+  }
+  .srs-print-root p {
+    margin: 0 0 4pt;
+    white-space: pre-wrap;
+  }
+  .srs-print-note {
+    font-style: italic;
+  }
+  .srs-print-item {
+    break-inside: avoid;
+  }
+  /* Fixed elements repeat on every printed page. */
+  .srs-watermark {
+    position: fixed;
+    top: 40%;
+    left: 0;
+    right: 0;
+    text-align: center;
+    transform: rotate(-30deg);
+    font-size: 30pt;
+    font-weight: 700;
+    color: rgba(0, 0, 0, 0.1);
+    pointer-events: none;
+  }
+}
