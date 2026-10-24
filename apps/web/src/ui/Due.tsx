@@ -141,7 +141,17 @@ export function Due() {
         <p className="meta">Change the date to see how the list looks on another day.</p>
       </div>
       {view.total === 0 ? (
-        <p className="empty">Nothing is due or waiting for data. Everything is up to date.</p>
+        <div className="card empty-start">
+          <p className="empty">Nothing is due or waiting for data. Everything is up to date.</p>
+          <div className="actions">
+            <a className="btn" href="#/caseload">
+              See the caseload
+            </a>
+            <a className="btn" href="#/today">
+              Start a session
+            </a>
+          </div>
+        </div>
       ) : (
         view.managers.map((m) => <Manager key={m.caseManager} m={m} />)
       )}
