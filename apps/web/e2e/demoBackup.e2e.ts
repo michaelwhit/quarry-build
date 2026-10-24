@@ -14,13 +14,26 @@ test.describe("loading the sample students for the demo", () => {
     await load.click();
     await expect(page.getByText(/12 students/)).toBeVisible();
 
+    // Add a student of our own so a real replace changes the count (13 back to 12).
+    await page.evaluate(() => {
+      window.location.hash = "#/add-student";
+    });
+    await page.getByLabel("First name").fill("Extra");
+    await page.getByLabel("Last name").fill("Student");
+    await page.getByRole("button", { name: "Add student" }).click();
+    await tabBar(page).getByRole("link", { name: "More" }).click();
+    const practice = page.getByRole("heading", { name: "Practice data" }).locator("..");
+    await expect(practice).toContainText("13 students");
+
     await load.click();
     await expect(page.getByRole("button", { name: "Replace with sample students" })).toBeVisible();
     await page.getByRole("button", { name: "Cancel" }).click();
     await expect(page.getByRole("button", { name: "Replace with sample students" })).toHaveCount(0);
     await load.click();
+    await expect(practice).toContainText("13 students");
     await page.getByRole("button", { name: "Replace with sample students" }).click();
-    await expect(page.getByText(/12 students/)).toBeVisible();
+    await expect(practice).toContainText("12 students");
+    await expect(practice).not.toContainText("13 students");
     await expect(page.getByRole("button", { name: "Replace with sample students" })).toHaveCount(0);
 
     await signOut(page);
