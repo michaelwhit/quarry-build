@@ -314,13 +314,16 @@ export async function getMe(): Promise<Me | null> {
   }
 }
 
-/** Always ends the session on this device, even when the server cannot be reached. */
-/** True when the server confirmed the logout; false means the cookie may still be valid. */
+/**
+ * Always ends the session on this device, even when the server cannot be reached. True when the
+ * server confirmed the logout (a 401 means it already has no session for us); false means the
+ * cookie may still be valid.
+ */
 export async function signOut(): Promise<boolean> {
   forgetToken();
   try {
     const res = await post("/v0/auth/web/logout", { deviceId: deviceId() });
-    return res.ok;
+    return res.ok || res.status === 401;
   } catch {
     return false;
   }

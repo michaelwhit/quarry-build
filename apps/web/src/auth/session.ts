@@ -65,7 +65,17 @@ function clearPending() {
   }
 }
 
+// Set when a sign-out could neither be confirmed nor recorded as a flag, so the page was not
+// reloaded. Until it is, the screen that checks for a session does not refresh, and the next
+// sign-in reloads first so nothing from the last person is still in memory.
+let reloadBeforeNextSignIn = false;
+
 export function begin(me: Me) {
+  if (reloadBeforeNextSignIn) {
+    // The new session's cookie is already set, so the reload signs this person straight in.
+    window.location.reload();
+    return;
+  }
   who = me;
   // A new sign-in replaces the old cookie, so an old unconfirmed sign-out no longer applies.
   clearPending();
@@ -76,6 +86,8 @@ export function begin(me: Me) {
     who = null;
     clearPracticeStorage();
     const marked = setPending();
+    // Held from the start, so nothing signs back in while the logout is still unconfirmed.
+    if (!marked && typeof window !== "undefined") reloadBeforeNextSignIn = true;
     void Promise.race([
       signOut(),
       new Promise<boolean>((r) => setTimeout(() => r(false), 2000)),
@@ -93,7 +105,7 @@ export function begin(me: Me) {
 /** On page load there is no access token in memory: refresh first. */
 export async function restore(): Promise<"signed_in" | "signed_out" | "no_server"> {
   // A sign-out the server never confirmed: finish it first, and do not refresh until it is done.
-  if (signOutPending()) {
+  if (signOutPending() || reloadBeforeNextSignIn) {
     if (await signOut()) clearPending();
     return "signed_out";
   }
