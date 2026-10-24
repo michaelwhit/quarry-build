@@ -737,12 +737,17 @@ h2.page-title {
 .form input,
 .form select,
 .form textarea {
+  min-height: 44px;
   padding: 10px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
   color: var(--text);
   font: inherit;
+}
+label > select,
+label > input[type="date"] {
+  min-height: 44px;
 }
 .form-warn {
   padding: 8px 12px;
