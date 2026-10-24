@@ -1025,3 +1025,14 @@ h2.landing-name {
   color: var(--text);
   font-weight: 700;
 }
+
+.student-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+.student-nav .btn.on {
+  border-color: var(--focus);
+  font-weight: 650;
+}
