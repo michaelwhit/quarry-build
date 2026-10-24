@@ -17,6 +17,9 @@ test.describe("meeting notices, service minutes and Prior Written Notice", () =>
     await tabBar(page).getByRole("link", { name: "Caseload" }).click();
     await page.locator("ul.cards .name").first().click();
 
+    await expect(page.getByRole("region", { name: "Recent notes" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Team" })).toBeVisible();
+
     await page.getByRole("link", { name: "Service minutes" }).click();
     await expect(page.getByRole("heading", { level: 2 }).first()).toContainText(/service/i);
     await page.goBack();
