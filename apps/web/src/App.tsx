@@ -128,7 +128,7 @@ function Caseload() {
           <div className="n">{totals.goals}</div>
           <div className="l">IEP goals</div>
         </li>
-        {(["needs_attention", "on_track", "met"] as const).map((k) => (
+        {(["needs_attention", "no_data", "on_track", "met"] as const).map((k) => (
           <li className="tile" key={k}>
             <div className="n">{counts[k]}</div>
             <div className="l">Goals: {STATUS_LABEL[k].toLowerCase()}</div>
