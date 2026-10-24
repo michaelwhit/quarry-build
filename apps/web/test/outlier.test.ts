@@ -25,6 +25,13 @@ describe("outlier check", () => {
     expect(checkOutlier(flat, 90, 100).ask).toBe(true);
   });
 
+  it("does not ask about small counts on a goal whose target is zero", () => {
+    const flat = [2, 2, 2, 2, 2];
+    expect(checkOutlier(flat, 3, 0).ask).toBe(false);
+    expect(checkOutlier([0, 0, 0, 0], 1, 0).ask).toBe(false);
+    expect(checkOutlier(flat, 12, 0).ask).toBe(true);
+  });
+
   it("looks only at the last six values", () => {
     const old = [1, 1, 1, 1, 1, 1, 1, 1];
     expect(checkOutlier([...old, ...steady], 64, 100).ask).toBe(false);

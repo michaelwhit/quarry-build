@@ -9,6 +9,8 @@ export const OUTLIER_MIN_POINTS = 4;
 const MIN_SPREAD_SHARE = 0.2;
 /** How many typical ups and downs away still counts as ordinary. */
 const SPREAD_TIMES = 3;
+/** The smallest allowed distance, in the goal's own units. */
+const MIN_SPREAD_UNITS = 1;
 
 const median = (xs: number[]): number => {
   const s = [...xs].sort((a, b) => a - b);
@@ -34,8 +36,11 @@ export function checkOutlier(previous: number[], value: number, scale: number): 
   if (!Number.isFinite(value) || recent.length < OUTLIER_MIN_POINTS) return NONE;
   const mid = median(recent);
   const typical = median(recent.map((v) => Math.abs(v - mid)));
-  const floor = Math.abs(Number.isFinite(scale) ? scale : 0) * MIN_SPREAD_SHARE;
-  const spread = Math.max(typical * SPREAD_TIMES, floor, 1e-9);
+  // The scale is the goal's target, but a goal to reduce something to zero has a target of 0, so
+  // the largest value seen counts too. One unit is the least change ever worth asking about.
+  const biggest = Math.max(Math.abs(Number.isFinite(scale) ? scale : 0), ...recent.map(Math.abs));
+  const floor = Math.max(biggest * MIN_SPREAD_SHARE, MIN_SPREAD_UNITS);
+  const spread = Math.max(typical * SPREAD_TIMES, floor);
   const low = mid - spread;
   const high = mid + spread;
   return { ask: value < low || value > high, low, high };
