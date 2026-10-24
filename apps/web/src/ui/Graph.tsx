@@ -46,11 +46,14 @@ export function Graph({
   target,
   label,
   unit,
+  reportHref,
 }: {
   series: SeriesPoint[];
   target: number;
   label: string;
   unit: string;
+  /** Where the student's progress report is. When given, a "Progress report" button shows below the graph. */
+  reportHref?: string;
 }) {
   const baseline = baselineOf(series);
   const max = Math.max(target, baseline ?? 0, ...series.map((s) => s.value)) * 1.1 || 1;
@@ -161,6 +164,13 @@ export function Graph({
           </span>
         )}
       </p>
+      {reportHref !== undefined && (
+        <p>
+          <a className="btn" href={reportHref}>
+            Progress report
+          </a>
+        </p>
+      )}
       {series.length > 0 && series.length < 3 && (
         <p className="meta">The trend line appears after 3 sessions.</p>
       )}
