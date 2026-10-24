@@ -46,6 +46,13 @@ const TILES: Tile[] = [
     href: "#/evaluation",
     needs: "evaluation",
   },
+  {
+    title: "Meeting notices",
+    subtitle: "Invitation, consent request and timeline",
+    icon: "✉",
+    href: "#/meeting-notices",
+    needs: "evaluation",
+  },
   // Present levels is written per student, so the tile opens the caseload to pick one (the same
   // as the Goal graphs tile). The roles that cannot use Present levels still see "Planned".
   {

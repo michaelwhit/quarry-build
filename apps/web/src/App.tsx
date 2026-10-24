@@ -30,6 +30,9 @@ import { Evaluation } from "./ui/Evaluation.tsx";
 import { PresentLevels } from "./ui/PresentLevels.tsx";
 import { AccessReview, StaffList } from "./ui/StaffList.tsx";
 import { Privacy, SignIn } from "./ui/SignIn.tsx";
+import { MeetingNotices, canUseNotices } from "./ui/MeetingNotices.tsx";
+import { PriorWrittenNotice, canUsePwn } from "./ui/PriorWrittenNotice.tsx";
+import { ServiceLog, canUseServiceLog } from "./ui/ServiceLog.tsx";
 import { Services } from "./ui/Services.tsx";
 import { ProgressReport, canUseReports } from "./ui/ProgressReport.tsx";
 import { getVersion, getWorkspace, setDelegated, setServed, subscribe } from "./data/workspace.ts";
@@ -238,6 +241,16 @@ function StudentPage({ id }: { id: string }) {
           <a className="btn" href={`#/student/${s.student.id}/report`}>
             Progress report
           </a>
+        )}{" "}
+        {canUseServiceLog(role) && (
+          <a className="btn" href={`#/student/${s.student.id}/service-log`}>
+            Service minutes
+          </a>
+        )}{" "}
+        {canUsePwn(role) && (
+          <a className="btn" href={`#/student/${s.student.id}/pwn`}>
+            Prior Written Notice
+          </a>
         )}
       </p>
       {can(role, "assignServed") && (
@@ -309,6 +322,8 @@ export function App() {
   const rp = /^#\/student\/([^/]+)\/report$/.exec(hash);
   const pl = /^#\/student\/([^/]+)\/present-levels$/.exec(hash);
   const sv = /^#\/student\/([^/]+)\/services$/.exec(hash);
+  const sl = /^#\/student\/([^/]+)\/service-log$/.exec(hash);
+  const pw = /^#\/student\/([^/]+)\/pwn$/.exec(hash);
   const es = /^#\/student\/([^/]+)\/edit$/.exec(hash);
   const ss = /^#\/student\/([^/]+)\/(accommodations|behavior)$/.exec(hash);
   const eg = /^#\/student\/([^/]+)\/goal\/([^/]+)\/edit$/.exec(hash);
@@ -396,6 +411,10 @@ export function App() {
     <PresentLevels studentId={decode(pl[1])} />
   ) : sv?.[1] ? (
     <Services studentId={decode(sv[1])} />
+  ) : sl?.[1] ? (
+    <ServiceLog studentId={decode(sl[1])} />
+  ) : pw?.[1] ? (
+    <PriorWrittenNotice studentId={decode(pw[1])} />
   ) : ss?.[1] && ss[2] ? (
     <StudentSection id={decode(ss[1])} section={ss[2] as "accommodations" | "behavior"} />
   ) : rp?.[1] ? (
@@ -404,6 +423,12 @@ export function App() {
     <StudentPage id={decode(m[1])} />
   ) : hash === "#/caseload" ? (
     <Caseload />
+  ) : hash === "#/meeting-notices" ? (
+    canUseNotices(role) ? (
+      <MeetingNotices />
+    ) : (
+      <NotAllowed />
+    )
   ) : hash === "#/evaluation" ? (
     allow("evaluation") ? (
       <Evaluation />
