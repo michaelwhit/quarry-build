@@ -32,6 +32,15 @@ const round1 = (n: number) => Math.round(n * 10) / 10;
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 
+/** The data table spells out the year, since a school year runs across two calendar years. */
+export const fmtDateYear = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+
 export function Graph({
   series,
   target,
@@ -167,7 +176,7 @@ export function Graph({
           <tbody>
             {series.map((s, i) => (
               <tr key={`${s.at}-${i}`}>
-                <td>{fmtDate(s.at)}</td>
+                <td>{fmtDateYear(s.at)}</td>
                 <td>{s.value}</td>
               </tr>
             ))}
