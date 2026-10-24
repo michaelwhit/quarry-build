@@ -16,7 +16,9 @@ export function Services({ studentId }: { studentId: string }) {
     return (
       <>
         <h2 className="page-title">Not available for this role</h2>
-        <p className="empty">Sign in as the director or a case manager to edit services.</p>
+        <p className="empty">
+          Sign in as the director, a case manager or a related-service provider to edit services.
+        </p>
       </>
     );
   if (!s)
