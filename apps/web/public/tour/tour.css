@@ -62,6 +62,7 @@ body {
   color: var(--link);
   font-weight: 600;
   min-height: 44px;
+  min-width: 44px;
   display: inline-flex;
   align-items: center;
 }
