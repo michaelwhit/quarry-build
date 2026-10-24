@@ -315,12 +315,14 @@ export async function getMe(): Promise<Me | null> {
 }
 
 /** Always ends the session on this device, even when the server cannot be reached. */
-export async function signOut(): Promise<void> {
+/** True when the server confirmed the logout; false means the cookie may still be valid. */
+export async function signOut(): Promise<boolean> {
   forgetToken();
   try {
-    await post("/v0/auth/web/logout", { deviceId: deviceId() });
+    const res = await post("/v0/auth/web/logout", { deviceId: deviceId() });
+    return res.ok;
   } catch {
-    // The cookie expires on its own; nothing more to do here.
+    return false;
   }
 }
 
