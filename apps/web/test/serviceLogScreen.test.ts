@@ -58,8 +58,10 @@ describe("service log store", () => {
     setRequiredPerWeek(sid(), 90);
     expect(getServiceLog(sid()).requiredPerWeek).toBe(90);
     setRequiredPerWeek(sid(), 999999);
-    expect(getServiceLog(sid()).requiredPerWeek).toBe(0);
+    expect(getServiceLog(sid()).requiredPerWeek).toBe(90);
     setRequiredPerWeek(sid(), 1.5);
+    expect(getServiceLog(sid()).requiredPerWeek).toBe(90);
+    setRequiredPerWeek(sid(), 0);
     expect(getServiceLog(sid()).requiredPerWeek).toBe(0);
   });
 

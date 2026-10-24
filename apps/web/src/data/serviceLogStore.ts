@@ -91,8 +91,13 @@ export function resetServiceLogForTests() {
 export const getServiceLog = (studentId: string): StudentLog => records.get(studentId) ?? empty();
 
 export function setRequiredPerWeek(studentId: string, minutes: number) {
-  const n = Number.isInteger(minutes) && minutes >= 0 && minutes <= MAX_REQUIRED ? minutes : 0;
-  records.set(studentId, { ...getServiceLog(studentId), requiredPerWeek: n });
+  const log = getServiceLog(studentId);
+  // A value that is not a whole number in range leaves the saved one alone, rather than zeroing it.
+  const n =
+    Number.isInteger(minutes) && minutes >= 0 && minutes <= MAX_REQUIRED
+      ? minutes
+      : log.requiredPerWeek;
+  records.set(studentId, { ...log, requiredPerWeek: n });
   save();
 }
 
