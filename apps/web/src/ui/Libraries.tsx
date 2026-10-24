@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { students, displayName } from "../data/district.ts";
 import {
   type AccommodationItem,
@@ -51,6 +51,7 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
     ),
   );
   const [starsOnly, setStarsOnly] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const starSet = tab === "goals" ? stars.goals : stars.accommodations;
   const only = starsOnly ? starSet : undefined;
@@ -79,6 +80,8 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
     setCategory("");
     setStarsOnly(false);
     setStatus("");
+    // The button that was pressed goes away, so keyboard focus moves to the search box.
+    searchRef.current?.focus();
   };
   const role = getRole();
   const canAdd = !!role && can(role, "editGoal");
@@ -113,7 +116,7 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
       <p className="lib-sample" role="note">
         Sample wording made up for practice. It has not been reviewed by a specialist.
       </p>
-      <div className="lib-tabs">
+      <div className="lib-tabs" role="group" aria-label="Library">
         {(["goals", "accommodations"] as const).map((t) => (
           <button
             key={t}
@@ -129,8 +132,9 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
           </button>
         ))}
       </div>
-      <div className="lib-filters">
+      <div className="lib-filters" role="search" aria-label="Search and filter the library">
         <input
+          ref={searchRef}
           type="search"
           aria-label="Search the library"
           placeholder="Search"
