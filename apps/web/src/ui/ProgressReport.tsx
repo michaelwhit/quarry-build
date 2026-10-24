@@ -22,19 +22,14 @@ import {
   subscribeReports,
 } from "../data/reports.ts";
 import { Graph } from "./Graph.tsx";
+import { dateTimeWithYear } from "../data/dates.ts";
 
 // Only the director and case managers use this screen (the practice app has no per-student
 // case manager assignment, so every case manager can open it).
 export const canUseReports = (role: string | null) =>
   role === "sped_director" || role === "case_manager";
 
-const when = (iso: string) =>
-  new Date(iso).toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+const when = dateTimeWithYear;
 const dueText = (iso: string) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString(undefined, {
     weekday: "short",
