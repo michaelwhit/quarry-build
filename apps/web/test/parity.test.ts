@@ -22,6 +22,22 @@ describe("Home tiles", () => {
     expect(html).not.toMatch(/Goal library[^]{0,200}Planned/);
   });
 
+  it("opens the caseload from Present levels for the roles that can use it", () => {
+    for (const role of ["sped_director", "case_manager", "related_service_provider"] as const) {
+      setRole(role);
+      const html = renderToString(createElement(Home)).replaceAll("<!-- -->", "");
+      expect(html).toMatch(/href="#\/caseload"[^>]*>(?:(?!<\/a>)[^])*Present levels/);
+      expect(html).not.toMatch(/Present levels[^]{0,200}Planned/);
+    }
+  });
+
+  it("keeps Present levels Planned for a role that cannot use it", () => {
+    setRole("gen_ed_teacher");
+    const html = renderToString(createElement(Home)).replaceAll("<!-- -->", "");
+    expect(html).toContain("Present levels");
+    expect(html).toMatch(/Present levels\. Draft the present-levels section\. Planned/);
+  });
+
   it("opens the libraries on the tab asked for", () => {
     const goals = renderToString(createElement(Libraries));
     const accommodations = renderToString(createElement(Libraries, { start: "accommodations" }));
