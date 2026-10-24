@@ -12,6 +12,7 @@ const FIXED_TITLE_ROUTES = new Set([
   "#/add-student",
   "#/import-students",
   "#/evaluation",
+  "#/meeting-notices",
   "#/staff",
   "#/access-review",
 ]);
