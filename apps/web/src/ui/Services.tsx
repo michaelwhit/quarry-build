@@ -30,7 +30,7 @@ export function Services({ studentId }: { studentId: string }) {
       <a className="btn back" href={`#/student/${studentId}`}>
         ← {displayName(s.student)}
       </a>
-      <h2 style={{ textTransform: "none", color: "var(--text)", fontSize: "1.4rem" }}>Services</h2>
+      <h2 className="page-title">Services</h2>
       <p>
         Special education services, related services, supports for school personnel and
         accommodations. Frequency must be a count or a condition, not &quot;as needed&quot;.
