@@ -1,4 +1,5 @@
 import { useState, useSyncExternalStore } from "react";
+import { localDay } from "../data/localDay.ts";
 import { displayName, studentById, students } from "../data/district.ts";
 import { getRole, getRoleVersion, roleById, subscribeRole } from "../data/roles.ts";
 import {
@@ -38,7 +39,7 @@ import {
 export const canUsePresentLevels = (role: string | null) =>
   role === "sped_director" || role === "case_manager" || role === "related_service_provider";
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => localDay();
 const areaLabel = (a: Area) => AREAS.find((x) => x.id === a)?.label ?? a;
 
 /** Every name that must not reach the drafter: the practice students on this roster. */
