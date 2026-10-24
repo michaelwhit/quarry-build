@@ -199,4 +199,12 @@ describe("the page", () => {
       /\blate\b|\bbehind\b|export|print|share|email|send|\bai\b/,
     );
   });
+
+  it("offers links to the caseload and Today when nothing is due, and still no buttons", () => {
+    const page = html("2025-01-01");
+    expect(page).toContain("Everything is up to date");
+    expect(page).toContain('href="#/caseload"');
+    expect(page).toContain('href="#/today"');
+    expect(page).not.toContain("<button");
+  });
 });
