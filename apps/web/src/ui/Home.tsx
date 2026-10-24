@@ -4,6 +4,7 @@ import { type Action, can, getRole, isDelegateRole, roleById, setRole } from "..
 import { displayName, districtName, goalCounts, students } from "../data/district.ts";
 import { canSeeOverdue } from "../data/overdue.ts";
 import { OverdueHomeLine } from "./Overdue.tsx";
+import { canUsePresentLevels } from "./PresentLevels.tsx";
 import { ReportsDue } from "./ProgressReport.tsx";
 import {
   clearAll,
@@ -21,6 +22,8 @@ interface Tile {
   href?: string;
   /** Shown only to roles with this right. */
   needs?: Action;
+  /** The tile opens only for these roles; for the others it stays "Planned". */
+  opensFor?: (role: string | null) => boolean;
 }
 
 // Same tiles and order as the native Home screen. A tile for something the web app does not do
@@ -43,7 +46,15 @@ const TILES: Tile[] = [
     href: "#/evaluation",
     needs: "evaluation",
   },
-  { title: "Present levels", subtitle: "Draft the present-levels section", icon: "¶" },
+  // Present levels is written per student, so the tile opens the caseload to pick one (the same
+  // as the Goal graphs tile). The roles that cannot use Present levels still see "Planned".
+  {
+    title: "Present levels",
+    subtitle: "Draft the present-levels section",
+    icon: "¶",
+    href: "#/caseload",
+    opensFor: canUsePresentLevels,
+  },
   {
     title: "Goal graphs",
     subtitle: "See progress over time",
@@ -110,7 +121,7 @@ export function Home() {
       <ul className="home-tiles">
         {TILES.filter((t) => !t.needs || can(getRole(), t.needs)).map((t) => (
           <li key={t.title}>
-            {t.href ? (
+            {t.href && (!t.opensFor || t.opensFor(getRole())) ? (
               <a className="card tile-card" href={t.href}>
                 <span className="ticon" aria-hidden="true">
                   {t.icon}

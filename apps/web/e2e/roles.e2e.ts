@@ -51,17 +51,23 @@ test.describe("each role's tabs", () => {
     expect(errors).toEqual([]);
   });
 
-  test("Libraries opens, and the unbuilt Home tiles are marked Planned, not offered", async ({
+  test("Libraries opens, and every Home tile the director sees is offered or marked Planned, never both", async ({
     page,
   }) => {
     await signIn(page, "director");
     await tabBar(page).getByRole("link", { name: "Libraries" }).click();
     await expect(page.getByRole("heading", { name: "Libraries", level: 2 })).toBeVisible();
     await tabBar(page).getByRole("link", { name: "Home" }).click();
+    // Present levels is built for the director, so its tile is a link to the caseload.
+    await expect(page.getByRole("link", { name: /Present levels/ })).toHaveAttribute(
+      "href",
+      "#/caseload",
+    );
+    // A tile that is still Planned is a label, not a link or a button.
     const planned = page.locator('[aria-label$="Planned, not available yet."]');
-    await expect(planned.first()).toBeVisible();
-    // A Planned tile is a label, not a link or a button.
-    await expect(planned.first().getByRole("link")).toHaveCount(0);
+    for (const tile of await planned.all()) {
+      await expect(tile.getByRole("link")).toHaveCount(0);
+    }
   });
 
   test("the privacy page comes first for paras and gen-ed teachers, and declining returns to the picker", async ({
