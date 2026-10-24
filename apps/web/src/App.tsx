@@ -33,7 +33,9 @@ import { Privacy, SignIn } from "./ui/SignIn.tsx";
 import { MeetingNotices, canUseNotices } from "./ui/MeetingNotices.tsx";
 import { PriorWrittenNotice, canUsePwn } from "./ui/PriorWrittenNotice.tsx";
 import { ServiceLog, canUseServiceLog } from "./ui/ServiceLog.tsx";
+import { RecentNotes } from "./ui/RecentNotes.tsx";
 import { Services } from "./ui/Services.tsx";
+import { TeamSection } from "./ui/TeamSection.tsx";
 import { ProgressReport, canUseReports } from "./ui/ProgressReport.tsx";
 import { getVersion, getWorkspace, setDelegated, setServed, subscribe } from "./data/workspace.ts";
 
@@ -297,6 +299,8 @@ function StudentPage({ id }: { id: string }) {
           />
         </section>
       ))}
+      <RecentNotes studentId={s.student.id} />
+      <TeamSection studentId={s.student.id} />
     </>
   );
 }
