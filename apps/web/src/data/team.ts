@@ -21,6 +21,12 @@ const TIES: Record<string, string> = {
   delegated: "Enters data for some goals",
 };
 const ORDER = ["caseload", "service", "class_roster", "delegated"];
+/** Known ties sort in ORDER; anything else goes last instead of first. */
+export const rank = (relationship: string) => {
+  const i = ORDER.indexOf(relationship);
+  return i === -1 ? ORDER.length : i;
+};
+export const tieLabel = (relationship: string) => TIES[relationship] ?? "On the team";
 
 export function teamFor(studentId: string, today: string = viewDate()): TeamMember[] {
   const people = new Map(staff.map((p) => [p.id, p]));
@@ -42,7 +48,7 @@ export function teamFor(studentId: string, today: string = viewDate()): TeamMemb
     )
     .sort(
       (a, b) =>
-        ORDER.indexOf(a.relationship) - ORDER.indexOf(b.relationship) ||
+        rank(a.relationship) - rank(b.relationship) ||
         (people.get(a.staff_id)?.display_name ?? "").localeCompare(
           people.get(b.staff_id)?.display_name ?? "",
         ),
@@ -53,7 +59,7 @@ export function teamFor(studentId: string, today: string = viewDate()): TeamMemb
       if (!p || seen.has(key)) return [];
       seen.add(key);
       return [
-        { id: a.id, name: p.display_name, role: roleName(p.role), tie: TIES[a.relationship] ?? "" },
+        { id: a.id, name: p.display_name, role: roleName(p.role), tie: tieLabel(a.relationship) },
       ];
     });
 }
