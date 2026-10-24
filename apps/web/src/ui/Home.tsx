@@ -3,6 +3,7 @@ import { dueFor } from "../data/derive.ts";
 import { type Action, can, getRole, isDelegateRole, roleById, setRole } from "../data/roles.ts";
 import { displayName, districtName, goalCounts, students } from "../data/district.ts";
 import { canSeeOverdue } from "../data/overdue.ts";
+import { clearPracticeStorageAndReload, hasPracticeData } from "../data/practiceStorage.ts";
 import { OverdueHomeLine } from "./Overdue.tsx";
 import { canUsePresentLevels } from "./PresentLevels.tsx";
 import { ReportsDue } from "./ProgressReport.tsx";
@@ -266,6 +267,9 @@ export function Today() {
   );
 }
 
+// The build with a sign-in server clears the kept text at every sign-out; the practice build keeps it.
+const SERVER_BUILD = !!import.meta.env.VITE_GOALLINE_API_ORIGIN;
+
 export function More() {
   const role = getRole();
   const [armed, setArmed] = useState<"sample" | "clear" | null>(null);
@@ -274,6 +278,8 @@ export function More() {
   const c = goalCounts();
   const points = getWorkspace().points.length;
   const hasData = students.length > 0;
+  // Service log, notices and the other kept text can outlive the student list.
+  const canClear = hasData || hasPracticeData();
   const download = () => {
     const url = URL.createObjectURL(new Blob([exportText()], { type: "application/json" }));
     const a = document.createElement("a");
@@ -301,12 +307,17 @@ export function More() {
           <h3 className="sec">Practice data</h3>
           <p className="meta">
             Loading and saving practice data is for the director role. Anyone can clear what is
-            stored in this browser. Signing out keeps it.
+            stored in this browser.{" "}
+            {SERVER_BUILD ? "Signing out clears it." : "Signing out keeps it."}
           </p>
           <div className="actions stack">
             {armed === "clear" ? (
               <>
-                <button type="button" className="save" onClick={() => (clearAll(), setArmed(null))}>
+                <button
+                  type="button"
+                  className="save"
+                  onClick={() => (clearAll(), clearPracticeStorageAndReload())}
+                >
                   Yes, clear practice data
                 </button>
                 <button type="button" onClick={() => setArmed(null)}>
@@ -314,7 +325,7 @@ export function More() {
                 </button>
               </>
             ) : (
-              <button type="button" onClick={() => setArmed("clear")} disabled={!hasData}>
+              <button type="button" onClick={() => setArmed("clear")} disabled={!canClear}>
                 Clear practice data
               </button>
             )}
@@ -352,7 +363,11 @@ export function More() {
             )}
             {armed === "clear" ? (
               <>
-                <button type="button" className="save" onClick={() => (clearAll(), setArmed(null))}>
+                <button
+                  type="button"
+                  className="save"
+                  onClick={() => (clearAll(), clearPracticeStorageAndReload())}
+                >
                   Yes, clear practice data
                 </button>
                 <button type="button" onClick={() => setArmed(null)}>
@@ -360,7 +375,7 @@ export function More() {
                 </button>
               </>
             ) : (
-              <button type="button" onClick={() => setArmed("clear")} disabled={!hasData}>
+              <button type="button" onClick={() => setArmed("clear")} disabled={!canClear}>
                 Clear practice data
               </button>
             )}

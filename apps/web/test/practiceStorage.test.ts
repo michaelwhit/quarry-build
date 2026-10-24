@@ -1,7 +1,11 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { PRACTICE_KEYS, clearPracticeStorage } from "../src/data/practiceStorage.ts";
+import {
+  PRACTICE_KEYS,
+  clearPracticeStorage,
+  hasPracticeData,
+} from "../src/data/practiceStorage.ts";
 
 const files = (dir: string): string[] =>
   readdirSync(dir).flatMap((f) => {
@@ -44,5 +48,36 @@ describe("practice storage keys", () => {
     const ok = { removeItem: (k: string) => void seen.push(k) };
     expect(() => clearPracticeStorage([blocked, ok])).not.toThrow();
     expect(seen).toEqual([...PRACTICE_KEYS]);
+  });
+
+  it.each(PRACTICE_KEYS)("%s: seen as data, and gone after a clear", (key) => {
+    const m = new Map<string, string>();
+    const store = {
+      getItem: (k: string) => m.get(k) ?? null,
+      removeItem: (k: string) => void m.delete(k),
+    };
+    expect(hasPracticeData([store])).toBe(false);
+    m.set(key, "{}");
+    expect(hasPracticeData([store])).toBe(true);
+    clearPracticeStorage([store]);
+    expect(m.size).toBe(0);
+    expect(hasPracticeData([store])).toBe(false);
+  });
+
+  it("does not count a store that throws as holding data", () => {
+    const blocked = {
+      getItem: () => {
+        throw new Error("blocked");
+      },
+    };
+    expect(hasPracticeData([blocked])).toBe(false);
+  });
+});
+
+describe("the e2e list of keys", () => {
+  it("matches the list in the app", () => {
+    const text = readFileSync("e2e/clearPracticeData.e2e.ts", "utf8");
+    const listed = [...text.matchAll(/^\s+"(goalline-practice-[a-z0-9-]+)",$/gm)].map((m) => m[1]);
+    expect([...listed].sort()).toEqual([...PRACTICE_KEYS].sort());
   });
 });

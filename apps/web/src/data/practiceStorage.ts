@@ -37,6 +37,9 @@ export const PRACTICE_KEYS: readonly string[] = [
 interface Removable {
   removeItem(key: string): void;
 }
+interface Readable {
+  getItem(key: string): string | null;
+}
 
 /**
  * Remove every practice key from the given stores (the browser's local and session storage by
@@ -58,8 +61,31 @@ export function clearPracticeStorage(stores?: Removable[]): number {
   return n;
 }
 
-function browserStores(): Removable[] {
-  const out: Removable[] = [];
+/** True when any listed key holds something, even if there are no students. */
+export function hasPracticeData(stores?: Readable[]): boolean {
+  const list: Readable[] = stores ?? browserStores();
+  for (const s of list)
+    for (const k of PRACTICE_KEYS) {
+      try {
+        if (s.getItem(k) !== null) return true;
+      } catch {
+        // A blocked store holds nothing we can see.
+      }
+    }
+  return false;
+}
+
+/**
+ * Clear first, then reload: every module keeps a copy in memory, and a reload is the one way to
+ * be sure none of it is written back. Nothing in the app writes storage on page hide or unload.
+ */
+export function clearPracticeStorageAndReload(): void {
+  clearPracticeStorage();
+  window.location.reload();
+}
+
+function browserStores(): (Removable & Readable)[] {
+  const out: (Removable & Readable)[] = [];
   for (const get of [() => window.localStorage, () => window.sessionStorage]) {
     try {
       out.push(get());
