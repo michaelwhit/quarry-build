@@ -144,6 +144,7 @@ describe("staff screens and access", () => {
     expect(list).toContain("Staff and roles");
     expect(list).toContain("Search staff");
     expect(list).toContain("Export who can see student records");
+    expect(list.replaceAll("<!-- -->", "")).toMatch(/role="status">\d+ (people|person) shown/);
     const review = renderToString(createElement(AccessReview));
     expect(review).toContain("Who can see student records");
     expect(review).toContain("Save as CSV");
