@@ -56,6 +56,9 @@ export function StaffList() {
           </button>
         ))}
       </div>
+      <p className="sr-only" role="status">
+        {rows.length === 1 ? "1 person shown" : `${rows.length} people shown`}
+      </p>
       {rows.length === 0 ? (
         <p className="empty">{TEXT.empty}</p>
       ) : (
