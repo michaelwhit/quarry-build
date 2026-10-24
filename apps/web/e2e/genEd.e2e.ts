@@ -25,7 +25,7 @@ test.describe("general-education teacher", () => {
     expect(errors).toEqual([]);
   });
 
-  test("At a glance is read only: whole goals, Planned cards, nothing to record or edit", async ({
+  test("At a glance is read only: whole goals, accommodations, services, nothing to record or edit", async ({
     page,
   }) => {
     const errors = watchErrors(page);
@@ -40,7 +40,7 @@ test.describe("general-education teacher", () => {
       page.getByRole("heading", { name: "Accommodations and modifications" }),
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Services" })).toBeVisible();
-    await expect(page.getByText("Planned", { exact: true })).toHaveCount(2);
+    await expect(page.getByText("Planned", { exact: true })).toHaveCount(0);
     for (const gone of [
       "Start a session",
       "Track this goal",

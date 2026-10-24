@@ -1,5 +1,7 @@
 import { displayName, studentById, students } from "../data/district.ts";
+import { getServices, kindLabel } from "../data/serviceRows.ts";
 import { count, gradeWords, metaLine } from "../data/wording.ts";
+import { getWorkspace } from "../data/workspace.ts";
 
 const words = (t: string) => t.replaceAll("_", " ");
 const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
@@ -49,6 +51,8 @@ export function AtAGlance({ studentId }: { studentId: string }) {
         </a>
       </>
     );
+  const accommodations = getWorkspace().accommodations.filter((a) => a.student_id === s.student.id);
+  const services = getServices(s.student.id).rows;
   return (
     <>
       <a className="btn" href="#/today">
@@ -73,18 +77,32 @@ export function AtAGlance({ studentId }: { studentId: string }) {
         ))}
       </ul>
       <h3 className="sec">Accommodations and modifications</h3>
-      <div className="card planned-card">
-        <span className="planned-tag">Planned</span>
-        <p>
-          Accommodations are kept on the case manager's student page. They are not shown on this
-          read-only page yet.
-        </p>
-      </div>
+      {accommodations.length === 0 ? (
+        <p className="empty">None recorded yet.</p>
+      ) : (
+        <ul className="pick">
+          {accommodations.map((a) => (
+            <li key={a.id} className="card">
+              <strong>{a.title}</strong>
+              <p>{a.description}</p>
+              <p className="meta">{metaLine(a.location, a.frequency, a.duration)}</p>
+            </li>
+          ))}
+        </ul>
+      )}
       <h3 className="sec">Services</h3>
-      <div className="card planned-card">
-        <span className="planned-tag">Planned</span>
-        <p>Services and minutes are not on the web yet.</p>
-      </div>
+      {services.length === 0 ? (
+        <p className="empty">None recorded yet.</p>
+      ) : (
+        <ul className="pick">
+          {services.map((r) => (
+            <li key={r.id} className="card">
+              <strong>{r.title}</strong>
+              <p className="meta">{metaLine(kindLabel(r.kind), r.frequency, r.duration)}</p>
+            </li>
+          ))}
+        </ul>
+      )}
       <p className="meta">Don't share this outside school.</p>
     </>
   );
