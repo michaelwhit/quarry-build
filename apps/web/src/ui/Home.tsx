@@ -334,7 +334,7 @@ export function More() {
       ) : (
         <section className="card" style={{ marginTop: 12 }}>
           <h3 className="sec">Practice data</h3>
-          <p className="meta">
+          <p className="meta" role="status">
             {students.length} student{students.length === 1 ? "" : "s"}, {c.goals} goal
             {c.goals === 1 ? "" : "s"}, {points} data point{points === 1 ? "" : "s"}. Made up only.
             It stays in this browser and is never sent anywhere.
