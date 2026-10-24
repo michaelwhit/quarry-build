@@ -128,4 +128,54 @@ test.describe("sign-out clears kept practice text", () => {
       await expect.poll(refreshes).toBeGreaterThan(before);
     });
   }
+
+  test("a 401 from logout counts as confirmed, so the flag clears", async ({ page }) => {
+    await fakeApi(page, {
+      ...signedInHandlers(3_600_000),
+      "POST /v0/auth/web/logout": { status: 401 },
+    });
+    await signInAndSeed(page);
+    await header(page).getByRole("button", { name: "Sign out" }).click();
+    await page.waitForEvent("load");
+    await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
+    expect(await page.evaluate(() => localStorage.getItem("goalline-signout-pending"))).toBeNull();
+  });
+
+  test("if the flag cannot be stored and logout is unconfirmed, the next sign-in reloads first", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      const set = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (k: string, v: string) {
+        if (k === "goalline-signout-pending") throw new Error("blocked");
+        return set.call(this, k, v);
+      };
+    });
+    let cookieValid = false;
+    await fakeApi(page, {
+      ...signedInHandlers(3_600_000),
+      "POST /v0/auth/web/refresh": () => (cookieValid ? { body: token() } : { status: 401 }),
+      "POST /v0/auth/web/logout": { status: 500 },
+    });
+    await signInAndSeed(page);
+    cookieValid = true;
+    await page.evaluate(() => {
+      (window as unknown as { sameDocument: boolean }).sameDocument = true;
+    });
+    await header(page).getByRole("button", { name: "Sign out" }).click();
+    await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
+    await page.waitForTimeout(2600);
+    // No reload happened: this is still the same document, with the kept text already cleared.
+    expect(await page.evaluate(() => "sameDocument" in window)).toBe(true);
+    expect(await leftover(page)).toEqual([]);
+
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await page.getByLabel("Work email").fill("sample@example.test");
+    await page.getByLabel(/^Password/).fill("correct horse battery staple");
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    // The page reloads before using the new session, then the cookie signs the person in.
+    await expect.poll(() => page.evaluate(() => "sameDocument" in window)).toBe(false);
+    await page.getByRole("button", { name: "I understand" }).click();
+    await expect(header(page).getByRole("button", { name: "Sign out" })).toBeVisible();
+  });
 });
