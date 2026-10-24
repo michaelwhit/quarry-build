@@ -14,6 +14,7 @@ import { DeleteButton } from "./Forms.tsx";
 import { Chip } from "./Chip.tsx";
 import { GoalPanel } from "./GoalPanel.tsx";
 import { Graph } from "./Graph.tsx";
+import { canUseReports } from "./ProgressReport.tsx";
 import { count, gradeWords, metaLine } from "../data/wording.ts";
 import { checkOutlier, outlierQuestion } from "../data/outlier.ts";
 
@@ -331,6 +332,7 @@ export function TrackGoal({ studentId, goalId }: { studentId: string; goalId: st
           target={plan.target_value}
           label={`${goalLabel(g.goal)} goal`}
           unit={unit}
+          {...(canUseReports(getRole()) ? { reportHref: `#/student/${studentId}/report` } : {})}
         />
       </section>
       {can(getRole(), "history") && <History goalId={goalId} unit={unit} />}
