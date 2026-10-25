@@ -3,7 +3,7 @@ import { getConsiderationsVersion, subscribeConsiderations } from "../data/consi
 import { displayName, studentById } from "../data/district.ts";
 import { getIepShortVersion, subscribeIepShort } from "../data/iepShort.ts";
 import { getPlVersion, subscribePl } from "../data/presentLevels.ts";
-import { type BoxId, type RowChange, copyText, dateText, draftPwn } from "../data/pwn.ts";
+import { type BoxId, type RowChange, copyText, draftPwn } from "../data/pwn.ts";
 import { gatherPwn } from "../data/pwnSources.ts";
 import {
   CHANGES,
@@ -274,9 +274,9 @@ export function PriorWrittenNotice({ studentId }: { studentId: string }) {
       <section className="goal" aria-label="The notice">
         <h3>The notice</h3>
         <p>
-          Date of the notice: {dateText(draft.noteDate) || "not entered"}
+          Date of the notice: {draft.noteDate || "not entered"}
           <br />
-          Date given: {dateText(draft.deliveryDate) || "not entered"}
+          Date given: {draft.deliveryDate || "not entered"}
         </p>
         {draft.deliveryMethod && <p>Pick in the record system: {draft.deliveryMethod}</p>}
       </section>
