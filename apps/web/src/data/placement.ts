@@ -2,6 +2,7 @@
 // the IEP: the least restrictive environment box, the health and Physical Education boxes, and
 // the transportation answer. The teacher writes them here, then copies each into SRS by hand.
 // Kept in this browser's storage next to the other practice drafts; nothing is sent anywhere.
+import { clip } from "./codePoints.ts";
 
 export type Transport = "yes" | "no";
 export interface Placement {
@@ -29,7 +30,7 @@ try {
 
 const isRec = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
-const text = (v: unknown) => (typeof v === "string" ? v.slice(0, MAX_TEXT) : "");
+const text = (v: unknown) => (typeof v === "string" ? clip(v, MAX_TEXT) : "");
 
 function load(): Map<string, Placement> {
   const out = new Map<string, Placement>();

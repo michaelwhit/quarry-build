@@ -1,6 +1,7 @@
 // The per-goal progress-report boxes of the IEP (practice data only): short-term objectives, how
 // often progress is reported, who is responsible, instruments and how parents are told. Kept in
 // this browser's storage, keyed by goal id. Nothing is sent anywhere.
+import { clip } from "./codePoints.ts";
 
 /** SRS schedule choices. To be confirmed against the district's coded dropdown. */
 export const SCHEDULES = ["Every 4.5 weeks", "Every 9 weeks", "Each semester", "Annually"] as const;
@@ -46,7 +47,7 @@ try {
 
 const isRec = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
-const str = (v: unknown, max: number) => (typeof v === "string" ? v.slice(0, max) : "");
+const str = (v: unknown, max: number) => (typeof v === "string" ? clip(v, max) : "");
 const oneOf = (v: unknown, list: readonly string[]) =>
   typeof v === "string" && list.includes(v) ? v : "";
 
