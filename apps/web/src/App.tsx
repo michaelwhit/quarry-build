@@ -36,6 +36,7 @@ import { ServiceLog, canUseServiceLog } from "./ui/ServiceLog.tsx";
 import { RecentNotes } from "./ui/RecentNotes.tsx";
 import { Services } from "./ui/Services.tsx";
 import { TeamSection } from "./ui/TeamSection.tsx";
+import { FamilySummary } from "./ui/FamilySummary.tsx";
 import { ProgressReport, canUseReports } from "./ui/ProgressReport.tsx";
 import { getVersion, getWorkspace, setDelegated, setServed, subscribe } from "./data/workspace.ts";
 
@@ -244,6 +245,11 @@ function StudentPage({ id }: { id: string }) {
             Progress report
           </a>
         )}{" "}
+        {canUseReports(role) && (
+          <a className="btn" href={`#/student/${s.student.id}/family-summary`}>
+            Family summary
+          </a>
+        )}{" "}
         {canUseServiceLog(role) && (
           <a className="btn" href={`#/student/${s.student.id}/service-log`}>
             Service minutes
@@ -324,6 +330,7 @@ export function App() {
   const allow = (a: Parameters<typeof can>[1]) => can(role, a);
   const g = /^#\/student\/([^/]+)\/add-goal$/.exec(hash);
   const rp = /^#\/student\/([^/]+)\/report$/.exec(hash);
+  const fs = /^#\/student\/([^/]+)\/family-summary$/.exec(hash);
   const pl = /^#\/student\/([^/]+)\/present-levels$/.exec(hash);
   const sv = /^#\/student\/([^/]+)\/services$/.exec(hash);
   const sl = /^#\/student\/([^/]+)\/service-log$/.exec(hash);
@@ -343,6 +350,7 @@ export function App() {
     pl?.[1],
     sv?.[1],
     rp?.[1],
+    fs?.[1],
     glance?.[1],
     es?.[1],
     ss?.[1],
@@ -423,6 +431,8 @@ export function App() {
     <StudentSection id={decode(ss[1])} section={ss[2] as "accommodations" | "behavior"} />
   ) : rp?.[1] ? (
     <ProgressReport studentId={decode(rp[1])} />
+  ) : fs?.[1] ? (
+    <FamilySummary studentId={decode(fs[1])} />
   ) : m?.[1] ? (
     <StudentPage id={decode(m[1])} />
   ) : hash === "#/caseload" ? (
