@@ -1,3 +1,4 @@
+import { count } from "../src/data/codePoints.ts";
 import { setRole } from "../src/data/roles.ts";
 import { beforeEach, describe, expect, it } from "vitest";
 import { students } from "../src/data/district.ts";
@@ -367,5 +368,34 @@ describe("accommodations on a student", () => {
     const broken = JSON.parse(text);
     broken.accommodations.push({ ...broken.accommodations[0], id: "x", student_id: "gone" });
     expect(parse(JSON.stringify(broken))?.accommodations).toHaveLength(1);
+  });
+});
+
+describe("limits count code points", () => {
+  const SMILE = "\u{1F600}"; // one code point, two UTF-16 units
+  const LONE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+  beforeEach(() => {
+    useStorage(fakeStorage());
+    clearAll();
+  });
+  it("keeps a 40-emoji name whole and cuts a longer one to 40 emoji, never inside one", () => {
+    const a = addStudent({ firstName: SMILE.repeat(40), lastName: "Stone", grade: "3" });
+    const b = addStudent({ firstName: SMILE.repeat(45), lastName: "Stone", grade: "3" });
+    const first = (id: string) =>
+      getWorkspace().students.find((s) => s.id === id)?.first_name ?? "";
+    expect(count(first(a))).toBe(40);
+    expect(count(first(b))).toBe(40);
+    expect(first(b)).not.toMatch(LONE);
+  });
+  it("cuts a goal statement at 800 code points", () => {
+    const sid = addStudent({ firstName: "Pat", lastName: "Example", grade: "3" });
+    const gid = addGoal(sid, { ...goal, statement: SMILE.repeat(900) });
+    const saved = getWorkspace().goals.find((g) => g.id === gid);
+    expect(count(saved?.statement ?? "")).toBe(800);
+    expect(saved?.statement).not.toMatch(LONE);
+  });
+  it("loads back a stored name of 40 emoji", () => {
+    addStudent({ firstName: SMILE.repeat(40), lastName: "Stone", grade: "3" });
+    expect(parse(exportText())?.students).toHaveLength(1);
   });
 });

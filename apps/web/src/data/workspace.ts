@@ -1,3 +1,4 @@
+import { clip, within } from "./codePoints.ts";
 import {
   data_points,
   goals as sampleGoals,
@@ -130,7 +131,7 @@ export function useStorage(s: StorageLike | null) {
 type Rec = Record<string, unknown>;
 const isRec = (v: unknown): v is Rec => typeof v === "object" && v !== null && !Array.isArray(v);
 const str = (v: unknown, max: number): v is string =>
-  typeof v === "string" && v.length > 0 && v.length <= max;
+  typeof v === "string" && v.length > 0 && within(v, max);
 const GRADES = new Set(["PK", "K", ...Array.from({ length: 12 }, (_, i) => String(i + 1))]);
 const num = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
 const strList = (v: unknown): v is string[] =>
@@ -274,8 +275,8 @@ export interface StudentInput {
 }
 
 function buildStudent(input: StudentInput, n: number, now: Date): { student: Student; iep: Iep } {
-  const first = input.firstName.trim().slice(0, 40);
-  const last = input.lastName.trim().slice(0, 40);
+  const first = clip(input.firstName.trim(), 40);
+  const last = clip(input.lastName.trim(), 40);
   if (!first || !last) throw new Error("First and last name are required");
   const sid = id();
   const end = new Date(now);
@@ -287,7 +288,7 @@ function buildStudent(input: StudentInput, n: number, now: Date): { student: Stu
     school_id: TENANT,
     first_name: first,
     last_name: last,
-    preferred_name: input.preferredName?.trim().slice(0, 40) || null,
+    preferred_name: clip(input.preferredName?.trim() ?? "", 40) || null,
     grade: input.grade,
     local_student_id: `PRACTICE-${String(n).padStart(3, "0")}`,
     state_student_id: `PRACTICE-${String(n).padStart(3, "0")}`,
@@ -354,12 +355,12 @@ export interface GoalInput {
 export function addGoal(studentId: string, input: GoalInput): string {
   const iep = current.ieps.find((i) => i.student_id === studentId);
   if (!iep) throw new Error("Student not found");
-  const statement = input.statement.trim().slice(0, 800);
+  const statement = clip(input.statement.trim(), 800);
   if (!statement) throw new Error("The goal needs wording");
   if (!Number.isFinite(input.targetValue) || input.targetValue <= 0)
     throw new Error("The target must be a number above zero");
   const gid = id();
-  const unit = input.unit.trim().slice(0, 40) || null;
+  const unit = clip(input.unit.trim(), 40) || null;
   const level = input.promptHierarchy[input.targetValue - 1];
   const goal: Goal = {
     id: gid,
@@ -369,9 +370,9 @@ export function addGoal(studentId: string, input: GoalInput): string {
     statement,
     condition: "",
     behavior: "",
-    baseline: input.baseline.trim().slice(0, 200),
+    baseline: clip(input.baseline.trim(), 200),
     target: level ?? `${input.targetValue}${unit ? ` ${unit}` : ""}`,
-    criteria: input.criteria.trim().slice(0, 300),
+    criteria: clip(input.criteria.trim(), 300),
     sequence: current.goals.filter((g) => g.iep_id === iep.id).length,
   };
   const plan: MeasurementPlan = {
@@ -406,7 +407,7 @@ export function addPoint(goalId: string, value: number, note: string) {
     prompt_level: null,
     step_results: null,
     setting: "practice",
-    note: note.trim().slice(0, 200) || null,
+    note: clip(note.trim(), 200) || null,
     collector_id: TENANT,
     device_id: "browser",
     client_created_at: at,
@@ -433,8 +434,8 @@ export function updateStudent(
   studentId: string,
   input: { firstName: string; lastName: string; preferredName?: string; grade: string },
 ) {
-  const first = input.firstName.trim().slice(0, 40);
-  const last = input.lastName.trim().slice(0, 40);
+  const first = clip(input.firstName.trim(), 40);
+  const last = clip(input.lastName.trim(), 40);
   if (!first || !last) throw new Error("First and last name are required");
   if (!current.students.some((s) => s.id === studentId)) throw new Error("Student not found");
   commit({
@@ -445,7 +446,7 @@ export function updateStudent(
             ...s,
             first_name: first,
             last_name: last,
-            preferred_name: input.preferredName?.trim().slice(0, 40) || null,
+            preferred_name: clip(input.preferredName?.trim() ?? "", 40) || null,
             grade: input.grade,
           }
         : s,
@@ -482,11 +483,11 @@ export function updateGoal(
 ) {
   const plan = current.plans.find((p) => p.goal_id === goalId);
   if (!plan || !current.goals.some((g) => g.id === goalId)) throw new Error("Goal not found");
-  const statement = input.statement.trim().slice(0, 800);
+  const statement = clip(input.statement.trim(), 800);
   if (!statement) throw new Error("The goal needs wording");
   if (!Number.isFinite(input.targetValue) || input.targetValue <= 0)
     throw new Error("The target must be a number above zero");
-  const unit = input.unit.trim().slice(0, 40) || null;
+  const unit = clip(input.unit.trim(), 40) || null;
   const level = plan.prompt_hierarchy[input.targetValue - 1];
   commit({
     ...current,
@@ -496,8 +497,8 @@ export function updateGoal(
             ...g,
             area: input.area,
             statement,
-            baseline: input.baseline.trim().slice(0, 200),
-            criteria: input.criteria.trim().slice(0, 300),
+            baseline: clip(input.baseline.trim(), 200),
+            criteria: clip(input.criteria.trim(), 300),
             target: level ?? `${input.targetValue}${unit ? ` ${unit}` : ""}`,
           }
         : g,

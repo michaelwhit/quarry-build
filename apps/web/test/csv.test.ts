@@ -105,6 +105,13 @@ describe("planImport", () => {
     const plan = planFor(`First,Last,Grade\n${"a".repeat(41)},Stone,3\n`);
     expect(plan[0]?.status.kind).toBe("problem");
   });
+  it("counts a name in code points, the same as the Swift name cap and the server", () => {
+    const smile = "\u{1F600}"; // one code point, two UTF-16 units
+    const ok = planFor(`First,Last,Grade\n${smile.repeat(40)},Stone,3\n`);
+    expect(ok[0]?.status.kind).toBe("ready");
+    const long = planFor(`First,Last,Grade\n${smile.repeat(41)},Stone,3\n`);
+    expect(long[0]?.status.kind).toBe("problem");
+  });
 });
 
 describe("line numbers", () => {
