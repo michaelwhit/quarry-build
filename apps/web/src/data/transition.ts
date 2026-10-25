@@ -2,6 +2,7 @@
 // the transition assessments behind them, the services and the course of study, with a plain check
 // for pieces still missing. Kept in this browser's storage next to the other practice drafts;
 // nothing is sent anywhere. A missing piece describes the draft, never the student.
+import { clip } from "./codePoints.ts";
 
 /** Transition planning starts with the IEP in effect when the student turns this age. */
 export const MIN_AGE = 14;
@@ -106,7 +107,7 @@ function clean(v: unknown): TransitionPlan {
       const date = text(x["date"]);
       plan.assessments.push({
         id: x["id"],
-        name: text(x["name"]).slice(0, 200),
+        name: clip(text(x["name"]), 200),
         date: realDate(date) ? date : "",
       });
     }

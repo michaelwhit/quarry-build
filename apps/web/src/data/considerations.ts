@@ -1,6 +1,7 @@
 // The "special considerations" boxes of the IEP (practice data only). For each one the team
 // either considered it and decided it is not needed, or it is needed and the teacher writes it.
 // Kept in this browser's storage next to the other practice drafts; nothing is sent anywhere.
+import { clip } from "./codePoints.ts";
 
 export const BOXES: { id: string; label: string }[] = [
   { id: "behavior", label: "Behavior that impedes learning: positive behavioral interventions" },
@@ -58,7 +59,7 @@ function load(): Map<string, StudentConsiderations> {
         const kept: StudentConsiderations = {};
         for (const b of BOXES) {
           const e = boxes[b.id];
-          if (validEntry(e)) kept[b.id] = { choice: e.choice, text: e.text.slice(0, 2000) };
+          if (validEntry(e)) kept[b.id] = { choice: e.choice, text: clip(e.text, 2000) };
         }
         out.set(sid, kept);
       }
@@ -102,7 +103,7 @@ export const getConsiderations = (studentId: string): StudentConsiderations =>
 export function setConsideration(studentId: string, boxId: string, entry: Consideration | null) {
   if (!BOXES.some((b) => b.id === boxId)) return;
   const next = { ...getConsiderations(studentId) };
-  if (entry) next[boxId] = { choice: entry.choice, text: entry.text.slice(0, 2000) };
+  if (entry) next[boxId] = { choice: entry.choice, text: clip(entry.text, 2000) };
   else delete next[boxId];
   records.set(studentId, next);
   save();

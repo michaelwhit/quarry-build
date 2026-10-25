@@ -1,5 +1,6 @@
 // Reading a spreadsheet export (CSV) into students. Pure functions, no browser or storage use, so
 // the rules can be tested on their own. The rules match the Mac and iPhone import screen.
+import { within } from "./codePoints.ts";
 
 export const MAX_ROWS = 500;
 export const MAX_COLUMNS = 40;
@@ -77,7 +78,7 @@ export function parseCsv(input: string): ParseResult {
   let startLine = 1;
 
   const endField = (): string | null => {
-    if (field.length > MAX_FIELD)
+    if (!within(field, MAX_FIELD))
       return `A cell is longer than ${MAX_FIELD} characters. Check that this is the right file.`;
     row.push(field);
     field = "";
@@ -109,7 +110,7 @@ export function parseCsv(input: string): ParseResult {
       } else {
         field += ch;
         if (ch === "\n" || (ch === "\r" && text[i + 1] !== "\n")) line++;
-        if (field.length > MAX_FIELD)
+        if (!within(field, MAX_FIELD))
           bad = `A cell is longer than ${MAX_FIELD} characters. Check that this is the right file.`;
       }
     } else if (ch === '"' && field === "" && !wasQuoted) {
@@ -336,7 +337,7 @@ export function planImport(
     let why: string | null = null;
     if (!firstName) why = "No first name.";
     else if (!lastName) why = "No last name.";
-    else if ([firstName, lastName, preferredName].some((n) => n.length > MAX_NAME))
+    else if ([firstName, lastName, preferredName].some((n) => !within(n, MAX_NAME)))
       why = `A name is longer than ${MAX_NAME} characters.`;
     else if (!grade)
       why = gradeText ? `Grade "${gradeText}" is not one of PK, K or 1 to 12.` : "No grade.";
