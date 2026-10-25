@@ -226,10 +226,17 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
         <input
           type="checkbox"
           checked={starsOnly}
+          disabled={tab === "goals" && mineOnly}
+          aria-describedby={tab === "goals" && mineOnly ? "lib-fav-hint" : undefined}
           onChange={(e) => setStarsOnly(e.target.checked)}
         />
         Favorites only ({starSet.size})
       </label>
+      {tab === "goals" && mineOnly && (
+        <p id="lib-fav-hint" className="meta">
+          Turn off My items only to use Favorites only.
+        </p>
+      )}
       {tab === "goals" && (
         <label className="check lib-starsonly">
           <input

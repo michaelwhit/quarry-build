@@ -15,6 +15,14 @@ import "./familySummary.css";
 // right, and only then can it be copied or printed. Nothing is sent from the app. The Spanish is a
 // fixed set of phrases that a bilingual reviewer checks; the goal wording stays as written.
 
+/** The line under the buttons that says why Copy and Print are off, or that they are ready. */
+export const actionHint = (goalCount: number, approved: boolean): string =>
+  goalCount === 0
+    ? "Add a goal before making a summary for the family."
+    : approved
+      ? "Ready to copy or print."
+      : "Copy and Print turn on after you tick the box.";
+
 /** The page a family would read: what is printed or copied. */
 export function FamilyPreview({ summary }: { summary: Summary }) {
   return (
@@ -44,6 +52,7 @@ export function FamilySummary({ studentId }: { studentId: string }) {
   const [periodId, setPeriodId] = useState(() => defaultPeriod().id);
   const [approved, setApproved] = useState(false);
   const [copied, setCopied] = useState<"idle" | "done" | "failed">("idle");
+  const [reset, setReset] = useState(false);
   const role = getRole();
   const s = studentById(studentId);
   if (!canUseReports(role))
@@ -64,6 +73,7 @@ export function FamilySummary({ studentId }: { studentId: string }) {
   // Changing what is shown means the teacher has to read it again.
   const change = (fn: () => void) => {
     fn();
+    setReset(approved);
     setApproved(false);
     setCopied("idle");
   };
@@ -110,7 +120,12 @@ export function FamilySummary({ studentId }: { studentId: string }) {
           <input
             type="checkbox"
             checked={approved}
-            onChange={(e) => setApproved(e.target.checked)}
+            disabled={summary.goals.length === 0}
+            aria-describedby="family-hint"
+            onChange={(e) => {
+              setApproved(e.target.checked);
+              setReset(false);
+            }}
           />{" "}
           I read this and it is right to share with the family
         </label>{" "}
@@ -120,8 +135,17 @@ export function FamilySummary({ studentId }: { studentId: string }) {
         <button type="button" className="btn" disabled={!approved} onClick={() => window.print()}>
           Print
         </button>
+        <p id="family-hint" className="meta">
+          {actionHint(summary.goals.length, approved)}
+        </p>
         <p className="sr-only" role="status">
-          {copied === "done" ? "Summary copied" : copied === "failed" ? "Could not copy" : ""}
+          {copied === "done"
+            ? "Summary copied"
+            : copied === "failed"
+              ? "Could not copy"
+              : reset
+                ? "The summary changed. Read it again and tick the box to copy or print."
+                : ""}
         </p>
       </div>
     </>

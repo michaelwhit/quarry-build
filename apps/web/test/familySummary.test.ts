@@ -6,7 +6,7 @@ import { familySummary, summaryText } from "../src/data/parentSummary.ts";
 import { PERIODS } from "../src/data/reports.ts";
 import { setRole } from "../src/data/roles.ts";
 import { loadSample } from "../src/data/workspace.ts";
-import { FamilyPreview } from "../src/ui/FamilySummary.tsx";
+import { FamilyPreview, actionHint } from "../src/ui/FamilySummary.tsx";
 
 beforeEach(() => {
   setRole("sped_director");
@@ -44,5 +44,12 @@ describe("family summary page", () => {
     const s = students[0]!;
     const text = summaryText(familySummary(s.student, [], PERIODS[0]!, "es"));
     expect(text).toContain("Este estudiante todavía no tiene metas.");
+  });
+
+  it("tells the teacher why Copy and Print are off, or that they are ready", () => {
+    expect(actionHint(0, false)).toContain("Add a goal");
+    expect(actionHint(0, true)).toContain("Add a goal");
+    expect(actionHint(2, false)).toContain("after you tick the box");
+    expect(actionHint(2, true)).toBe("Ready to copy or print.");
   });
 });
