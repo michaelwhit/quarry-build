@@ -1,5 +1,6 @@
 import type { AlternativeInput, BoxId, PwnDraft, RowChange } from "./pwn.ts";
 import { BOX_LABEL } from "./pwn.ts";
+import { clip } from "./codePoints.ts";
 
 // What the teacher types for the Prior Written Notice (practice data only), plus which boxes were
 // approved. The draft itself is rebuilt by code from the other IEP sections every time; only the
@@ -52,7 +53,7 @@ try {
 
 const isRec = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
-const str = (v: unknown) => (typeof v === "string" ? v.slice(0, MAX_TEXT) : "");
+const str = (v: unknown) => (typeof v === "string" ? clip(v, MAX_TEXT) : "");
 const strList = (v: unknown): string[] => (Array.isArray(v) ? v.slice(0, MAX_LINES).map(str) : []);
 
 /** Keeps only well-formed fields, so a damaged or hand-edited store cannot break the page. */

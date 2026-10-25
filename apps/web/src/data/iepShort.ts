@@ -1,6 +1,7 @@
 // The short IEP sections (practice data only): header dates, meeting attendance, alternate
 // assessment and extended school year. Kept in this browser's storage, one record per student.
 // Nothing is sent anywhere; the teacher copies each item into SRS by hand.
+import { clip } from "./codePoints.ts";
 
 /** SRS position list. To be confirmed against the district's dropdown. */
 export const POSITIONS = [
@@ -104,7 +105,7 @@ try {
 
 const isRec = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
-const str = (v: unknown, max: number) => (typeof v === "string" ? v.slice(0, max) : "");
+const str = (v: unknown, max: number) => (typeof v === "string" ? clip(v, max) : "");
 const day = (v: unknown) => (typeof v === "string" && parseDate(v) ? v : "");
 
 function clean(v: unknown): IepShort {
