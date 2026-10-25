@@ -262,7 +262,9 @@ export function subscribe(l: () => void) {
 
 const id = () => crypto.randomUUID();
 const TENANT = "practice";
-const day = (d: Date) => d.toISOString().slice(0, 10);
+/** The calendar day on the clock where the person is (not the UTC day), as yyyy-mm-dd. */
+const day = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 export interface StudentInput {
   firstName: string;
@@ -416,10 +418,7 @@ export function loadSample() {
   commit(sampleWorkspace());
 }
 
-const localToday = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
+const localToday = () => day(new Date());
 
 /** The sample students with their sessions moved forward so the newest is recent, for a demo. */
 export function loadSampleAsOf(today: string = localToday()) {
