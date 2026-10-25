@@ -14,6 +14,26 @@ test.describe("keyboard and screen-reader basics", () => {
     expect(errors).toEqual([]);
   });
 
+  test("Skip to content is the first stop in the keyboard order and jumps past the tab bar", async ({
+    page,
+  }) => {
+    await signIn(page, "director");
+    const first = await page.evaluate(() => {
+      const stops = [...document.querySelectorAll<HTMLElement>("a[href], button, input, select")];
+      const bar = document.querySelector("nav a");
+      return {
+        firstIsSkip: stops[0]?.classList.contains("skip") ?? false,
+        skipBeforeBar: bar ? stops.indexOf(bar as HTMLElement) > 0 : false,
+      };
+    });
+    expect(first).toEqual({ firstIsSkip: true, skipBeforeBar: true });
+    const skip = page.getByRole("link", { name: "Skip to content" });
+    await skip.focus();
+    await expect(skip).toBeInViewport();
+    await page.keyboard.press("Enter");
+    await expect(page.locator("main#main")).toBeInViewport();
+  });
+
   test("the test-data notice is a landmark and the page has one main", async ({ page }) => {
     await signIn(page, "director");
     await expect(page.getByRole("complementary", { name: "Test data notice" })).toBeVisible();
