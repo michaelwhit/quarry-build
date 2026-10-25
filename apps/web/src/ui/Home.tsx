@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { practiceFileName } from "../data/localDay.ts";
 import { dueFor } from "../data/derive.ts";
 import { type Action, can, getRole, isDelegateRole, roleById, setRole } from "../data/roles.ts";
 import { displayName, districtName, goalCounts, students } from "../data/district.ts";
@@ -284,7 +285,7 @@ export function More() {
     const url = URL.createObjectURL(new Blob([exportText()], { type: "application/json" }));
     const a = document.createElement("a");
     a.href = url;
-    a.download = `goalline-practice-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = practiceFileName();
     a.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
