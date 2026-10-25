@@ -1,0 +1,31 @@
+.family-controls,
+.family-actions {
+  margin: 12px 0;
+}
+.family-summary {
+  max-width: 40rem;
+  padding: 12px 16px;
+  border: 1px solid var(--line, #888);
+  border-radius: 8px;
+}
+.family-note {
+  font-style: italic;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .family-summary,
+  .family-summary * {
+    visibility: visible;
+    color: #000;
+  }
+  .family-summary {
+    position: absolute;
+    left: 0;
+    top: 0;
+    border: 0;
+    font-size: 12pt;
+  }
+}

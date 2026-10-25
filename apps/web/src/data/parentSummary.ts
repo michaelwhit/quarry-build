@@ -14,6 +14,7 @@ interface Phrases {
   period: (label: string) => string;
   area: Record<GoalArea, string>;
   noData: string;
+  noGoals: string;
   progress: (sessions: number, start: string, now: string, aim: string) => string;
   onTrack: string;
   notYet: string;
@@ -39,6 +40,7 @@ const PHRASES: Record<Lang, Phrases> = {
       other: "Other goal",
     },
     noData: "No progress was recorded in this period.",
+    noGoals: "This student has no goals yet.",
     progress: (n, a, b, c) =>
       `${n} ${n === 1 ? "session" : "sessions"} recorded. Started at ${a}, most recent ${b}, aim ${c}.`,
     onTrack: "On track to meet this goal.",
@@ -63,6 +65,7 @@ const PHRASES: Record<Lang, Phrases> = {
       other: "Otra meta",
     },
     noData: "No se registró progreso en este período.",
+    noGoals: "Este estudiante todavía no tiene metas.",
     progress: (n, a, b, c) =>
       `${n} ${n === 1 ? "sesión registrada" : "sesiones registradas"}. Comenzó en ${a}, más reciente ${b}, meta ${c}.`,
     onTrack: "Va por buen camino para lograr esta meta.",
@@ -87,6 +90,8 @@ export interface FamilySummary {
   title: string;
   period: string;
   goals: SummaryGoal[];
+  /** Shown in place of the goals when there are none. */
+  noGoals: string;
   next: string;
 }
 
@@ -124,6 +129,7 @@ export function familySummary(
         note: p.notTranslated,
       };
     }),
+    noGoals: p.noGoals,
     next: p.next,
   };
 }
@@ -131,6 +137,7 @@ export function familySummary(
 /** Plain text for copying, with no ids and only the student's first name. */
 export function summaryText(s: FamilySummary): string {
   const lines = [s.title, s.period, ""];
+  if (s.goals.length === 0) lines.push(s.noGoals, "");
   for (const g of s.goals) {
     lines.push(g.area, `${g.goalWording}: ${g.statement}`);
     if (g.note) lines.push(g.note);
