@@ -24,6 +24,10 @@ import {
   updateGoal,
   updateStudent,
 } from "../data/workspace.ts";
+import { gradeBandOf } from "../data/libraryFill.ts";
+import { MAX_MY_GOALS, addMyGoal, getMyGoals, removeMyGoal } from "../data/myItems.ts";
+import { type GoalForTemplate, draftMyGoal, todayIso } from "../data/myItemsFromGoal.ts";
+import { MyItemsOffer } from "./MyItemsOffer.tsx";
 
 const GRADES = ["PK", "K", ...Array.from({ length: 12 }, (_, i) => String(i + 1))];
 
@@ -203,6 +207,8 @@ export function AddGoal({ studentId, editGoalId }: { studentId: string; editGoal
   const [levels, setLevels] = useState((old?.plan.prompt_hierarchy ?? DEFAULT_LEVELS).join("\n"));
   const [steps, setSteps] = useState((old?.plan.task_steps ?? []).join("\n"));
   const [frequency, setFrequency] = useState(old?.plan.frequency ?? "2x weekly");
+  const [saveMine, setSaveMine] = useState(false);
+  const [mineTitle, setMineTitle] = useState("");
   const [error, setError] = useState("");
 
   if (!s || (editGoalId && !old))
@@ -219,9 +225,46 @@ export function AddGoal({ studentId, editGoalId }: { studentId: string; editGoal
   };
   const levelList = lines(levels);
   const stepList = lines(steps);
+  const unitUsed =
+    type === "prompt_level" || type === "task_analysis" || type === "yes_no" ? "" : unit;
+  const forMine = (): GoalForTemplate => ({
+    title: mineTitle,
+    statement,
+    criteria,
+    area,
+    type,
+    unit: unitUsed,
+    targetValue: type === "task_analysis" && target === "" ? stepList.length : Number(target),
+    trialsPerSession: type === "trials" ? Number(trials) : null,
+    promptHierarchy: type === "prompt_level" ? levelList : [],
+    taskSteps: type === "task_analysis" ? stepList : [],
+    names: [s.student.first_name, s.student.last_name, s.student.preferred_name ?? ""],
+    gradeBand: gradeBandOf(s.student.grade),
+  });
+  /** Saves to My items first, so a duplicate or an unsaved item stops the form before the goal is added. */
+  const saveToMine = (): string | null => {
+    if (!saveMine) return null;
+    if (getMyGoals().length >= MAX_MY_GOALS)
+      throw new Error("My items is full. Remove one in Libraries, or untick the box.");
+    const r = addMyGoal(draftMyGoal(forMine(), todayIso()).item);
+    if (!r.ok)
+      throw new Error(
+        r.reason === "duplicate"
+          ? "That wording is already in My items. Untick the box to save the goal."
+          : "This goal is too long to keep in My items. Untick the box to save the goal alone.",
+      );
+    if (!r.kept) {
+      removeMyGoal(r.id);
+      throw new Error(
+        "This browser would not keep My items for later visits. Untick the box to save the goal alone.",
+      );
+    }
+    return r.id;
+  };
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    let mineId: string | null = null;
     try {
       const targetValue =
         type === "task_analysis" && target === "" ? stepList.length : Number(target);
@@ -230,6 +273,7 @@ export function AddGoal({ studentId, editGoalId }: { studentId: string; editGoal
       if (type === "task_analysis" && stepList.length < 1) throw new Error("Add the steps");
       if (type === "trials" && !(Number(trials) > 0))
         throw new Error("Enter the trials per session");
+      mineId = saveToMine();
       if (editGoalId) {
         updateGoal(editGoalId, {
           area,
@@ -260,6 +304,7 @@ export function AddGoal({ studentId, editGoalId }: { studentId: string; editGoal
       });
       window.location.hash = `#/student/${s.student.id}`;
     } catch (err) {
+      if (mineId) removeMyGoal(mineId);
       setError(err instanceof Error ? err.message : "Could not add the goal");
     }
   };
@@ -408,6 +453,12 @@ export function AddGoal({ studentId, editGoalId }: { studentId: string; editGoal
             )}
           </select>
         </label>
+        <MyItemsOffer
+          goal={forMine()}
+          on={saveMine}
+          onToggle={setSaveMine}
+          onTitle={setMineTitle}
+        />
         {error && (
           <p className="form-error" role="alert">
             {error}
