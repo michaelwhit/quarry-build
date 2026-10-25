@@ -279,6 +279,13 @@ export function PriorWrittenNotice({ studentId }: { studentId: string }) {
           Date given: {draft.deliveryDate || "not entered"}
         </p>
         {draft.deliveryMethod && <p>Pick in the record system: {draft.deliveryMethod}</p>}
+        {draft.blocked
+          .filter((why) => why.startsWith("Date of"))
+          .map((why) => (
+            <p key={why} role="note" className="empty">
+              {why}
+            </p>
+          ))}
       </section>
       {draft.boxes.map((b) => {
         const approved = isApproved(entry, draft, b.id as BoxId);

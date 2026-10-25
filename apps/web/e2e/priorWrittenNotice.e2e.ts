@@ -98,4 +98,17 @@ test.describe("Prior Written Notice draft", () => {
     await expect(notice).toContainText("Date of the notice: Nov 10, 2026");
     await expect(notice).toContainText("Date given: Nov 2, 2026");
   });
+
+  test("a date that is missing or out of order says so in the notice", async ({ page }) => {
+    await loadSamplesAsDirector(page);
+    await openNotice(page);
+    const notes = box(page, "The notice").getByRole("note");
+    await expect(notes).toHaveText(["Date of note is not a real date."]);
+    await page.getByLabel("Date of the notice").fill("2026-11-10");
+    await expect(notes).toHaveCount(0);
+    await page.getByLabel("Date it was given to the parent").fill("2026-11-02");
+    await expect(notes).toHaveText(["Date of delivery is before the date of note."]);
+    await page.getByLabel("Date it was given to the parent").fill("2026-11-12");
+    await expect(notes).toHaveCount(0);
+  });
 });
