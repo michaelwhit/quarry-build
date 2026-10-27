@@ -213,6 +213,9 @@ h2 {
   font-size: 0.95rem;
   text-transform: capitalize;
 }
+.goal h3.as-written {
+  text-transform: none;
+}
 .goal p {
   margin: 4px 0 10px;
   color: var(--text-muted);
@@ -748,6 +751,12 @@ h2.page-title {
 label > select,
 label > input[type="date"] {
   min-height: 44px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
 }
 .form-warn {
   padding: 8px 12px;

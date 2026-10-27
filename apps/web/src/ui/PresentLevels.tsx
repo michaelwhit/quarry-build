@@ -523,7 +523,7 @@ export function PresentLevels({ studentId }: { studentId: string }) {
           const empty = def.ai && ev.scores.length === 0 && ev.statements.length === 0;
           return (
             <section className="goal" key={def.key} aria-label={def.label} aria-busy={busy}>
-              <h3>{def.label}</h3>
+              <h3 className="as-written">{def.label}</h3>
               <p className="meta">
                 {def.ai ? "Draft, you approve." : "You write this section."} ·{" "}
                 {slot?.approved ? "Approved" : slot ? "Draft saved" : "Not started"}
