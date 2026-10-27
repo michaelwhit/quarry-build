@@ -30,6 +30,11 @@ test("the family summary needs a read-and-approve tick before Copy and Print, in
   await expect(page.getByText("The Spanish wording is a draft")).toBeVisible();
   await expect(tick).not.toBeChecked();
   await expect(copy).toBeDisabled();
+  // A screen reader user is told the tick was cleared, and why Copy and Print are off.
+  await expect(page.getByRole("status").filter({ hasText: "The summary changed" })).toHaveCount(1);
+  await expect(page.getByText("Copy and Print turn on after you tick the box.")).toBeVisible();
+  await tick.check();
+  await expect(page.getByText("Ready to copy or print.")).toBeVisible();
   expect(errors).toEqual([]);
 });
 
