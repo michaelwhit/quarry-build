@@ -304,4 +304,23 @@ export const moreAccommodations: AccommodationItem[] = [
     description: "An adult checks that the student understands the task and has started it.",
     frequency: "At the start of each independent task",
   },
+  {
+    ...same,
+    id: "a-largeprint",
+    title: "Larger print on handouts and tests",
+    kind: "accommodation",
+    category: "Presentation",
+    description: "Handouts and tests are printed in a larger, clear font with wider line spacing.",
+    frequency: "On printed handouts and tests",
+  },
+  {
+    ...same,
+    id: "a-clutter",
+    title: "Less clutter on the page",
+    kind: "accommodation",
+    category: "Presentation",
+    description:
+      "Worksheets have plenty of white space, one block of items at a time and no decorative graphics.",
+    frequency: "On worksheets and tests",
+  },
 ];
