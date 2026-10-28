@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { GoalArea, MeasurementType } from "@synthetic/src/types.ts";
+import { clip } from "../data/codePoints.ts";
 import { displayName, goalById, studentById, students } from "../data/district.ts";
 import {
   FIELDS,
@@ -151,15 +152,15 @@ export function AddStudent({ editId }: { editId?: string }) {
       <form className="form" onSubmit={submit}>
         <label>
           <span>First name</span>
-          <input value={first} maxLength={40} required onChange={(e) => setFirst(e.target.value)} />
+          <input value={first} required onChange={(e) => setFirst(clip(e.target.value, 40))} />
         </label>
         <label>
           <span>Last name</span>
-          <input value={last} maxLength={40} required onChange={(e) => setLast(e.target.value)} />
+          <input value={last} required onChange={(e) => setLast(clip(e.target.value, 40))} />
         </label>
         <label>
           <span>Preferred name (optional)</span>
-          <input value={preferred} maxLength={40} onChange={(e) => setPreferred(e.target.value)} />
+          <input value={preferred} onChange={(e) => setPreferred(clip(e.target.value, 40))} />
         </label>
         <label>
           <span>Grade</span>
@@ -334,28 +335,25 @@ export function AddGoal({ studentId, editGoalId }: { studentId: string; editGoal
           <textarea
             value={statement}
             rows={4}
-            maxLength={800}
             required
-            onChange={(e) => setStatement(e.target.value)}
+            onChange={(e) => setStatement(clip(e.target.value, 800))}
           />
         </label>
         <label>
           <span>Baseline (where the student is now)</span>
           <input
             value={baseline}
-            maxLength={200}
             required
             placeholder="e.g. 3 minutes"
-            onChange={(e) => setBaseline(e.target.value)}
+            onChange={(e) => setBaseline(clip(e.target.value, 200))}
           />
         </label>
         <label>
           <span>Criteria</span>
           <input
             value={criteria}
-            maxLength={300}
             placeholder="e.g. in 4 of 5 sessions"
-            onChange={(e) => setCriteria(e.target.value)}
+            onChange={(e) => setCriteria(clip(e.target.value, 300))}
           />
         </label>
         <label>
@@ -412,7 +410,7 @@ export function AddGoal({ studentId, editGoalId }: { studentId: string; editGoal
         {type !== "yes_no" && type !== "prompt_level" && type !== "task_analysis" && (
           <label>
             <span>Unit</span>
-            <input value={unit} maxLength={40} onChange={(e) => setUnit(e.target.value)} />
+            <input value={unit} onChange={(e) => setUnit(clip(e.target.value, 40))} />
           </label>
         )}
         {type === "prompt_level" ? (
