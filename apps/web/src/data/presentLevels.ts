@@ -1,3 +1,4 @@
+import { count } from "./codePoints.ts";
 import { nameMatcher, redact } from "./evaluation.ts";
 
 // Present levels (practice data only). The teacher confirms scores and stated needs, a drafter
@@ -273,7 +274,7 @@ export function scoreProblems(s: EvScore, today: string): string[] {
     found.push("Percentile is a whole number from 1 to 99.");
   if (!isDay(s.testedOn)) found.push("Enter the date it was given (year-month-day).");
   else if (s.testedOn > today) found.push("The test date is in the future.");
-  if (s.descriptor.length > 60) found.push("The printed label is too long.");
+  if (count(s.descriptor) > 60) found.push("The printed label is too long.");
   return found;
 }
 
