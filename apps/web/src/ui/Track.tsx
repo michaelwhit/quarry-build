@@ -317,10 +317,16 @@ export function TrackGoal({ studentId, goalId }: { studentId: string; goalId: st
             className="save"
             onClick={() => save()}
             disabled={!hasInput(plan, s)}
+            aria-describedby={hasInput(plan, s) ? undefined : "track-save-hint"}
           >
             Save session{value !== null ? `: ${value} ${unit}` : ""}
           </button>
         </div>
+        {!hasInput(plan, s) && (
+          <p id="track-save-hint" className="meta">
+            Record something for this session to turn Save on.
+          </p>
+        )}
         {unsaved && !asking && <p className="meta">This session is not saved yet.</p>}
         {asking && (
           <div role="alert">
