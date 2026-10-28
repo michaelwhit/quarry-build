@@ -10,6 +10,7 @@ import {
   reopen,
   defaultComment,
   defaultPeriod,
+  openingPeriod,
   editGoal,
   effectiveSufficient,
   getRecord,
@@ -47,6 +48,12 @@ describe("period and numbers", () => {
     expect(defaultPeriod(new Date(2026, 9, 24, 0, 5)).id).toBe("q2");
     expect(defaultPeriod(new Date("2026-11-01T12:00:00Z")).id).toBe("q2");
     expect(defaultPeriod(new Date("2027-06-01T12:00:00Z")).id).toBe("q2");
+  });
+  it("a student's page opens on a past-due unfiled period, else the one due next (a default, the picker lists all)", () => {
+    expect(openingPeriod("s1", new Date(2026, 9, 30)).id).toBe("q1");
+    expect(openingPeriod("s1", new Date(2026, 9, 22)).id).toBe("q1");
+    // Quarter 1 is still unfiled in January, so it stays the one that opens.
+    expect(openingPeriod("s1", new Date(2027, 0, 5)).id).toBe("q1");
   });
   it("counts only data inside the period and never says Yes without data", () => {
     const q2 = PERIODS[1]!;

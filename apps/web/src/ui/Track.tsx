@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { goalLabel } from "../data/derive.ts";
+import { clip } from "../data/codePoints.ts";
 import { displayName, goalById, students } from "../data/district.ts";
 import {
   type SessionState,
@@ -303,8 +304,7 @@ export function TrackGoal({ studentId, goalId }: { studentId: string; goalId: st
           <span>Quick note (optional)</span>
           <input
             value={note}
-            maxLength={200}
-            onChange={(e) => setNote(e.target.value)}
+            onChange={(e) => setNote(clip(e.target.value, 200))}
             placeholder="e.g. used visual cue"
           />
         </label>

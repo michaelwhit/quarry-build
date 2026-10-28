@@ -20,6 +20,17 @@ export const dueWords = (iso: string): string => {
 export const sharedDueDate = (dates: string[]): string | undefined =>
   dates.length > 0 && dates.every((d) => d === dates[0]) ? dates[0] : undefined;
 
+/** These lists come from the built-in demo district, so with no students loaded they match nothing. */
+export function SampleListNote() {
+  if (students.length > 0) return null;
+  return (
+    <p className="meta" data-testid="sample-list-note">
+      These reports are samples from the demo district. They will not match your caseload until you{" "}
+      <a href="#/">load the sample students</a>.
+    </p>
+  );
+}
+
 /** The director's Home line; opens the list. Zero is shown calmly, not hidden. */
 export function OverdueHomeLine() {
   const n = overdueList(viewDate()).total;
@@ -54,6 +65,7 @@ export function Overdue() {
       </a>
       <h2 className="page-title">Progress reports to file</h2>
       <p className="meta">Made-up reports for practice. These are not real students.</p>
+      <SampleListNote />
       {list.total === 0 ? (
         <p className="empty">Nothing is waiting. Every progress report due so far is filed.</p>
       ) : (

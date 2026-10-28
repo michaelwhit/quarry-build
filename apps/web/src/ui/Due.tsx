@@ -10,7 +10,7 @@ import {
   type WindowDays,
 } from "../data/due.ts";
 import { setPracticeDate, viewDate } from "../data/overdue.ts";
-import { dueWords } from "./Overdue.tsx";
+import { SampleListNote, dueWords } from "./Overdue.tsx";
 
 const known = new Set(students.map((s) => s.student.id));
 
@@ -101,6 +101,7 @@ export function Due() {
       <p className="meta">
         Made-up reports, dates and data for practice. These are not real students.
       </p>
+      <SampleListNote />
       <div className="card numbers">
         <div className="name">
           {count((m) => m.overdue.length)} overdue · {count((m) => m.comingUp.length)} coming up ·{" "}

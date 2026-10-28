@@ -1,4 +1,5 @@
 import { useState, useId } from "react";
+import { clip } from "../data/codePoints.ts";
 import {
   ACTIVITY_TEXT,
   type ConsentActivity,
@@ -111,25 +112,22 @@ function ContactFields({ value, onChange }: { value: Contact; onChange: (c: Cont
       <label>
         Name
         <input
-          maxLength={120}
           value={value.name}
-          onChange={(e) => onChange({ ...value, name: e.target.value })}
+          onChange={(e) => onChange({ ...value, name: clip(e.target.value, 120) })}
         />
       </label>
       <label>
         Role
         <input
-          maxLength={120}
           value={value.role}
-          onChange={(e) => onChange({ ...value, role: e.target.value })}
+          onChange={(e) => onChange({ ...value, role: clip(e.target.value, 120) })}
         />
       </label>
       <label>
         Phone (optional)
         <input
-          maxLength={40}
           value={value.phone ?? ""}
-          onChange={(e) => onChange({ ...value, phone: e.target.value })}
+          onChange={(e) => onChange({ ...value, phone: clip(e.target.value, 40) })}
         />
       </label>
     </fieldset>
@@ -171,26 +169,21 @@ function Invite({ contact, setContact }: { contact: Contact; setContact: (c: Con
       <label>
         Time
         <input
-          maxLength={40}
           placeholder="9:30 AM"
           value={time}
-          onChange={(e) => setTime(e.target.value)}
+          onChange={(e) => setTime(clip(e.target.value, 40))}
         />
       </label>
       <label>
         Place
-        <input maxLength={120} value={place} onChange={(e) => setPlace(e.target.value)} />
+        <input value={place} onChange={(e) => setPlace(clip(e.target.value, 120))} />
       </label>
       {people.map((p, i) => (
         <fieldset key={i}>
           <legend>Person invited {i + 1}</legend>
           <label>
             Name
-            <input
-              maxLength={120}
-              value={p.name}
-              onChange={(e) => set(i, { name: e.target.value })}
-            />
+            <input value={p.name} onChange={(e) => set(i, { name: clip(e.target.value, 120) })} />
           </label>
           <label>
             Position
@@ -253,30 +246,19 @@ function Consent({ contact, setContact }: { contact: Contact; setContact: (c: Co
       </label>
       <label>
         Areas to look at (one per line)
-        <textarea
-          rows={3}
-          maxLength={1000}
-          value={areas}
-          onChange={(e) => setAreas(e.target.value)}
-        />
+        <textarea rows={3} value={areas} onChange={(e) => setAreas(clip(e.target.value, 1000))} />
       </label>
       <label>
         Procedures and instruments (one per line, optional)
         <textarea
           rows={3}
-          maxLength={1000}
           value={instruments}
-          onChange={(e) => setInstruments(e.target.value)}
+          onChange={(e) => setInstruments(clip(e.target.value, 1000))}
         />
       </label>
       <label>
         Why, in your own words
-        <textarea
-          rows={3}
-          maxLength={1000}
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-        />
+        <textarea rows={3} value={reason} onChange={(e) => setReason(clip(e.target.value, 1000))} />
       </label>
       <ContactFields value={contact} onChange={setContact} />
       <Boxes draft={draft} />
@@ -322,7 +304,7 @@ function Timeline() {
       </label>
       <label>
         No-school days, YYYY-MM-DD, one per line (weekends are skipped for you)
-        <textarea rows={4} maxLength={2000} value={off} onChange={(e) => setOff(e.target.value)} />
+        <textarea rows={4} value={off} onChange={(e) => setOff(clip(e.target.value, 2000))} />
       </label>
       <section className="goal" aria-label="Timeline">
         <h3>Evaluation timeline</h3>

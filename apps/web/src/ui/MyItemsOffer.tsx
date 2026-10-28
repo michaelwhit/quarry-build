@@ -1,4 +1,5 @@
 import { type GoalForTemplate, draftMyGoal, todayIso } from "../data/myItemsFromGoal.ts";
+import { clip } from "../data/codePoints.ts";
 
 /**
  * The "Add to my goal library" offer on the goal form: tick it, name it, and see what the saved
@@ -28,9 +29,8 @@ export function MyItemsOffer({
             <span>Name in My items</span>
             <input
               value={goal.title}
-              maxLength={120}
               placeholder="e.g. Read a passage aloud"
-              onChange={(e) => onTitle(e.target.value)}
+              onChange={(e) => onTitle(clip(e.target.value, 120))}
             />
           </label>
           <p className="meta">

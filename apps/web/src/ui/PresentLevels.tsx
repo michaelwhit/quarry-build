@@ -1,4 +1,5 @@
 import { useState, useSyncExternalStore } from "react";
+import { clip } from "../data/codePoints.ts";
 import { localDay } from "../data/localDay.ts";
 import { displayName, studentById, students } from "../data/district.ts";
 import { getRole, getRoleVersion, roleById, subscribeRole } from "../data/roles.ts";
@@ -96,17 +97,12 @@ function ScoreForm({
           <span>Test or instrument (for example Acadience ORF)</span>
           <input
             value={s.instrument}
-            maxLength={120}
-            onChange={(e) => set({ instrument: e.target.value })}
+            onChange={(e) => set({ instrument: clip(e.target.value, 120) })}
           />
         </label>
         <label>
           <span>Measure (for example Reading Fluency)</span>
-          <input
-            value={s.measure}
-            maxLength={120}
-            onChange={(e) => set({ measure: e.target.value })}
-          />
+          <input value={s.measure} onChange={(e) => set({ measure: clip(e.target.value, 120) })} />
         </label>
         <label>
           <span>Score type</span>
@@ -142,8 +138,7 @@ function ScoreForm({
           </span>
           <input
             value={s.descriptor}
-            maxLength={60}
-            onChange={(e) => set({ descriptor: e.target.value })}
+            onChange={(e) => set({ descriptor: clip(e.target.value, 60) })}
           />
         </label>
         <label>
@@ -242,8 +237,7 @@ function StatementForm({
           <textarea
             value={s.text}
             rows={2}
-            maxLength={400}
-            onChange={(e) => set({ text: e.target.value })}
+            onChange={(e) => set({ text: clip(e.target.value, 400) })}
           />
         </label>
         <label>
@@ -251,8 +245,7 @@ function StatementForm({
           <textarea
             value={s.implication}
             rows={2}
-            maxLength={400}
-            onChange={(e) => set({ implication: e.target.value })}
+            onChange={(e) => set({ implication: clip(e.target.value, 400) })}
           />
         </label>
         {scores.length > 0 && (
@@ -523,7 +516,7 @@ export function PresentLevels({ studentId }: { studentId: string }) {
           const empty = def.ai && ev.scores.length === 0 && ev.statements.length === 0;
           return (
             <section className="goal" key={def.key} aria-label={def.label} aria-busy={busy}>
-              <h3>{def.label}</h3>
+              <h3 className="as-written">{def.label}</h3>
               <p className="meta">
                 {def.ai ? "Draft, you approve." : "You write this section."} ·{" "}
                 {slot?.approved ? "Approved" : slot ? "Draft saved" : "Not started"}
@@ -536,9 +529,10 @@ export function PresentLevels({ studentId }: { studentId: string }) {
                   aria-label={def.label}
                   value={slot?.text ?? ""}
                   rows={def.ai ? 6 : 4}
-                  maxLength={6000}
                   disabled={slot?.approved}
-                  onChange={(e) => setSlotText(getPl(studentId), def.key, e.target.value, ctx)}
+                  onChange={(e) =>
+                    setSlotText(getPl(studentId), def.key, clip(e.target.value, 6000), ctx)
+                  }
                 />
               </div>
               {slot && def.ai && !slot.edited && (
