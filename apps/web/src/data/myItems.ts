@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import type { MeasurementType } from "@synthetic/src/types.ts";
+import { within } from "./codePoints.ts";
 import { GRADE_BANDS, type GoalItem, goalAreaLabel } from "./library.ts";
 
 // A teacher's own saved goal wording ("My items"), kept in this browser only. Practice data:
@@ -38,7 +39,7 @@ const SLOT_KINDS = ["text", "number", "choice", "date"];
 
 const isRec = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
-const str = (v: unknown, max = MAX_TEXT): v is string => typeof v === "string" && v.length <= max;
+const str = (v: unknown, max = MAX_TEXT): v is string => typeof v === "string" && within(v, max);
 const strs = (v: unknown): v is string[] =>
   Array.isArray(v) && v.length <= 60 && v.every((x) => str(x, 300));
 const num = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);

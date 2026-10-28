@@ -1,4 +1,5 @@
 import type { GoalArea, MeasurementType } from "@synthetic/src/types.ts";
+import { clip } from "./codePoints.ts";
 import type { GoalItem, GradeBand } from "./library.ts";
 import { type Check, type Mastery, checks } from "./libraryText.ts";
 
@@ -125,7 +126,7 @@ export function draftMyGoal(g: GoalForTemplate, today: string): MyGoalDraft {
     maintenance_check: false,
   };
   const item: Omit<GoalItem, "id"> = {
-    title: replaceNames(g.title.trim(), g.names, "the student").slice(0, 120) || "My goal",
+    title: clip(replaceNames(g.title.trim(), g.names, "the student"), 120) || "My goal",
     area: g.area,
     grade_bands: g.gradeBand ? [g.gradeBand] : [],
     template_text: template,
