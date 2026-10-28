@@ -301,9 +301,10 @@ export function PriorWrittenNotice({ studentId }: { studentId: string }) {
             ))}
             {b.blocked.length === 0 && b.text && (
               <p>
-                {approved ? (
-                  <strong>Approved. Changing any entry clears this.</strong>
-                ) : (
+                <span role="status">
+                  {approved && <strong>Approved. Changing any entry clears this.</strong>}
+                </span>
+                {!approved && (
                   <button
                     type="button"
                     className="btn"
