@@ -326,11 +326,21 @@ export function More() {
                 </button>
               </>
             ) : (
-              <button type="button" onClick={() => setArmed("clear")} disabled={!canClear}>
+              <button
+                type="button"
+                onClick={() => setArmed("clear")}
+                disabled={!canClear}
+                aria-describedby={canClear ? undefined : "practice-empty-hint"}
+              >
                 Clear practice data
               </button>
             )}
           </div>
+          {!canClear && (
+            <p id="practice-empty-hint" className="meta">
+              Nothing is stored in this browser, so there is nothing to clear.
+            </p>
+          )}
         </section>
       ) : (
         <section className="card" style={{ marginTop: 12 }}>
@@ -376,11 +386,21 @@ export function More() {
                 </button>
               </>
             ) : (
-              <button type="button" onClick={() => setArmed("clear")} disabled={!canClear}>
+              <button
+                type="button"
+                onClick={() => setArmed("clear")}
+                disabled={!canClear}
+                aria-describedby={canClear ? undefined : "practice-empty-hint"}
+              >
                 Clear practice data
               </button>
             )}
           </div>
+          {!canClear && (
+            <p id="practice-empty-hint" className="meta">
+              Nothing is stored in this browser, so there is nothing to clear.
+            </p>
+          )}
           <h4 className="sec" style={{ marginTop: 16 }}>
             Save to a file or load from a file
           </h4>
@@ -389,9 +409,19 @@ export function More() {
             is already here you choose whether to add the file's students or replace everything.
           </p>
           <div className="actions stack">
-            <button type="button" onClick={download} disabled={!hasData}>
+            <button
+              type="button"
+              onClick={download}
+              disabled={!hasData}
+              aria-describedby={hasData ? undefined : "practice-save-hint"}
+            >
               Save practice data to a file
             </button>
+            {!hasData && (
+              <p id="practice-save-hint" className="meta">
+                There are no students to save yet. Load the sample students or add one first.
+              </p>
+            )}
             <label className="btn file-btn">
               Load from a file
               <input

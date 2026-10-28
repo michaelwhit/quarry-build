@@ -41,6 +41,9 @@ test.describe("save practice data to a file and load it back", () => {
     await openMore(page);
     await expect(practice(page)).toContainText("0 students");
     await expect(page.getByRole("button", { name: "Save practice data to a file" })).toBeDisabled();
+    await expect(
+      page.getByRole("button", { name: "Save practice data to a file" }),
+    ).toHaveAccessibleDescription(/no students to save yet/);
 
     // Nothing is here, so the file loads without asking.
     await send(page, "saved.json", text);
