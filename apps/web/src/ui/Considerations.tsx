@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { clip } from "../data/codePoints.ts";
 import {
   BOXES,
   NOT_NEEDED,
@@ -46,10 +47,12 @@ export function Considerations({ studentId }: { studentId: string }) {
                 {e.choice === "needed" ? "What the team decided" : "Reason (optional)"}
                 <textarea
                   rows={2}
-                  maxLength={2000}
                   value={e.text}
                   onChange={(ev) =>
-                    setConsideration(studentId, b.id, { choice: e.choice, text: ev.target.value })
+                    setConsideration(studentId, b.id, {
+                      choice: e.choice,
+                      text: clip(ev.target.value, 2000),
+                    })
                   }
                 />
               </label>

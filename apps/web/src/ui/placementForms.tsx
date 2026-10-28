@@ -1,3 +1,4 @@
+import { clip } from "../data/codePoints.ts";
 import { getPlacement, setPlacement, MAX_TEXT, type Placement } from "../data/placement.ts";
 
 type BoxKey = "lre" | "health" | "pe";
@@ -9,9 +10,8 @@ function Box({ studentId, field, label }: { studentId: string; field: BoxKey; la
       {label}
       <textarea
         rows={4}
-        maxLength={MAX_TEXT}
         value={p[field]}
-        onChange={(e) => setPlacement(studentId, { [field]: e.target.value })}
+        onChange={(e) => setPlacement(studentId, { [field]: clip(e.target.value, MAX_TEXT) })}
       />
     </label>
   );

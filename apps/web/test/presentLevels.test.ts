@@ -72,6 +72,17 @@ function addStatement(patch: Partial<EvStatement>) {
 }
 
 describe("score rows", () => {
+  it("counts the printed label in characters: 60 emoji fit and 61 do not", () => {
+    const base = {
+      ...blankScore(getPl(SID)),
+      measure: "m",
+      value: "90",
+      testedOn: "2026-09-01",
+    };
+    const flag = "The printed label is too long.";
+    expect(scoreProblems({ ...base, descriptor: "😀".repeat(60) }, TODAY)).not.toContain(flag);
+    expect(scoreProblems({ ...base, descriptor: "😀".repeat(61) }, TODAY)).toContain(flag);
+  });
   it("must be in range, dated and not from the future", () => {
     const base = { ...blankScore(getPl(SID)), measure: "m", value: "200", testedOn: "2026-09-01" };
     expect(scoreProblems(base, TODAY).join(" ")).toMatch(/40 to 160/);
