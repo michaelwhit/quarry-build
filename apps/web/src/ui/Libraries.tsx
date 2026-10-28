@@ -659,7 +659,9 @@ function GoalDetail({
             !mayAdd
               ? "lib-goal-hint"
               : !student
-                ? "lib-goal-student"
+                ? students.length === 0
+                  ? "lib-goal-student"
+                  : "lib-goal-pick"
                 : !ready
                   ? "lib-goal-fix"
                   : undefined
@@ -676,6 +678,11 @@ function GoalDetail({
       {students.length === 0 && (
         <p id="lib-goal-student" className="meta">
           Add a made-up student on the caseload page first.
+        </p>
+      )}
+      {students.length > 0 && !student && (
+        <p id="lib-goal-pick" className="meta">
+          Choose a student above to turn this on.
         </p>
       )}
       {mayAdd && student && !ready && (
