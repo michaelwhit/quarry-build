@@ -29,8 +29,12 @@ export const section = "services";
 export function Form({ studentId }: { studentId: string }) {
   useSyncExternalStore(subscribeServices, getServicesVersion, getServicesVersion);
   const [d, setD] = useState<RowDraft>(EMPTY);
+  const [added, setAdded] = useState("");
   const rows = getServices(studentId).rows;
-  const set = (p: Partial<RowDraft>) => setD({ ...d, ...p });
+  const set = (p: Partial<RowDraft>) => {
+    setD({ ...d, ...p });
+    setAdded("");
+  };
   const problem = rowProblem(d);
   const fromLibrary = (id: string) => {
     const a = accommodations.find((x) => x.id === id);
@@ -127,8 +131,8 @@ export function Form({ studentId }: { studentId: string }) {
         />
         Follows the school calendar
       </label>
-      {problem && d.title.trim() !== "" && (
-        <p role="note" className="empty">
+      {problem && (
+        <p role="note" id="service-problem" className="empty">
           {problem}
         </p>
       )}
@@ -136,13 +140,18 @@ export function Form({ studentId }: { studentId: string }) {
         type="button"
         className="btn"
         disabled={problem !== undefined}
+        aria-describedby={problem ? "service-problem" : undefined}
         onClick={() => {
           addServiceRow(studentId, d);
+          setAdded(`Added ${d.title.trim()}.`);
           setD(EMPTY);
         }}
       >
         Add row
       </button>
+      <p role="status" className="sr-only">
+        {added}
+      </p>
     </div>
   );
 }
