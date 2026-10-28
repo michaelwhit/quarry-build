@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useId } from "react";
 import {
   ACTIVITY_TEXT,
   type ConsentActivity,
@@ -37,6 +37,7 @@ const TABS: { id: Tab; label: string }[] = [
 
 /** Tick and Copy for one box of text. A change to the text takes the tick away. */
 export function TickCopy({ label, text }: { label: string; text: string }) {
+  const id = useId();
   const [read, setRead] = useState("");
   // The message belongs to the text it was about; once the text changes it goes away.
   const [done, setDone] = useState({ text: "", message: "" });
@@ -59,9 +60,20 @@ export function TickCopy({ label, text }: { label: string; text: string }) {
         />
         I read this and it is right
       </label>{" "}
-      <button type="button" className="btn" disabled={!ticked} onClick={copy}>
+      <button
+        type="button"
+        className="btn"
+        disabled={!ticked}
+        aria-describedby={ticked ? undefined : `${id}-tick-hint`}
+        onClick={copy}
+      >
         Copy {label}
       </button>
+      {!ticked && (
+        <p id={`${id}-tick-hint`} className="meta">
+          Tick the box to turn Copy on.
+        </p>
+      )}
       <p className="saved" role="status">
         {done.text === text ? done.message : ""}
       </p>
