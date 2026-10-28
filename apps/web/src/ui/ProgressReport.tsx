@@ -10,6 +10,7 @@ import {
   reopen,
   defaultComment,
   defaultPeriod,
+  openingPeriod,
   editGoal,
   effectiveSufficient,
   getRecord,
@@ -98,7 +99,7 @@ export function ReportsDue() {
 export function ProgressReport({ studentId }: { studentId: string }) {
   useSyncExternalStore(subscribeReports, getReportsVersion);
   useSyncExternalStore(subscribeRole, getRoleVersion);
-  const [periodId, setPeriodId] = useState(() => defaultPeriod().id);
+  const [periodId, setPeriodId] = useState(() => openingPeriod(studentId).id);
   const [confirming, setConfirming] = useState(false);
   const role = getRole();
   const s = studentById(studentId);

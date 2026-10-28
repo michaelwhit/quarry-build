@@ -32,14 +32,30 @@ export const PERIODS: readonly Period[] = [
   { id: "q2", label: "Quarter 2", start: "2026-10-17", end: "2026-12-18", due: "2027-01-08" },
 ];
 
-export function defaultPeriod(now: Date = new Date()): Period {
+const localDayOf = (now: Date): string =>
   // The local calendar day, not the UTC one, so an evening visit does not jump a day ahead.
-  const today = [
+  [
     now.getFullYear(),
     String(now.getMonth() + 1).padStart(2, "0"),
     String(now.getDate()).padStart(2, "0"),
   ].join("-");
+
+export function defaultPeriod(now: Date = new Date()): Period {
+  const today = localDayOf(now);
   return PERIODS.find((p) => p.due >= today) ?? PERIODS[PERIODS.length - 1]!;
+}
+
+/**
+ * The period a student's own report page opens on: the first one already past its due date whose
+ * report is not filed (so a waiting Quarter 1 is not hidden behind Quarter 2), else the one due next.
+ * A default only; the period picker still lists every period.
+ */
+export function openingPeriod(studentId: string, now: Date = new Date()): Period {
+  const today = localDayOf(now);
+  const waiting = PERIODS.find(
+    (p) => p.due < today && getRecord(studentId, p.id).state !== "filed_attested",
+  );
+  return waiting ?? defaultPeriod(now);
 }
 
 export interface GoalEntry {
