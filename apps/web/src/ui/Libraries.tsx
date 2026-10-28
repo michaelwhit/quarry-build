@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { clip } from "../data/codePoints.ts";
 import { students, displayName } from "../data/district.ts";
 import {
   type AccommodationItem,
@@ -432,15 +433,15 @@ function AccommodationDetail({ item }: { item: AccommodationItem }) {
           </label>
           <label>
             <span>Location</span>
-            <input value={where} maxLength={200} onChange={(e) => setWhere(e.target.value)} />
+            <input value={where} onChange={(e) => setWhere(clip(e.target.value, 200))} />
           </label>
           <label>
             <span>Frequency</span>
-            <input value={often} maxLength={200} onChange={(e) => setOften(e.target.value)} />
+            <input value={often} onChange={(e) => setOften(clip(e.target.value, 200))} />
           </label>
           <label>
             <span>Duration</span>
-            <input value={length} maxLength={200} onChange={(e) => setLength(e.target.value)} />
+            <input value={length} onChange={(e) => setLength(clip(e.target.value, 200))} />
           </label>
           {vague && (
             <p className="form-error" role="alert">
@@ -607,8 +608,10 @@ function GoalDetail({
                 type={s.kind === "date" ? "date" : "text"}
                 inputMode={s.kind === "number" ? "decimal" : undefined}
                 value={values[s.name] ?? ""}
-                maxLength={s.kind === "date" ? 10 : 100}
-                onChange={(e) => set(s.name, e.target.value)}
+                maxLength={s.kind === "date" ? 10 : undefined}
+                onChange={(e) =>
+                  set(s.name, s.kind === "date" ? e.target.value : clip(e.target.value, 100))
+                }
               />
             )}
             {s.help && <span>{s.help}</span>}
@@ -616,7 +619,7 @@ function GoalDetail({
         ))}
         <label>
           <span>Baseline for this student (optional)</span>
-          <input value={baseline} maxLength={200} onChange={(e) => setBaseline(e.target.value)} />
+          <input value={baseline} onChange={(e) => setBaseline(clip(e.target.value, 200))} />
         </label>
         {goal.requires_fba_bip && (
           <label className="check">
