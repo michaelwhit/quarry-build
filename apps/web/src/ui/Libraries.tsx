@@ -38,6 +38,9 @@ import { AccommodationBulk } from "./AccommodationBulk.tsx";
 import { DeleteButton } from "./Forms.tsx";
 import "./libraries.css";
 
+const copyStatus = (title: string, kept: boolean) =>
+  `Saved a copy of "${title}" and opened it.${kept ? "" : " For now only: this browser would not keep it for later visits."}`;
+
 const todayIso = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -400,7 +403,7 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
             const res = duplicateMyGoal(openGoal.id);
             if (res.ok) {
               setOpenId(res.id);
-              setStatus(`Saved a copy of "${openGoal.title}" and opened it.`);
+              setStatus(copyStatus(openGoal.title, res.kept));
             }
             return res;
           }}
@@ -421,9 +424,9 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
         <AccommodationDetail
           key={openAcc.id}
           item={openAcc}
-          onCopied={(id) => {
+          onCopied={(id, kept) => {
             setOpenId(id);
-            setStatus(`Saved a copy of "${openAcc.title}" and opened it.`);
+            setStatus(copyStatus(openAcc.title, kept));
           }}
           onRemoved={(title) => {
             setOpenId(null);
@@ -506,7 +509,7 @@ function AccommodationDetail({
 }: {
   item: AccommodationItem;
   onRemoved: (title: string) => void;
-  onCopied: (id: string) => void;
+  onCopied: (id: string, kept: boolean) => void;
 }) {
   const [studentId, setStudentId] = useState("");
   const [message, setMessage] = useState("");
@@ -658,7 +661,7 @@ function AccommodationDetail({
           rename={(t) => renameMyAccommodation(item.id, t)}
           copy={() => {
             const res = duplicateMyAccommodation(item.id);
-            if (res.ok) onCopied(res.id);
+            if (res.ok) onCopied(res.id, res.kept);
             return res;
           }}
         />

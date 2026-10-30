@@ -122,4 +122,34 @@ describe("My accommodations", () => {
     expect(b?.frequency).toBe(a?.frequency);
     expect(duplicateMyAccommodation("mya-gone")).toEqual({ ok: false, reason: "invalid" });
   });
+
+  it("says so when a copy will not be kept for later visits", () => {
+    const res = addMyAccommodation(base);
+    if (!res.ok) throw new Error("not saved");
+    setMyAccommodationsStorageForTests({
+      getItem: () => null,
+      setItem: () => {
+        throw new Error("full");
+      },
+    });
+    const copy = duplicateMyAccommodation(res.id);
+    expect(copy.ok && copy.kept).toBe(false);
+  });
+
+  it("keeps only the known fields of a saved item", () => {
+    const res = addMyAccommodation({ ...base, extra: "not stored" } as typeof base);
+    if (!res.ok) throw new Error("not saved");
+    expect(Object.keys(getMyAccommodations()[0]!).sort()).toEqual(
+      [
+        "category",
+        "description",
+        "duration",
+        "frequency",
+        "id",
+        "kind",
+        "location",
+        "title",
+      ].sort(),
+    );
+  });
 });
