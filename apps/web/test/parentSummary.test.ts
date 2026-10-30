@@ -37,6 +37,15 @@ describe("family summary", () => {
     expect(summaryText(es)).toContain("Meta:");
   });
 
+  it("writes the numbers as short sentences with a target, not 'aim'", () => {
+    const s = students.find((x) => x.goals.length > 0)!;
+    const out = familySummary(s.student, s.goals, PERIODS[0]!, "en");
+    const line = out.goals.map((g) => g.progress).find((l) => l !== "");
+    expect(line).toBeDefined();
+    expect(line).toMatch(/recorded\. Started at .+\. Most recent: .+\. Target: .+\.$/);
+    expect(line).not.toContain("aim");
+  });
+
   it("says plainly when nothing was recorded in the period", () => {
     const s = pick();
     const empty = { ...PERIODS[0]!, start: "2001-01-01", end: "2001-01-02" };

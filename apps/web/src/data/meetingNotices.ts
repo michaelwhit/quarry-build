@@ -82,7 +82,10 @@ export function draftInvite(input: InviteInput): NoticeDraft {
   const time = input.meetingTime.trim();
   const place = input.location.trim();
   const people = input.invitees.filter((p) => p.name.trim() && p.position.trim());
-  const halfFilled = input.invitees.length - people.length;
+  // A row with nothing typed in it is ignored; only a row with one of the two missing is a problem.
+  const halfFilled = input.invitees.filter(
+    (p) => (p.name.trim() === "") !== (p.position.trim() === ""),
+  ).length;
   return finish([
     box(
       "purpose",
