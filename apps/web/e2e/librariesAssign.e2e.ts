@@ -155,6 +155,11 @@ test.describe("assign from the library", () => {
 
     await ticks.nth(0).check();
     await ticks.nth(2).check();
+    // A tick that a search hides is not counted or added.
+    await page.getByRole("searchbox", { name: "Search the library" }).fill("zzzz-no-match");
+    await expect(add).toHaveText("Add 0 ticked to Sample Learner");
+    await page.getByRole("searchbox", { name: "Search the library" }).fill("");
+    await expect(add).toHaveText("Add 2 ticked to Sample Learner");
     await add.click();
     await expect(
       page.getByText(/Sample Learner: added 1 accommodation\. Left out 1/),

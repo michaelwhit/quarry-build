@@ -278,7 +278,7 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
       </p>
       {tab === "accommodations" && canAdd && (
         <AccommodationBulk
-          picked={allAccs.filter((a) => picked.has(a.id))}
+          picked={shownAccs.filter((a) => picked.has(a.id))}
           onDone={() => setPicked(new Set())}
         />
       )}
