@@ -86,6 +86,7 @@ export function gatherPwn(studentId: string): PwnSources {
     otherFactors: entry.otherFactors,
     reasons: entry.reasons,
     contact: entry.contact,
+    helpSource: entry.helpSource,
   };
   return { input, missing };
 }

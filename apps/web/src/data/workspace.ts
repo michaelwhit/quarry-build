@@ -182,13 +182,13 @@ const validAccommodation = (a: Rec) =>
   str(a["title"], 120) &&
   str(a["kind"], 40) &&
   typeof a["description"] === "string" &&
-  a["description"].length <= 600 &&
+  within(a["description"], 600) &&
   typeof a["location"] === "string" &&
-  a["location"].length <= 200 &&
+  within(a["location"], 200) &&
   typeof a["frequency"] === "string" &&
-  a["frequency"].length <= 200 &&
+  within(a["frequency"], 200) &&
   typeof a["duration"] === "string" &&
-  a["duration"].length <= 200;
+  within(a["duration"], 200);
 
 const keep = (v: unknown, ok: (r: Rec) => boolean): Rec[] =>
   Array.isArray(v) ? v.filter((r): r is Rec => isRec(r) && ok(r)) : [];
@@ -643,7 +643,7 @@ export interface AccommodationInput {
 /** Copies a library accommodation onto a student. The same accommodation is not added twice. */
 export function addAccommodation(studentId: string, input: AccommodationInput): string {
   if (!current.students.some((s) => s.id === studentId)) throw new Error("Student not found");
-  const title = input.title.trim().slice(0, 120);
+  const title = clip(input.title.trim(), 120);
   if (!title) throw new Error("The accommodation needs a title");
   const existing = current.accommodations.find(
     (a) => a.student_id === studentId && a.title === title,
@@ -653,11 +653,11 @@ export function addAccommodation(studentId: string, input: AccommodationInput): 
     id: id(),
     student_id: studentId,
     title,
-    kind: input.kind.slice(0, 40),
-    description: input.description.slice(0, 600),
-    location: input.location.slice(0, 200),
-    frequency: input.frequency.slice(0, 200),
-    duration: input.duration.slice(0, 200),
+    kind: clip(input.kind, 40),
+    description: clip(input.description, 600),
+    location: clip(input.location, 200),
+    frequency: clip(input.frequency, 200),
+    duration: clip(input.duration, 200),
   };
   commit({ ...current, accommodations: [...current.accommodations, record] });
   return record.id;

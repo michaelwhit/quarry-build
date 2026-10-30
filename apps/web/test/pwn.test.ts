@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  SAFEGUARDS_LINE,
   type PwnInput,
   copyText,
   dateText,
@@ -61,6 +62,7 @@ function base(): PwnInput {
     otherFactors: ["Family prefers morning services."],
     reasons: ["Progress data show the student needs daily small-group reading practice."],
     contact: { name: "Pat Example", role: "Case manager", phone: "555-0100" },
+    helpSource: "The state parent help line",
   };
 }
 
@@ -280,6 +282,26 @@ describe("unanswered extended school year", () => {
     const d = draftPwn(i);
     expect(d.blocked).toContain("Extended school year: choose not needed or needed.");
     expect(copyText(d, "refused")).toBeNull();
+  });
+});
+
+describe("safeguards and help sources", () => {
+  it("always carries the safeguards line and the help source the district gave", () => {
+    const d = draftPwn(base());
+    expect(copyText(d, "safeguards")).toBe(SAFEGUARDS_LINE);
+    expect(copyText(d, "help_sources")).toBe("The state parent help line");
+  });
+
+  it("blocks the notice when no help source is given", () => {
+    const i = base();
+    i.helpSource = "  ";
+    const d = draftPwn(i);
+    expect(d.blocked).toContain("Add where parents can get help understanding their rights.");
+    expect(copyText(d, "help_sources")).toBeNull();
+    delete i.helpSource;
+    expect(draftPwn(i).blocked).toContain(
+      "Add where parents can get help understanding their rights.",
+    );
   });
 });
 
