@@ -5,6 +5,8 @@ import {
   MY_ITEMS_KEY,
   addMyGoal,
   clearMyGoals,
+  duplicateMyGoal,
+  renameMyGoal,
   getMyGoals,
   isMyGoal,
   removeMyGoal,
@@ -176,6 +178,30 @@ describe("My items store", () => {
     expect(found).toHaveLength(1);
     removeMyGoal(getMyGoals()[0]!.id);
     expect(getMyGoals()).toHaveLength(0);
+  });
+  it("renames a saved goal, refusing a blank or too-long name", () => {
+    addMyGoal(draft());
+    const id = getMyGoals()[0]!.id;
+    expect(renameMyGoal(id, "  Addition facts ")).toBe(true);
+    expect(getMyGoals()[0]?.title).toBe("Addition facts");
+    expect(renameMyGoal(id, "   ")).toBe(false);
+    expect(renameMyGoal(id, "x".repeat(121))).toBe(false);
+    expect(renameMyGoal("my-gone", "Name")).toBe(false);
+    expect(getMyGoals()[0]?.title).toBe("Addition facts");
+  });
+  it("makes a copy that can be changed without losing the first, and stops at the limit", () => {
+    addMyGoal(draft());
+    const id = getMyGoals()[0]!.id;
+    const res = duplicateMyGoal(id);
+    expect(res.ok).toBe(true);
+    const all = getMyGoals();
+    expect(all).toHaveLength(2);
+    expect(all[1]?.title).toBe(`${all[0]?.title} (copy)`);
+    expect(all[1]?.id).not.toBe(id);
+    expect(all[1]?.template_text).toBe(all[0]?.template_text);
+    expect(duplicateMyGoal("my-gone")).toEqual({ ok: false, reason: "invalid" });
+    while (getMyGoals().length < MAX_MY_GOALS) duplicateMyGoal(id);
+    expect(duplicateMyGoal(id)).toEqual({ ok: false, reason: "full" });
   });
   it("does not save the same wording twice", () => {
     addMyGoal(draft());

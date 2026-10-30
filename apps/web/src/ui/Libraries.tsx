@@ -25,11 +25,13 @@ import {
 } from "../data/libraryText.ts";
 import {
   addMyAccommodation,
+  duplicateMyAccommodation,
   isMyAccommodationId,
   removeMyAccommodation,
+  renameMyAccommodation,
   useMyAccommodations,
 } from "../data/myAccommodations.ts";
-import { removeMyGoal, useMyGoals } from "../data/myItems.ts";
+import { duplicateMyGoal, removeMyGoal, renameMyGoal, useMyGoals } from "../data/myItems.ts";
 import { can, getRole } from "../data/roles.ts";
 import { addAccommodation, addGoal, getWorkspace, removeAccommodation } from "../data/workspace.ts";
 import { DeleteButton } from "./Forms.tsx";
@@ -363,6 +365,21 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
         />
       )}
       {openGoal?.id.startsWith("my-") && (
+        <MineTools
+          key={`tools:${openGoal.id}`}
+          title={openGoal.title}
+          rename={(t) => renameMyGoal(openGoal.id, t)}
+          copy={() => {
+            const res = duplicateMyGoal(openGoal.id);
+            if (res.ok) {
+              setOpenId(res.id);
+              setStatus(`Saved a copy of "${openGoal.title}" and opened it.`);
+            }
+            return res;
+          }}
+        />
+      )}
+      {openGoal?.id.startsWith("my-") && (
         <DeleteButton
           label="Remove from My items"
           ask="Yes, remove it from My items"
@@ -377,6 +394,10 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
         <AccommodationDetail
           key={openAcc.id}
           item={openAcc}
+          onCopied={(id) => {
+            setOpenId(id);
+            setStatus(`Saved a copy of "${openAcc.title}" and opened it.`);
+          }}
           onRemoved={(title) => {
             setOpenId(null);
             setStatus(`Removed "${title}" from My items.`);
@@ -387,12 +408,78 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
   );
 }
 
+/** Rename a saved item or make a copy of it to change; the copy opens so it can be reworded. */
+function MineTools({
+  title,
+  rename,
+  copy,
+}: {
+  title: string;
+  rename: (title: string) => boolean;
+  copy: () => { ok: true; kept: boolean } | { ok: false; reason: "full" | "duplicate" | "invalid" };
+}) {
+  const [name, setName] = useState(title);
+  const [message, setMessage] = useState("");
+  const hint = !name.trim()
+    ? "Type a name to turn Rename on."
+    : name.trim() === title
+      ? "Change the name to turn Rename on."
+      : "";
+  return (
+    <div className="lib-detail" role="group" aria-label="Your saved item">
+      <label>
+        <span>Name in My items</span>
+        <input value={name} onChange={(e) => setName(clip(e.target.value, 120))} />
+      </label>
+      <div className="actions">
+        <button
+          type="button"
+          disabled={hint !== ""}
+          aria-describedby={hint ? "mine-name-hint" : undefined}
+          onClick={() =>
+            setMessage(
+              rename(name) ? `Renamed to "${name.trim()}".` : "Could not rename. Check the name.",
+            )
+          }
+        >
+          Rename
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const res = copy();
+            setMessage(
+              res.ok
+                ? ""
+                : res.reason === "full"
+                  ? "My items is full. Remove one first."
+                  : "Could not make a copy.",
+            );
+          }}
+        >
+          Make a copy
+        </button>
+      </div>
+      {hint && (
+        <p id="mine-name-hint" className="meta">
+          {hint}
+        </p>
+      )}
+      <p className="saved" role="status">
+        {message}
+      </p>
+    </div>
+  );
+}
+
 function AccommodationDetail({
   item,
   onRemoved,
+  onCopied,
 }: {
   item: AccommodationItem;
   onRemoved: (title: string) => void;
+  onCopied: (id: string) => void;
 }) {
   const [studentId, setStudentId] = useState("");
   const [message, setMessage] = useState("");
@@ -537,6 +624,17 @@ function AccommodationDetail({
             {message}
           </p>
         </form>
+      )}
+      {mineItem && (
+        <MineTools
+          title={item.title}
+          rename={(t) => renameMyAccommodation(item.id, t)}
+          copy={() => {
+            const res = duplicateMyAccommodation(item.id);
+            if (res.ok) onCopied(res.id);
+            return res;
+          }}
+        />
       )}
       {mineItem && (
         <DeleteButton

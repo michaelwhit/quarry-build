@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 import type { MeasurementType } from "@synthetic/src/types.ts";
-import { within } from "./codePoints.ts";
+import { clip, within } from "./codePoints.ts";
 import { GRADE_BANDS, type GoalItem, goalAreaLabel } from "./library.ts";
 
 // A teacher's own saved goal wording ("My items"), kept in this browser only. Practice data:
@@ -148,6 +148,25 @@ export function addMyGoal(item: Omit<GoalItem, "id">): SaveResult {
   if (!isMyGoal({ ...item, id })) return { ok: false, reason: "invalid" };
   const kept = commit([...items, { ...item, id }]);
   return { ok: true, id, kept };
+}
+
+/** Renames a saved goal. False when the name is blank or too long, or the goal is gone. */
+export function renameMyGoal(id: string, title: string): boolean {
+  const name = title.trim();
+  if (!name || !within(name, 120) || !items.some((g) => g.id === id)) return false;
+  commit(items.map((g) => (g.id === id ? { ...g, title: name } : g)));
+  return true;
+}
+
+/** Saves a copy of a goal under "<title> (copy)", for changing the wording without losing the first. */
+export function duplicateMyGoal(id: string): SaveResult {
+  const from = items.find((g) => g.id === id);
+  if (!from) return { ok: false, reason: "invalid" };
+  if (items.length >= MAX_MY_GOALS) return { ok: false, reason: "full" };
+  const copy = { ...from, id: newId(), title: clip(`${from.title} (copy)`, 120) };
+  if (!isMyGoal(copy)) return { ok: false, reason: "invalid" };
+  const kept = commit([...items, copy]);
+  return { ok: true, id: copy.id, kept };
 }
 
 export function removeMyGoal(id: string) {
