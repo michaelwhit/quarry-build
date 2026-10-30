@@ -27,7 +27,6 @@ export function exportMyItems(): string {
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
-/** Adds the valid entries of a saved file to My items. Says what was added and what was left out. */
 // Only the known fields are kept, so extra keys in a loaded file are not stored.
 const knownGoalFields = (g: GoalItem): Omit<GoalItem, "id"> => ({
   title: g.title,
@@ -52,6 +51,7 @@ const knownGoalFields = (g: GoalItem): Omit<GoalItem, "id"> => ({
   method: g.method,
 });
 
+/** Adds the valid entries of a saved file to My items. Says what was added and what was left out. */
 export function importMyItems(text: string): { message: string; added: number } {
   if (text.length > MAX_MY_ITEMS_FILE_BYTES)
     return { message: "That file is too large.", added: 0 };
