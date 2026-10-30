@@ -98,4 +98,13 @@ describe("My items file", () => {
     expect(res.message).toContain("Left out 3");
     expect(getMyAccommodations()[0]?.id).not.toBe("mya-file-id");
   });
+  it("keeps only the known fields of a loaded goal", () => {
+    addMyGoal(draftMyGoal(goal, "2026-10-22").item);
+    const file = JSON.parse(exportMyItems());
+    file.goals[0].extra = "not stored";
+    resetMyItemsForTests();
+    importMyItems(JSON.stringify(file));
+    expect(getMyGoals()).toHaveLength(1);
+    expect(Object.keys(getMyGoals()[0]!)).not.toContain("extra");
+  });
 });

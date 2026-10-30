@@ -1,5 +1,6 @@
 import { addMyAccommodation, getMyAccommodations, isMyAccommodation } from "./myAccommodations.ts";
 import { addMyGoal, getMyGoals, isMyGoal } from "./myItems.ts";
+import type { GoalItem } from "./library.ts";
 
 // My items (the teacher's own goal and accommodation wording) saved to a file and loaded back.
 // The file holds wording only, with no student, and every entry is checked on the way in the same
@@ -27,6 +28,30 @@ export function exportMyItems(): string {
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 /** Adds the valid entries of a saved file to My items. Says what was added and what was left out. */
+// Only the known fields are kept, so extra keys in a loaded file are not stored.
+const knownGoalFields = (g: GoalItem): Omit<GoalItem, "id"> => ({
+  title: g.title,
+  area: g.area,
+  grade_bands: g.grade_bands,
+  type: g.type,
+  unit: g.unit,
+  target_value: g.target_value,
+  ...(g.target_slot !== undefined ? { target_slot: g.target_slot } : {}),
+  trials_per_session: g.trials_per_session,
+  prompt_hierarchy: g.prompt_hierarchy,
+  task_steps: g.task_steps,
+  baseline_guidance: g.baseline_guidance,
+  objective_ladder: g.objective_ladder,
+  related_accommodation_ids: g.related_accommodation_ids,
+  ...(g.requires_fba_bip !== undefined ? { requires_fba_bip: g.requires_fba_bip } : {}),
+  template_text: g.template_text,
+  condition_text: g.condition_text,
+  behavior_text: g.behavior_text,
+  slots: g.slots,
+  mastery: g.mastery,
+  method: g.method,
+});
+
 export function importMyItems(text: string): { message: string; added: number } {
   if (text.length > MAX_MY_ITEMS_FILE_BYTES)
     return { message: "That file is too large.", added: 0 };
@@ -53,9 +78,7 @@ export function importMyItems(text: string): { message: string; added: number } 
       left++;
       continue;
     }
-    const { id, ...rest } = g;
-    void id;
-    if (addMyGoal(rest).ok) addedGoals++;
+    if (addMyGoal(knownGoalFields(g)).ok) addedGoals++;
     else left++;
   }
   for (const a of accs) {
