@@ -59,6 +59,7 @@ test.describe("assign from the library", () => {
     const title = await detail.locator("h3").innerText();
     const add = detail.getByRole("button", { name: "Add to student", exact: true });
     await expect(add).toBeDisabled();
+    await expect(add).toHaveAccessibleDescription("Choose a student above to turn this on.");
     await detail.getByLabel("Add to student").selectOption({ label: "Sample Learner" });
     await expect(add).toBeEnabled();
 
@@ -67,6 +68,7 @@ test.describe("assign from the library", () => {
       '"As needed" is not allowed. Say how many times and how often.',
     );
     await expect(add).toBeDisabled();
+    await expect(add).toHaveAccessibleDescription(/As needed/);
 
     await detail.getByLabel("Frequency").fill("Every timed test");
     await expect(detail.getByRole("alert")).toHaveCount(0);
