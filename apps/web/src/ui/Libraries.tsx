@@ -444,7 +444,7 @@ function AccommodationDetail({ item }: { item: AccommodationItem }) {
             <input value={length} onChange={(e) => setLength(clip(e.target.value, 200))} />
           </label>
           {vague && (
-            <p className="form-error" role="alert">
+            <p id="acc-add-vague" className="form-error" role="alert">
               "As needed" is not allowed. Say how many times and how often.
             </p>
           )}
@@ -454,10 +454,31 @@ function AccommodationDetail({ item }: { item: AccommodationItem }) {
               className="save"
               onClick={add}
               disabled={!student || vague || blank}
+              aria-describedby={
+                !student
+                  ? "acc-add-pick"
+                  : vague
+                    ? "acc-add-vague"
+                    : blank
+                      ? "acc-add-blank"
+                      : undefined
+              }
             >
               Add to student
             </button>
           </div>
+          {!student && (
+            <p id="acc-add-pick" className="meta">
+              {students.length === 0
+                ? "Add a made-up student on the caseload page first."
+                : "Choose a student above to turn this on."}
+            </p>
+          )}
+          {student && !vague && blank && (
+            <p id="acc-add-blank" className="meta">
+              Fill in location, frequency and duration to turn this on.
+            </p>
+          )}
           <p className="saved" role="status">
             {message}
           </p>
@@ -471,9 +492,13 @@ function AccommodationDetail({ item }: { item: AccommodationItem }) {
 export function StudentAccommodations({ studentId }: { studentId: string }) {
   const role = getRole();
   const list = getWorkspace().accommodations.filter((a) => a.student_id === studentId);
+  const [removed, setRemoved] = useState("");
   return (
     <section className="lib-detail" aria-label="Accommodations">
       <h3>Accommodations</h3>
+      <p role="status" className="sr-only">
+        {removed}
+      </p>
       {list.length === 0 && (
         <p className="empty">
           None yet. Add one from the <a href="#/libraries">Libraries</a> tab.
@@ -494,7 +519,10 @@ export function StudentAccommodations({ studentId }: { studentId: string }) {
             <button
               type="button"
               className="danger-ghost"
-              onClick={() => removeAccommodation(a.id)}
+              onClick={() => {
+                removeAccommodation(a.id);
+                setRemoved(`Removed ${a.title}.`);
+              }}
             >
               Remove {a.title}
             </button>
