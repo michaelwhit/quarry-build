@@ -23,11 +23,23 @@ import {
   pieces,
   preview,
 } from "../data/libraryText.ts";
-import { removeMyGoal, useMyGoals } from "../data/myItems.ts";
+import {
+  addMyAccommodation,
+  duplicateMyAccommodation,
+  isMyAccommodationId,
+  removeMyAccommodation,
+  renameMyAccommodation,
+  useMyAccommodations,
+} from "../data/myAccommodations.ts";
+import { duplicateMyGoal, removeMyGoal, renameMyGoal, useMyGoals } from "../data/myItems.ts";
 import { can, getRole } from "../data/roles.ts";
 import { addAccommodation, addGoal, getWorkspace, removeAccommodation } from "../data/workspace.ts";
+import { AccommodationBulk } from "./AccommodationBulk.tsx";
 import { DeleteButton } from "./Forms.tsx";
 import "./libraries.css";
+
+const copyStatus = (title: string, kept: boolean) =>
+  `Saved a copy of "${title}" and opened it.${kept ? "" : " For now only: this browser would not keep it for later visits."}`;
 
 const todayIso = () => {
   const d = new Date();
@@ -57,18 +69,21 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
   const [starsOnly, setStarsOnly] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const [mineOnly, setMineOnly] = useState(false);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
   const mine = useMyGoals();
   const allGoals = [...goals, ...mine];
+  const mineAccs = useMyAccommodations();
+  const allAccs = [...accommodations, ...mineAccs];
 
   const starSet = tab === "goals" ? stars.goals : stars.accommodations;
-  const only =
-    tab === "goals" && mineOnly ? new Set(mine.map((g) => g.id)) : starsOnly ? starSet : undefined;
+  const mineSet = new Set((tab === "goals" ? mine : mineAccs).map((x) => x.id));
+  const only = mineOnly ? mineSet : starsOnly ? starSet : undefined;
   const shownGoals = filterGoals(allGoals, { query, band, area, only });
-  const shownAccs = filterAccommodations(accommodations, { query, kind, category, only });
+  const shownAccs = filterAccommodations(allAccs, { query, kind, category, only });
   const filtering =
     (tab === "goals" ? !!(query || band || area) : !!(query || kind || category)) ||
     starsOnly ||
-    (tab === "goals" && mineOnly);
+    mineOnly;
   const toggleStar = (id: string, title: string) => {
     const next: Favorites =
       tab === "goals"
@@ -121,8 +136,7 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
     }
   };
   const openGoal = tab === "goals" ? allGoals.find((g) => g.id === openId) : undefined;
-  const openAcc =
-    tab === "accommodations" ? accommodations.find((a) => a.id === openId) : undefined;
+  const openAcc = tab === "accommodations" ? allAccs.find((a) => a.id === openId) : undefined;
 
   return (
     <>
@@ -138,6 +152,7 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
             aria-pressed={tab === t}
             onClick={() => {
               setTab(t);
+              setPicked(new Set());
               setOpenId(null);
               setStatus("");
               setStartHref("");
@@ -227,27 +242,21 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
         <input
           type="checkbox"
           checked={starsOnly}
-          disabled={tab === "goals" && mineOnly}
-          aria-describedby={tab === "goals" && mineOnly ? "lib-fav-hint" : undefined}
+          disabled={mineOnly}
+          aria-describedby={mineOnly ? "lib-fav-hint" : undefined}
           onChange={(e) => setStarsOnly(e.target.checked)}
         />
         Favorites only ({starSet.size})
       </label>
-      {tab === "goals" && mineOnly && (
+      {mineOnly && (
         <p id="lib-fav-hint" className="meta">
           Turn off My items only to use Favorites only.
         </p>
       )}
-      {tab === "goals" && (
-        <label className="check lib-starsonly">
-          <input
-            type="checkbox"
-            checked={mineOnly}
-            onChange={(e) => setMineOnly(e.target.checked)}
-          />
-          My items only ({mine.length})
-        </label>
-      )}
+      <label className="check lib-starsonly">
+        <input type="checkbox" checked={mineOnly} onChange={(e) => setMineOnly(e.target.checked)} />
+        My items only ({mineSet.size})
+      </label>
       <p className="lib-note" role="status">
         {status}
         {startHref ? (
@@ -260,7 +269,7 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
       <p className="lib-count" role="status">
         {tab === "goals"
           ? `${shownGoals.length} of ${allGoals.length} goals`
-          : `${shownAccs.length} of ${accommodations.length} accommodations`}
+          : `${shownAccs.length} of ${allAccs.length} accommodations`}
         {filtering && (
           <>
             {" "}
@@ -270,6 +279,12 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
           </>
         )}
       </p>
+      {tab === "accommodations" && canAdd && (
+        <AccommodationBulk
+          picked={shownAccs.filter((a) => picked.has(a.id))}
+          onDone={() => setPicked(new Set())}
+        />
+      )}
       {tab === "goals" ? (
         <ul className="lib-list" aria-label="Goals">
           {shownGoals.map((g) => (
@@ -318,28 +333,51 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
         <ul className="lib-list" aria-label="Accommodations">
           {shownAccs.map((a) => (
             <li key={a.id} className="lib-item">
-              <button
-                type="button"
-                className="lib-star"
-                aria-pressed={stars.accommodations.has(a.id)}
-                aria-label={`Favorite: ${a.title}`}
-                onClick={() => toggleStar(a.id, a.title)}
-              >
-                {stars.accommodations.has(a.id) ? "★" : "☆"}
-              </button>
+              {!isMyAccommodationId(a.id) && (
+                <button
+                  type="button"
+                  className="lib-star"
+                  aria-pressed={stars.accommodations.has(a.id)}
+                  aria-label={`Favorite: ${a.title}`}
+                  onClick={() => toggleStar(a.id, a.title)}
+                >
+                  {stars.accommodations.has(a.id) ? "★" : "☆"}
+                </button>
+              )}
               <button type="button" aria-current={openId === a.id} onClick={() => setOpenId(a.id)}>
                 <strong>{a.title}</strong>
                 <span className="meta">
+                  {isMyAccommodationId(a.id) ? "My item · " : ""}
                   {kindLabel[a.kind]} · {a.category}
                 </span>
               </button>
+              {canAdd && (
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={picked.has(a.id)}
+                    onChange={(e) =>
+                      setPicked((prev) => {
+                        const next = new Set(prev);
+                        if (e.target.checked) next.add(a.id);
+                        else next.delete(a.id);
+                        return next;
+                      })
+                    }
+                  />{" "}
+                  Tick to add with others
+                  <span className="sr-only">: {a.title}</span>
+                </label>
+              )}
             </li>
           ))}
           {shownAccs.length === 0 && (
             <li className="empty">
-              {starsOnly && !query && !kind && !category
-                ? "No favorites yet. Tap a star to save an accommodation."
-                : "No accommodations match."}
+              {mineOnly && !query && !kind && !category
+                ? 'Nothing in My items yet. Open an accommodation, change the wording if you like, and choose "Save to My items".'
+                : starsOnly && !query && !kind && !category
+                  ? "No favorites yet. Tap a star to save an accommodation."
+                  : "No accommodations match."}
             </li>
           )}
         </ul>
@@ -357,6 +395,21 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
         />
       )}
       {openGoal?.id.startsWith("my-") && (
+        <MineTools
+          key={`tools:${openGoal.id}`}
+          title={openGoal.title}
+          rename={(t) => renameMyGoal(openGoal.id, t)}
+          copy={() => {
+            const res = duplicateMyGoal(openGoal.id);
+            if (res.ok) {
+              setOpenId(res.id);
+              setStatus(copyStatus(openGoal.title, res.kept));
+            }
+            return res;
+          }}
+        />
+      )}
+      {openGoal?.id.startsWith("my-") && (
         <DeleteButton
           label="Remove from My items"
           ask="Yes, remove it from My items"
@@ -367,12 +420,97 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
           }}
         />
       )}
-      {openAcc && <AccommodationDetail key={openAcc.id} item={openAcc} />}
+      {openAcc && (
+        <AccommodationDetail
+          key={openAcc.id}
+          item={openAcc}
+          onCopied={(id, kept) => {
+            setOpenId(id);
+            setStatus(copyStatus(openAcc.title, kept));
+          }}
+          onRemoved={(title) => {
+            setOpenId(null);
+            setStatus(`Removed "${title}" from My items.`);
+          }}
+        />
+      )}
     </>
   );
 }
 
-function AccommodationDetail({ item }: { item: AccommodationItem }) {
+/** Rename a saved item or make a copy of it to change; the copy opens so it can be reworded. */
+function MineTools({
+  title,
+  rename,
+  copy,
+}: {
+  title: string;
+  rename: (title: string) => boolean;
+  copy: () => { ok: true; kept: boolean } | { ok: false; reason: "full" | "duplicate" | "invalid" };
+}) {
+  const [name, setName] = useState(title);
+  const [message, setMessage] = useState("");
+  const hint = !name.trim()
+    ? "Type a name to turn Rename on."
+    : name.trim() === title
+      ? "Change the name to turn Rename on."
+      : "";
+  return (
+    <div className="lib-detail" role="group" aria-label="Your saved item">
+      <label>
+        <span>Name in My items</span>
+        <input value={name} onChange={(e) => setName(clip(e.target.value, 120))} />
+      </label>
+      <div className="actions">
+        <button
+          type="button"
+          disabled={hint !== ""}
+          aria-describedby={hint ? "mine-name-hint" : undefined}
+          onClick={() =>
+            setMessage(
+              rename(name) ? `Renamed to "${name.trim()}".` : "Could not rename. Check the name.",
+            )
+          }
+        >
+          Rename
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const res = copy();
+            setMessage(
+              res.ok
+                ? ""
+                : res.reason === "full"
+                  ? "My items is full. Remove one first."
+                  : "Could not make a copy.",
+            );
+          }}
+        >
+          Make a copy
+        </button>
+      </div>
+      {hint && (
+        <p id="mine-name-hint" className="meta">
+          {hint}
+        </p>
+      )}
+      <p className="saved" role="status">
+        {message}
+      </p>
+    </div>
+  );
+}
+
+function AccommodationDetail({
+  item,
+  onRemoved,
+  onCopied,
+}: {
+  item: AccommodationItem;
+  onRemoved: (title: string) => void;
+  onCopied: (id: string, kept: boolean) => void;
+}) {
   const [studentId, setStudentId] = useState("");
   const [message, setMessage] = useState("");
   const [where, setWhere] = useState(item.location);
@@ -382,6 +520,29 @@ function AccommodationDetail({ item }: { item: AccommodationItem }) {
   const vague = vagueFrequency(often);
   const blank = !where.trim() || !often.trim() || !length.trim();
   const student = students.find((s) => s.student.id === studentId)?.student;
+  const mineItem = isMyAccommodationId(item.id);
+  const saveMine = () => {
+    const res = addMyAccommodation({
+      title: item.title,
+      kind: item.kind,
+      category: item.category,
+      description: item.description,
+      location: where,
+      frequency: often,
+      duration: length,
+    });
+    setMessage(
+      res.ok
+        ? res.kept
+          ? `Saved "${item.title}" to My items.`
+          : `Saved "${item.title}" for now; this browser would not keep it for later visits.`
+        : res.reason === "full"
+          ? "My items is full. Remove one first."
+          : res.reason === "duplicate"
+            ? "That wording is already in My items."
+            : "Could not save that wording. Check the boxes and try again.",
+    );
+  };
   const add = () => {
     if (!student) return;
     try {
@@ -466,6 +627,16 @@ function AccommodationDetail({ item }: { item: AccommodationItem }) {
             >
               Add to student
             </button>
+            {!mineItem && (
+              <button
+                type="button"
+                onClick={saveMine}
+                disabled={vague || blank}
+                aria-describedby={vague ? "acc-add-vague" : blank ? "acc-add-blank" : undefined}
+              >
+                Save to My items
+              </button>
+            )}
           </div>
           {!student && (
             <p id="acc-add-pick" className="meta">
@@ -474,7 +645,7 @@ function AccommodationDetail({ item }: { item: AccommodationItem }) {
                 : "Choose a student above to turn this on."}
             </p>
           )}
-          {student && !vague && blank && (
+          {!vague && blank && (
             <p id="acc-add-blank" className="meta">
               Fill in location, frequency and duration to turn this on.
             </p>
@@ -483,6 +654,27 @@ function AccommodationDetail({ item }: { item: AccommodationItem }) {
             {message}
           </p>
         </form>
+      )}
+      {mineItem && (
+        <MineTools
+          title={item.title}
+          rename={(t) => renameMyAccommodation(item.id, t)}
+          copy={() => {
+            const res = duplicateMyAccommodation(item.id);
+            if (res.ok) onCopied(res.id, res.kept);
+            return res;
+          }}
+        />
+      )}
+      {mineItem && (
+        <DeleteButton
+          label="Remove from My items"
+          ask="Yes, remove it from My items"
+          onDelete={() => {
+            removeMyAccommodation(item.id);
+            onRemoved(item.title);
+          }}
+        />
       )}
     </section>
   );

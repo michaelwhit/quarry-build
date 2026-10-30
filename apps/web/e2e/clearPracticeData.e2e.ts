@@ -18,6 +18,7 @@ const KEYS = [
   "goalline-practice-iepshort-v1",
   "goalline-practice-library-favorites-v1",
   "goalline-practice-my-items-v1",
+  "goalline-practice-my-accommodations-v1",
 ];
 
 test.describe("Clear practice data removes every kept key", () => {
