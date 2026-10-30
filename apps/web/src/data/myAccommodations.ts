@@ -109,8 +109,11 @@ export type SaveResult =
 /** Adds an accommodation to My items. `kept` is false when the browser would not save it. */
 export function addMyAccommodation(item: Omit<AccommodationItem, "id">): SaveResult {
   if (items.length >= MAX_MY_ACCOMMODATIONS) return { ok: false, reason: "full" };
+  // Only the known fields are kept, so extra keys on an entry (from a loaded file) are not stored.
   const clean = {
-    ...item,
+    kind: item.kind,
+    category: item.category,
+    description: item.description,
     title: item.title.trim(),
     location: item.location.trim(),
     frequency: item.frequency.trim(),
