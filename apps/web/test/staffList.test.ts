@@ -12,6 +12,7 @@ import {
   filterStaff,
   roleName,
   staffRows,
+  type StaffPerson,
 } from "../src/data/staffList.ts";
 
 const TODAY = "2026-10-21";
@@ -40,6 +41,27 @@ describe("staff list", () => {
     expect(cm?.detail).toMatch(/^\d+ students?$/);
     const para = rows.find((r) => r.role === "paraprofessional");
     expect(para?.detail).toMatch(/^\d+ delegated goals?/);
+  });
+
+  it("shows a status word and a role end date on each row, and keeps a paused person off the access list", () => {
+    const people: StaffPerson[] = [
+      { id: "s1", display_name: "Sam Example", role: "case_manager", status: "active" },
+      {
+        id: "s2",
+        display_name: "Riley Mockridge",
+        role: "paraprofessional",
+        status: "paused",
+        role_end_date: "2027-06-01",
+      },
+      { id: "s3", display_name: "Gone Person", role: "case_manager", status: "removed" },
+    ];
+    const rows = staffRows(TODAY, people);
+    expect(rows.map((r) => [r.name, r.status, r.roleEnds])).toEqual([
+      ["Sam Example", "active", ""],
+      ["Riley Mockridge", "paused", "Role ends Jun 2027"],
+    ]);
+    expect(accessRoster(TODAY, people).map((r) => r.name)).toEqual(["Sam Example"]);
+    expect(staffRows(TODAY).every((r) => r.status === "active" && r.roleEnds === "")).toBe(true);
   });
 
   it("searches by name and filters by role", () => {
@@ -144,6 +166,8 @@ describe("staff screens and access", () => {
     expect(list).toContain("Staff and roles");
     expect(list).toContain("Search staff");
     expect(list).toContain("Export who can see student records");
+    expect(list.replaceAll("<!-- -->", "")).toContain("Status: Active");
+    expect(list).not.toContain("Access is paused.");
     expect(list.replaceAll("<!-- -->", "")).toMatch(/role="status">\d+ (people|person) shown/);
     const review = renderToString(createElement(AccessReview));
     expect(review).toContain("Who can see student records");
