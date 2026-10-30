@@ -106,4 +106,21 @@ describe("My accommodations", () => {
     expect(res.ok && res.kept).toBe(false);
     expect(PRACTICE_KEYS).toContain(MY_ACCOMMODATIONS_KEY);
   });
+
+  it("keeps only the known fields of a saved item", () => {
+    const res = addMyAccommodation({ ...base, extra: "not stored" } as typeof base);
+    if (!res.ok) throw new Error("not saved");
+    expect(Object.keys(getMyAccommodations()[0]!).sort()).toEqual(
+      [
+        "category",
+        "description",
+        "duration",
+        "frequency",
+        "id",
+        "kind",
+        "location",
+        "title",
+      ].sort(),
+    );
+  });
 });
