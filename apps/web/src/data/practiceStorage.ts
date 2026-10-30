@@ -2,6 +2,7 @@ import { CONSIDERATIONS_KEY } from "./considerations.ts";
 import { FAVORITES_KEY } from "./libraryFavorites.ts";
 import { GOAL_EXTRAS_KEY } from "./goalExtras.ts";
 import { IEP_SHORT_KEY } from "./iepShort.ts";
+import { MY_ACCOMMODATIONS_KEY } from "./myAccommodations.ts";
 import { MY_ITEMS_KEY } from "./myItems.ts";
 import { PLACEMENT_KEY } from "./placement.ts";
 import { PL_KEY } from "./presentLevels.ts";
@@ -34,6 +35,7 @@ export const PRACTICE_KEYS: readonly string[] = [
   IEP_SHORT_KEY,
   FAVORITES_KEY,
   MY_ITEMS_KEY,
+  MY_ACCOMMODATIONS_KEY,
 ];
 
 interface Removable {

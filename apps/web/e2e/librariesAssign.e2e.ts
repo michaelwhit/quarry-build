@@ -81,4 +81,50 @@ test.describe("assign from the library", () => {
     await expect(page.locator("main")).toContainText(title);
     await expect(page.locator("main")).toContainText("Every timed test");
   });
+
+  test("an accommodation's own wording is saved to My items, found by the filter, and removed", async ({
+    page,
+  }) => {
+    const errors = watchErrors(page);
+    await signIn(page, "director");
+    await tabBar(page).getByRole("link", { name: "Libraries" }).click();
+    await page.getByRole("button", { name: "Accommodations", exact: true }).click();
+    await page
+      .getByRole("list", { name: "Accommodations" })
+      .locator("li.lib-item > button")
+      .nth(1)
+      .click();
+    const detail = page.locator("section.lib-detail");
+    const title = await detail.locator("h3").innerText();
+    await detail.getByLabel("Frequency").fill("Every timed test");
+    await detail.getByRole("button", { name: "Save to My items" }).click();
+    await expect(detail.getByRole("status")).toHaveText(`Saved "${title}" to My items.`);
+    await detail.getByRole("button", { name: "Save to My items" }).click();
+    await expect(detail.getByRole("status")).toHaveText("That wording is already in My items.");
+
+    await page.getByLabel(/^My items only/).check();
+    const mine = page.getByRole("list", { name: "Accommodations" }).locator("li.lib-item");
+    await expect(mine).toHaveCount(1);
+    await expect(mine.first()).toContainText("My item ·");
+    await mine.first().locator("button").first().click();
+    await expect(detail.getByLabel("Frequency")).toHaveValue("Every timed test");
+    const rename = detail.getByRole("button", { name: "Rename", exact: true });
+    await expect(rename).toBeDisabled();
+    await expect(rename).toHaveAccessibleDescription("Change the name to turn Rename on.");
+    await detail.getByLabel("Name in My items").fill("Extra time on tests");
+    await rename.click();
+    await expect(detail.getByText('Renamed to "Extra time on tests".')).toBeVisible();
+    await detail.getByRole("button", { name: "Make a copy" }).click();
+    await expect(page.locator("p.lib-note")).toContainText(
+      'Saved a copy of "Extra time on tests" and opened it.',
+    );
+    await expect(detail.locator("h3")).toHaveText("Extra time on tests (copy)");
+    await detail.getByRole("button", { name: "Remove from My items" }).click();
+    await detail.getByRole("button", { name: "Yes, remove it from My items" }).click();
+    await expect(page.locator("p.lib-note")).toContainText(
+      'Removed "Extra time on tests (copy)" from My items.',
+    );
+    await expect(mine).toHaveCount(1);
+    expect(errors).toEqual([]);
+  });
 });
