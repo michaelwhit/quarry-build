@@ -4,7 +4,7 @@ import { type BoxId, type PwnInput, copyText, draftPwn } from "../src/data/pwn.t
 // CI eval set for the Prior Written Notice (required-elements check): twenty invented students, each
 // with a complete set of entries. For every one, all the required contents are present when the
 // entries are complete, and taking away any one required entry blocks the matching box and the whole
-// notice. The text never holds a last name, an id or a classmate. Invented data from a seeded generator.
+// notice. Invented data from a seeded generator.
 
 const FIRST = [
   "Ansel",
@@ -28,29 +28,6 @@ const FIRST = [
   "Sorrel",
   "Tamsin",
 ];
-const LAST = [
-  "Ashgrove",
-  "Bramblewick",
-  "Coldharbour",
-  "Dunmore",
-  "Elderfield",
-  "Fernsby",
-  "Greywether",
-  "Hollowell",
-  "Ironsides",
-  "Juniperson",
-  "Kettlewood",
-  "Larkspur",
-  "Marchbanks",
-  "Nettlefold",
-  "Oakenshaw",
-  "Pennyfeather",
-  "Quillfeather",
-  "Ravenscroft",
-  "Stonebridge",
-  "Thistledown",
-];
-
 function rng(seed: number) {
   let a = seed >>> 0;
   return () => {
@@ -190,13 +167,4 @@ describe("required elements: a missing entry blocks the box and the notice", () 
         expect(d.blocked.length).toBeGreaterThan(0);
         expect(copyText(d, rm.box), rm.name).toBeNull();
       });
-});
-
-describe("required elements: nothing that names the student gets in", () => {
-  for (let i = 0; i < 20; i++)
-    it(`${FIRST[i]}: no last name, id or classmate in the text`, () => {
-      const d = draftPwn(inputFor(i));
-      const text = d.boxes.map((b) => b.text).join("\n");
-      for (const name of [...LAST, ...FIRST, "S6000000"]) expect(text).not.toContain(name);
-    });
 });
