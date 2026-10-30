@@ -149,6 +149,7 @@ describe("gatherPwn", () => {
       noteDate: "2027-01-05",
       reasons: ["Daily practice is needed."],
       contact: { name: "Pat Example", role: "Case manager", phone: "" },
+      helpSource: "The state parent help line",
     });
     const draft = draftPwn(gatherPwn(sid()).input);
     expect(draft.blocked.filter((b) => !b.includes("goal"))).toEqual([]);
