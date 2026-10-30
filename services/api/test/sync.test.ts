@@ -29,16 +29,19 @@ describe.skipIf(!databaseUrl)("sync", () => {
     await owner.end();
   });
 
+  // Recorded a few hours ago: the server refuses a device clock more than 14 days behind, so fixed
+  // calendar dates here would start failing once they age past that.
+  const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000).toISOString();
   const point = (f: Fixture, who: Fixture["cmOne"], device: string, idx = 0, extra = {}) => ({
     id: randomUUID(),
     goal_id: f.students[idx]!.goalId,
     plan_id: f.students[idx]!.planId,
-    observed_at: "2026-10-16T14:00:00Z",
+    observed_at: hoursAgo(3),
     correct: 7,
     total: 10,
     collector_id: who.staffId,
     device_id: device,
-    client_created_at: "2026-10-16T14:00:01Z",
+    client_created_at: hoursAgo(2.9),
     ...extra,
   });
   const push = (s: Fixture["cmOne"], device: string, points: object[]) =>
@@ -91,7 +94,7 @@ describe.skipIf(!databaseUrl)("sync", () => {
     const device = randomUUID();
     const p = point(a, a.cmOne, device);
     await push(a.cmOne, device, [p]);
-    const res = await push(a.cmOne, device, [{ ...p, client_created_at: "2026-10-16T15:00:00Z" }]);
+    const res = await push(a.cmOne, device, [{ ...p, client_created_at: hoursAgo(2) }]);
     expect(res.json().results[0].status).toBe("conflict");
   });
 

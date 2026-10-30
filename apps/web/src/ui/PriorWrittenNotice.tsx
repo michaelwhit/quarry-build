@@ -242,6 +242,14 @@ export function PriorWrittenNotice({ studentId }: { studentId: string }) {
             onBlur={(e) => set({ otherFactors: lines(e.target.value) })}
           />
         </label>
+        <label>
+          Where parents can get help understanding their rights
+          <input
+            maxLength={300}
+            value={entry.helpSource}
+            onChange={(e) => set({ helpSource: e.target.value })}
+          />
+        </label>
         <fieldset>
           <legend>Contact for questions</legend>
           <label>

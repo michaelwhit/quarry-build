@@ -19,6 +19,9 @@ test.describe("Track: a session that is not saved", () => {
       await page.locator('a.pick-btn[href^="#/track/"]').nth(i).click();
       const pad = page.getByRole("region", { name: "Record data" });
       await expect(pad).toBeVisible();
+      await expect(pad.getByRole("button", { name: /Save session/ })).toHaveAccessibleDescription(
+        "Record something for this session to turn Save on.",
+      );
       for (const o of [
         pad.getByRole("button", { name: /Correct/ }),
         pad.getByRole("button", { name: "+ 1" }),
