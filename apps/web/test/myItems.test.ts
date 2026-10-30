@@ -199,6 +199,11 @@ describe("My items store", () => {
     expect(all[1]?.title).toBe(`${all[0]?.title} (copy)`);
     expect(all[1]?.id).not.toBe(id);
     expect(all[1]?.template_text).toBe(all[0]?.template_text);
+    const long = getMyGoals()[0]!.id;
+    expect(renameMyGoal(long, "L".repeat(120))).toBe(true);
+    duplicateMyGoal(long);
+    expect(getMyGoals().at(-1)?.title.endsWith(" (copy)")).toBe(true);
+    expect(getMyGoals().at(-1)?.title.length).toBe(120);
     expect(duplicateMyGoal("my-gone")).toEqual({ ok: false, reason: "invalid" });
     while (getMyGoals().length < MAX_MY_GOALS) duplicateMyGoal(id);
     expect(duplicateMyGoal(id)).toEqual({ ok: false, reason: "full" });

@@ -132,6 +132,7 @@ export function useMyGoals(): GoalItem[] {
   return items;
 }
 
+const COPY_SUFFIX = " (copy)";
 let counter = 0;
 const newId = () => `my-${Date.now().toString(36)}-${(counter++).toString(36)}`;
 
@@ -163,7 +164,11 @@ export function duplicateMyGoal(id: string): SaveResult {
   const from = items.find((g) => g.id === id);
   if (!from) return { ok: false, reason: "invalid" };
   if (items.length >= MAX_MY_GOALS) return { ok: false, reason: "full" };
-  const copy = { ...from, id: newId(), title: clip(`${from.title} (copy)`, 120) };
+  const copy = {
+    ...from,
+    id: newId(),
+    title: `${clip(from.title, 120 - COPY_SUFFIX.length)}${COPY_SUFFIX}`,
+  };
   if (!isMyGoal(copy)) return { ok: false, reason: "invalid" };
   const kept = commit([...items, copy]);
   return { ok: true, id: copy.id, kept };
