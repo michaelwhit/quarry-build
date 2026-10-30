@@ -33,6 +33,7 @@ const draftFor = (contactName: string) =>
     otherFactors: [],
     reasons: ["Daily practice is needed."],
     contact: { name: contactName, role: "Case manager" },
+    helpSource: "The state parent help line",
   });
 
 beforeEach(() => {
@@ -68,6 +69,13 @@ describe("pwnStore", () => {
     expect(e.reasons).toEqual(["", "ok"]);
     expect(e.alternatives).toEqual([{ option: "x", reason: "y" }]);
     expect(e.approved).toEqual({});
+  });
+
+  it("keeps the help source and drops a non-text one from damaged storage", () => {
+    usePwnStorage(memory(JSON.stringify({ s1: { helpSource: 5 } })).s);
+    expect(getPwnEntry("s1").helpSource).toBe("");
+    setPwnEntry("s1", { helpSource: "The state parent help line" });
+    expect(getPwnEntry("s1").helpSource).toBe("The state parent help line");
   });
 
   it("approves a ready box and refuses a blocked one", () => {

@@ -42,7 +42,7 @@ const PHRASES: Record<Lang, Phrases> = {
     noData: "No progress was recorded in this period.",
     noGoals: "This student has no goals yet.",
     progress: (n, a, b, c) =>
-      `${n} ${n === 1 ? "session" : "sessions"} recorded. Started at ${a}, most recent ${b}, aim ${c}.`,
+      `${n} ${n === 1 ? "session" : "sessions"} recorded. Started at ${a}. Most recent: ${b}. Target: ${c}.`,
     onTrack: "On track to meet this goal.",
     notYet: "Not yet on track. The team will talk about changes to help.",
     goalWording: "Goal",

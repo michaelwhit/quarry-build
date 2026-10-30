@@ -16,6 +16,7 @@ export interface PwnEntry {
   alternatives: AlternativeInput[];
   otherFactors: string[];
   contact: { name: string; role: string; phone: string };
+  helpSource: string;
   /** service row id or goal id -> what this IEP does to it. Unmarked items count as "added". */
   changes: Record<string, RowChange>;
   /** box id -> fingerprint of the text when the teacher approved it. */
@@ -34,6 +35,7 @@ export const emptyEntry = (): PwnEntry => ({
   alternatives: [],
   otherFactors: [],
   contact: { name: "", role: "", phone: "" },
+  helpSource: "",
   changes: {},
   approved: {},
 });
@@ -68,6 +70,7 @@ function clean(v: unknown): PwnEntry {
   if (Array.isArray(v["alternatives"]))
     for (const a of v["alternatives"].slice(0, MAX_LINES))
       if (isRec(a)) e.alternatives.push({ option: str(a["option"]), reason: str(a["reason"]) });
+  e.helpSource = str(v["helpSource"]);
   const c = v["contact"];
   if (isRec(c)) e.contact = { name: str(c["name"]), role: str(c["role"]), phone: str(c["phone"]) };
   const ch = v["changes"];

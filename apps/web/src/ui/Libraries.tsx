@@ -851,13 +851,40 @@ function GoalDetail({
           className="save"
           onClick={add}
           disabled={!ready || !student || !mayAdd}
+          aria-describedby={
+            !mayAdd
+              ? "lib-goal-hint"
+              : !student
+                ? students.length === 0
+                  ? "lib-goal-student"
+                  : "lib-goal-pick"
+                : !ready
+                  ? "lib-goal-fix"
+                  : undefined
+          }
         >
           Add to student's goals
         </button>
       </div>
-      {!mayAdd && <p className="meta">Your role can read the library but not add goals.</p>}
+      {!mayAdd && (
+        <p id="lib-goal-hint" className="meta">
+          Your role can read the library but not add goals.
+        </p>
+      )}
       {students.length === 0 && (
-        <p className="meta">Add a made-up student on the caseload page first.</p>
+        <p id="lib-goal-student" className="meta">
+          Add a made-up student on the caseload page first.
+        </p>
+      )}
+      {students.length > 0 && !student && (
+        <p id="lib-goal-pick" className="meta">
+          Choose a student above to turn this on.
+        </p>
+      )}
+      {mayAdd && student && !ready && (
+        <p id="lib-goal-fix" className="meta">
+          Fix the items marked with a cross in the checks above to turn this on.
+        </p>
       )}
       <p className="saved" role="status">
         {message}
