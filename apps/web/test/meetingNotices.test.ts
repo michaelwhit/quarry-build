@@ -57,6 +57,14 @@ describe("draftInvite", () => {
     expect(noticeCopy(d, "when_where")).toBeNull();
   });
 
+  it("ignores fully blank invitee rows", () => {
+    const i = base();
+    i.invitees.push({ name: " ", position: "" });
+    const d = draftInvite(i);
+    expect(d.blocked).toEqual([]);
+    expect(noticeCopy(d, "invitees")).not.toContain("\n- ,");
+  });
+
   it("blocks a contact without a role", () => {
     const i = base();
     i.contact = { name: "Pat Example", role: " " };
