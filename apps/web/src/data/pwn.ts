@@ -62,10 +62,30 @@ export interface PwnInput {
   /** The teacher's own one-line reasons for the proposed or stopped actions; nothing is invented. */
   reasons?: string[];
   contact: { name: string; role: string; phone?: string };
+  /**
+   * Where parents can get help understanding their rights (the district's or the state's parent
+   * help line). Required in the notice; the district supplies the wording.
+   */
+  helpSource?: string;
 }
 
+/**
+ * The procedural-safeguards statement every notice carries. The district's own wording is to be
+ * confirmed inside the record system; this is the placeholder, never written by a model.
+ */
+export const SAFEGUARDS_LINE =
+  "Parents of a child with a disability are protected by procedural safeguards. For a copy of the procedural safeguards, ask the contact below.";
+
 export type BoxId =
-  "proposed" | "refused" | "why" | "other_options" | "evaluation" | "other_factors" | "contact";
+  | "proposed"
+  | "refused"
+  | "why"
+  | "other_options"
+  | "evaluation"
+  | "other_factors"
+  | "safeguards"
+  | "help_sources"
+  | "contact";
 
 export const BOX_LABEL: Record<BoxId, string> = {
   proposed: "Action proposed",
@@ -74,6 +94,8 @@ export const BOX_LABEL: Record<BoxId, string> = {
   other_options: "Other options considered and why rejected",
   evaluation: "Evaluation procedures used",
   other_factors: "Other relevant factors",
+  safeguards: "Procedural safeguards",
+  help_sources: "Where parents can get help understanding their rights",
   contact: "Contact for questions",
 };
 
@@ -287,6 +309,20 @@ export function draftPwn(input: PwnInput): PwnDraft {
       label: BOX_LABEL.other_factors,
       text: factors.length ? bullets(factors) : "None.",
       blocked: [],
+    },
+    {
+      id: "safeguards",
+      label: BOX_LABEL.safeguards,
+      text: SAFEGUARDS_LINE,
+      blocked: [],
+    },
+    {
+      id: "help_sources",
+      label: BOX_LABEL.help_sources,
+      text: input.helpSource?.trim() ?? "",
+      blocked: input.helpSource?.trim()
+        ? []
+        : ["Add where parents can get help understanding their rights."],
     },
     {
       id: "contact",

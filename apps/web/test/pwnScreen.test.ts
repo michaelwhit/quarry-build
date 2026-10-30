@@ -35,6 +35,15 @@ beforeEach(() => {
 });
 
 describe("Prior Written Notice screen", () => {
+  it("asks for where parents can get help, shows the safeguards line, and clears the block once typed", () => {
+    expect(draw()).toContain("Where parents can get help understanding their rights");
+    expect(draw()).toContain("Procedural safeguards");
+    expect(draw()).toContain("Add where parents can get help understanding their rights.");
+    setPwnEntry(sid(), { helpSource: "The state parent help line" });
+    expect(draw()).not.toContain("Add where parents can get help understanding their rights.");
+    expect(draw()).toContain("The state parent help line");
+  });
+
   it("opens with the entries form, what to finish first, and every box with what is missing", () => {
     const html = draw();
     expect(html).toContain("Prior Written Notice draft");
