@@ -34,6 +34,7 @@ import {
 import { duplicateMyGoal, removeMyGoal, renameMyGoal, useMyGoals } from "../data/myItems.ts";
 import { can, getRole } from "../data/roles.ts";
 import { addAccommodation, addGoal, getWorkspace, removeAccommodation } from "../data/workspace.ts";
+import { AccommodationBulk } from "./AccommodationBulk.tsx";
 import { DeleteButton } from "./Forms.tsx";
 import "./libraries.css";
 
@@ -68,6 +69,7 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
   const [starsOnly, setStarsOnly] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const [mineOnly, setMineOnly] = useState(false);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
   const mine = useMyGoals();
   const allGoals = [...goals, ...mine];
   const mineAccs = useMyAccommodations();
@@ -150,6 +152,7 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
             aria-pressed={tab === t}
             onClick={() => {
               setTab(t);
+              setPicked(new Set());
               setOpenId(null);
               setStatus("");
               setStartHref("");
@@ -276,6 +279,12 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
           </>
         )}
       </p>
+      {tab === "accommodations" && canAdd && (
+        <AccommodationBulk
+          picked={shownAccs.filter((a) => picked.has(a.id))}
+          onDone={() => setPicked(new Set())}
+        />
+      )}
       {tab === "goals" ? (
         <ul className="lib-list" aria-label="Goals">
           {shownGoals.map((g) => (
@@ -342,6 +351,24 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
                   {kindLabel[a.kind]} · {a.category}
                 </span>
               </button>
+              {canAdd && (
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={picked.has(a.id)}
+                    onChange={(e) =>
+                      setPicked((prev) => {
+                        const next = new Set(prev);
+                        if (e.target.checked) next.add(a.id);
+                        else next.delete(a.id);
+                        return next;
+                      })
+                    }
+                  />{" "}
+                  Tick to add with others
+                  <span className="sr-only">: {a.title}</span>
+                </label>
+              )}
             </li>
           ))}
           {shownAccs.length === 0 && (

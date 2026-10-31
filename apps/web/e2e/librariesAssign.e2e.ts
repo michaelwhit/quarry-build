@@ -127,4 +127,48 @@ test.describe("assign from the library", () => {
     await expect(mine).toHaveCount(1);
     expect(errors).toEqual([]);
   });
+
+  test("several accommodations are ticked and added to one student, and a repeat is left out", async ({
+    page,
+  }) => {
+    const errors = watchErrors(page);
+    await signIn(page, "director");
+    const id = await newStudent(page);
+    await tabBar(page).getByRole("link", { name: "Libraries" }).click();
+    await page.getByRole("button", { name: "Accommodations", exact: true }).click();
+    const add = page.getByRole("button", { name: /^Add \d+ ticked to / });
+    await expect(add).toBeDisabled();
+    await expect(add).toHaveAccessibleDescription(
+      "Tick one or more accommodations in the list to turn this on.",
+    );
+    const ticks = page.getByRole("checkbox", { name: /^Tick to add with others/ });
+    await ticks.nth(0).check();
+    await ticks.nth(1).check();
+    await expect(add).toHaveAccessibleDescription("Choose a student to turn this on.");
+    await page
+      .getByLabel("Student for the ticked accommodations")
+      .selectOption({ label: "Sample Learner" });
+    await expect(add).toHaveText("Add 2 ticked to Sample Learner");
+    await add.click();
+    await expect(page.getByText("Sample Learner: added 2 accommodations.")).toBeVisible();
+    await expect(ticks.nth(0)).not.toBeChecked();
+
+    await ticks.nth(0).check();
+    await ticks.nth(2).check();
+    // A tick that a search hides is not counted or added.
+    await page.getByRole("searchbox", { name: "Search the library" }).fill("zzzz-no-match");
+    await expect(add).toHaveText("Add 0 ticked to Sample Learner");
+    await page.getByRole("searchbox", { name: "Search the library" }).fill("");
+    await expect(add).toHaveText("Add 2 ticked to Sample Learner");
+    await add.click();
+    await expect(
+      page.getByText(/Sample Learner: added 1 accommodation\. Left out 1/),
+    ).toBeVisible();
+
+    await page.evaluate((h) => {
+      window.location.hash = h;
+    }, `#/student/${id}/accommodations`);
+    await expect(page.getByRole("button", { name: /^Remove / })).toHaveCount(3);
+    expect(errors).toEqual([]);
+  });
 });
