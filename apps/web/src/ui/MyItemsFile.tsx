@@ -56,7 +56,10 @@ export function MyItemsFile() {
               setMessage("That file is too large.");
               return;
             }
-            void f.text().then((t) => setMessage(importMyItems(t).message));
+            f.text().then(
+              (t) => setMessage(importMyItems(t).message),
+              () => setMessage("That file could not be read."),
+            );
           }}
         />
       </label>
