@@ -187,11 +187,13 @@ export function Evaluation() {
           Names, dates and numbers that could identify someone are replaced. Held-back lines are
           never included. Practice build: nothing is sent anywhere.
         </p>
-        {problems.map((p, i) => (
-          <p className="form-error" key={`${i}-${p}`}>
-            {p}
-          </p>
-        ))}
+        <div id="eval-problems">
+          {problems.map((p, i) => (
+            <p className="form-error" key={`${i}-${p}`}>
+              {p}
+            </p>
+          ))}
+        </div>
         <div className="actions stack">
           {isChecked ? (
             <p className="saved" role="status">
@@ -202,6 +204,7 @@ export function Evaluation() {
               type="button"
               className="save"
               disabled={problems.length > 0}
+              aria-describedby={problems.length > 0 ? "eval-problems" : undefined}
               onClick={() => setChecked(fingerprint(intake, preview))}
             >
               Looks right, continue
