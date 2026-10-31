@@ -108,10 +108,23 @@ test.describe("assign from the library", () => {
     await expect(mine.first()).toContainText("My item ·");
     await mine.first().locator("button").first().click();
     await expect(detail.getByLabel("Frequency")).toHaveValue("Every timed test");
+    const rename = detail.getByRole("button", { name: "Rename", exact: true });
+    await expect(rename).toBeDisabled();
+    await expect(rename).toHaveAccessibleDescription("Change the name to turn Rename on.");
+    await detail.getByLabel("Name in My items").fill("Extra time on tests");
+    await rename.click();
+    await expect(detail.getByText('Renamed to "Extra time on tests".')).toBeVisible();
+    await detail.getByRole("button", { name: "Make a copy" }).click();
+    await expect(page.locator("p.lib-note")).toContainText(
+      'Saved a copy of "Extra time on tests" and opened it.',
+    );
+    await expect(detail.locator("h3")).toHaveText("Extra time on tests (copy)");
     await detail.getByRole("button", { name: "Remove from My items" }).click();
     await detail.getByRole("button", { name: "Yes, remove it from My items" }).click();
-    await expect(page.locator("p.lib-note")).toContainText(`Removed "${title}" from My items.`);
-    await expect(page.getByText("Nothing in My items yet.")).toBeVisible();
+    await expect(page.locator("p.lib-note")).toContainText(
+      'Removed "Extra time on tests (copy)" from My items.',
+    );
+    await expect(mine).toHaveCount(1);
     expect(errors).toEqual([]);
   });
 });

@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { within } from "./codePoints.ts";
+import { clip, within } from "./codePoints.ts";
 import type { AccommodationItem } from "./library.ts";
 
 // A teacher's own saved accommodation wording ("My items" on the Accommodations tab), kept in this
@@ -92,6 +92,7 @@ export function useMyAccommodations(): AccommodationItem[] {
   return items;
 }
 
+const COPY_SUFFIX = " (copy)";
 let counter = 0;
 const newId = () =>
   `${MY_ACCOMMODATION_PREFIX}${Date.now().toString(36)}-${(counter++).toString(36)}`;
@@ -124,6 +125,29 @@ export function addMyAccommodation(item: Omit<AccommodationItem, "id">): SaveRes
   if (!isMyAccommodation({ ...clean, id })) return { ok: false, reason: "invalid" };
   const kept = commit([...items, { ...clean, id }]);
   return { ok: true, id, kept };
+}
+
+/** Renames a saved accommodation. False when the name is blank or too long, or it is gone. */
+export function renameMyAccommodation(id: string, title: string): boolean {
+  const name = title.trim();
+  if (!name || !within(name, 120) || !items.some((a) => a.id === id)) return false;
+  commit(items.map((a) => (a.id === id ? { ...a, title: name } : a)));
+  return true;
+}
+
+/** Saves a copy under "<title> (copy)", for changing the wording without losing the first. */
+export function duplicateMyAccommodation(id: string): SaveResult {
+  const from = items.find((a) => a.id === id);
+  if (!from) return { ok: false, reason: "invalid" };
+  if (items.length >= MAX_MY_ACCOMMODATIONS) return { ok: false, reason: "full" };
+  const copy = {
+    ...from,
+    id: newId(),
+    title: `${clip(from.title, 120 - COPY_SUFFIX.length)}${COPY_SUFFIX}`,
+  };
+  if (!isMyAccommodation(copy)) return { ok: false, reason: "invalid" };
+  const kept = commit([...items, copy]);
+  return { ok: true, id: copy.id, kept };
 }
 
 export function removeMyAccommodation(id: string) {

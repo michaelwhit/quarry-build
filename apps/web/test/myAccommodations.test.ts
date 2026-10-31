@@ -5,6 +5,8 @@ import {
   MAX_MY_ACCOMMODATIONS,
   MY_ACCOMMODATIONS_KEY,
   addMyAccommodation,
+  duplicateMyAccommodation,
+  renameMyAccommodation,
   getMyAccommodations,
   isMyAccommodation,
   isMyAccommodationId,
@@ -105,6 +107,33 @@ describe("My accommodations", () => {
     const res = addMyAccommodation(base);
     expect(res.ok && res.kept).toBe(false);
     expect(PRACTICE_KEYS).toContain(MY_ACCOMMODATIONS_KEY);
+  });
+
+  it("renames, and copies under a new id with the same wording", () => {
+    const res = addMyAccommodation(base);
+    if (!res.ok) throw new Error("not saved");
+    expect(renameMyAccommodation(res.id, " Extra time, tests ")).toBe(true);
+    expect(getMyAccommodations()[0]?.title).toBe("Extra time, tests");
+    expect(renameMyAccommodation(res.id, " ")).toBe(false);
+    expect(duplicateMyAccommodation(res.id).ok).toBe(true);
+    const [a, b] = getMyAccommodations();
+    expect(b?.title).toBe("Extra time, tests (copy)");
+    expect(b?.id).not.toBe(a?.id);
+    expect(b?.frequency).toBe(a?.frequency);
+    expect(duplicateMyAccommodation("mya-gone")).toEqual({ ok: false, reason: "invalid" });
+  });
+
+  it("says so when a copy will not be kept for later visits", () => {
+    const res = addMyAccommodation(base);
+    if (!res.ok) throw new Error("not saved");
+    setMyAccommodationsStorageForTests({
+      getItem: () => null,
+      setItem: () => {
+        throw new Error("full");
+      },
+    });
+    const copy = duplicateMyAccommodation(res.id);
+    expect(copy.ok && copy.kept).toBe(false);
   });
 
   it("keeps only the known fields of a saved item", () => {
