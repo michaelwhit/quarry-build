@@ -16,6 +16,7 @@ import {
   planImport,
   readyRows,
 } from "../data/csv.ts";
+import { isOneRosterUsers, oneRosterNote, readOneRosterUsers } from "../data/oneRoster.ts";
 import { EXAMPLE_FILE, EXAMPLE_FILE_NAME } from "../data/importExample.ts";
 import { sampleLine } from "../data/importGuide.ts";
 import {
@@ -540,6 +541,7 @@ const IMPORT_STEPS = ["Choose file", "Match columns", "Review and fix", "Add"];
 /** Add many students at once from a spreadsheet saved as CSV: pick the file, check the columns, preview, confirm. */
 export function ImportStudents() {
   const [fileName, setFileName] = useState("");
+  const [readAs, setReadAs] = useState("");
   const [table, setTable] = useState<CsvTable | null>(null);
   const [mapping, setMapping] = useState<Mapping>({});
   const [error, setError] = useState("");
@@ -565,9 +567,15 @@ export function ImportStudents() {
       setError(result.message);
       return;
     }
-    setTable(result.table);
+    // A OneRoster users file is turned into a plain roster; any other file is read as it is.
+    const oneRoster = isOneRosterUsers(result.table.headers)
+      ? readOneRosterUsers(result.table)
+      : null;
+    const read = oneRoster ? oneRoster.table : result.table;
+    setReadAs(oneRoster ? oneRosterNote(oneRoster) : "");
+    setTable(read);
     setFileName(name);
-    setMapping(detectMapping(result.table.headers));
+    setMapping(detectMapping(read.headers));
   };
 
   const pick = (file: File | undefined) => {
@@ -635,6 +643,10 @@ export function ImportStudents() {
             <li>Needed: a grade, and either a first and last name or one full-name column.</li>
             <li>Optional: a preferred name. Any other columns are ignored.</li>
             <li>
+              A OneRoster users.csv from your student information system works too: only student
+              names and grades are read.
+            </li>
+            <li>
               GoalLine matches the columns for you, and you can change them before anything is
               added.
             </li>
@@ -671,6 +683,7 @@ export function ImportStudents() {
       )}
       {table && (
         <form className="form" onSubmit={(e) => e.preventDefault()}>
+          {readAs && <p className="meta">{readAs}</p>}
           {table.headerLine !== undefined && (
             <p className="meta">
               The header row is on line {table.headerLine}. The lines above it were skipped.
