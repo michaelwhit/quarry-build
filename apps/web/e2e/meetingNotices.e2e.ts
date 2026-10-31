@@ -71,6 +71,7 @@ test.describe("evaluation timeline", () => {
     await fill(page, "2026-10-30", "3");
     const copy = timeline(page).getByRole("button", { name: "Copy the timeline" });
     await expect(copy).toBeDisabled();
+    await expect(copy).toHaveAccessibleDescription("Tick the box to turn Copy on.");
     await timeline(page).getByLabel("I read this and it is right").check();
     await expect(copy).toBeEnabled();
     await copy.click();
