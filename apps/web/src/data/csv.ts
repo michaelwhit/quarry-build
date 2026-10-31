@@ -213,7 +213,7 @@ const ALIASES: Record<ImportField, string[]> = {
   ],
 };
 
-const headerKey = (h: string) => h.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+export const headerKey = (h: string) => h.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
 
 /** Guesses which column is which from the header row. A column fills at most one field. */
 export function detectMapping(headers: string[]): Mapping {
