@@ -7,6 +7,7 @@ import {
   addServiceRow,
   getServices,
   getServicesVersion,
+  providerNote,
   removeServiceRow,
   rowProblem,
   subscribeServices,
@@ -59,6 +60,11 @@ export function Form({ studentId }: { studentId: string }) {
               {SERVICE_KINDS.find((k) => k.id === r.kind)?.label} · {r.frequency} · {r.duration} ·{" "}
               {r.location}
             </span>{" "}
+            {providerNote(r) && (
+              <span className="meta" role="note">
+                {providerNote(r)}
+              </span>
+            )}{" "}
             <button
               type="button"
               className="btn"

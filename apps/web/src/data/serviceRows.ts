@@ -10,6 +10,9 @@ export const SERVICE_KINDS: { id: ServiceKind; label: string }[] = [
 ];
 export const kindLabel = (k: ServiceKind) => SERVICE_KINDS.find((x) => x.id === k)?.label ?? k;
 
+/** Whether the person named on a service can still log against it. Comes from the server's roster. */
+export type ProviderState = "active" | "paused" | "removed" | "role_ended" | "role_changed";
+
 export interface ServiceRow {
   id: string;
   kind: ServiceKind;
@@ -25,11 +28,27 @@ export interface ServiceRow {
   /** A named place. */
   location: string;
   followsCalendar: boolean;
+  /**
+   * Only on rows that come from a server: the provider named on a related service, or null when
+   * none is named. Practice and sample rows leave it out, and then no provider note is shown.
+   */
+  provider?: { state: ProviderState } | null;
 }
 export type RowDraft = Omit<ServiceRow, "id">;
 
 const VAGUE = /\b(as needed|if needed|when needed|as appropriate|as required|prn|n\/a|tbd)\b/i;
 const COUNT = /\d|\b(daily|weekly|monthly|each|every|once|twice|during|on|when|whenever)\b/i;
+/**
+ * What to tell the team about the provider on a related service: nothing when the row carries no
+ * provider data (practice rows), "needs a provider" when none is named, and "needs a new provider"
+ * when the named person is paused, removed, their role has ended or they now hold another role. Nothing is cleared for them.
+ */
+export function providerNote(r: Pick<ServiceRow, "kind" | "provider">): string | null {
+  if (r.kind !== "related" || r.provider === undefined) return null;
+  if (r.provider === null) return "Needs a provider";
+  return r.provider.state === "active" ? null : "Needs a new provider";
+}
+
 export const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Why a row cannot be pasted yet; undefined when it is complete. */
@@ -66,6 +85,13 @@ try {
   storage = null;
 }
 
+export const PROVIDER_STATES: ProviderState[] = [
+  "active",
+  "paused",
+  "removed",
+  "role_ended",
+  "role_changed",
+];
 const isRec = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 const str = (v: unknown): v is string => typeof v === "string";
@@ -79,7 +105,10 @@ const isRow = (v: unknown): v is ServiceRow =>
   str(v["frequency"]) &&
   str(v["duration"]) &&
   str(v["location"]) &&
-  typeof v["followsCalendar"] === "boolean";
+  typeof v["followsCalendar"] === "boolean" &&
+  (v["provider"] === undefined ||
+    v["provider"] === null ||
+    (isRec(v["provider"]) && PROVIDER_STATES.includes(v["provider"]["state"] as ProviderState)));
 
 function load(): Map<string, ServiceRecord> {
   const out = new Map<string, ServiceRecord>();
