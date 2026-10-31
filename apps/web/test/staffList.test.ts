@@ -149,4 +149,14 @@ describe("staff screens and access", () => {
     expect(review).toContain("Who can see student records");
     expect(review).toContain("Save as CSV");
   });
+  it("says so and explains the off Save button when no one can see student records", () => {
+    const html = renderToString(createElement(AccessReview, { rows: [] }));
+    expect(html).toContain("No one is listed as able to see student records.");
+    expect(html).toContain("Nothing to save until someone is listed.");
+    const button = /<button[^>]*>/.exec(html)![0];
+    expect(button).toContain('aria-describedby="csv-off"');
+    expect(button).toContain("disabled");
+    const full = renderToString(createElement(AccessReview));
+    expect(full).not.toContain("csv-off");
+  });
 });
