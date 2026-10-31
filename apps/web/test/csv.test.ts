@@ -254,3 +254,43 @@ describe("the made-up example file", () => {
     ]);
   });
 });
+
+describe("fixing rows in the preview", () => {
+  const text = "First,Last,Grade\nAva,Stone,3\n,Brook,4\nMia,Field,13\nAva,Stone,3\n";
+  it("replaces a row's name and grade, and the row is then judged like any other", () => {
+    const t = table(text);
+    const m = detectMapping(t.headers);
+    expect(planImport(t, m, []).map((r) => r.status.kind)).toEqual([
+      "ready",
+      "problem",
+      "problem",
+      "duplicate",
+    ]);
+    const fixed = planImport(t, m, [], {
+      1: { firstName: " Noa ", lastName: "Brook", grade: "4" },
+      2: { firstName: "Mia", lastName: "Field", grade: "12" },
+    });
+    expect(fixed.map((r) => r.status.kind)).toEqual(["ready", "ready", "ready", "duplicate"]);
+    expect(fixed[1]).toMatchObject({ firstName: "Noa", lastName: "Brook", grade: "4" });
+  });
+  it("a fix that is still wrong stays a problem, and one that repeats a row is a duplicate", () => {
+    const t = table(text);
+    const m = detectMapping(t.headers);
+    const still = planImport(t, m, [], {
+      1: { firstName: "", lastName: "Brook", grade: "4" },
+      2: { firstName: "Ava", lastName: "Stone", grade: "3" },
+    });
+    expect(still.map((r) => r.status.kind)).toEqual(["ready", "problem", "duplicate", "duplicate"]);
+  });
+  it("applies to a file with one full-name column too", () => {
+    const t = table("Name,Grade\nMadeup,3\n");
+    const rows = planImport(t, detectMapping(t.headers), [], {
+      0: { firstName: "Ivy", lastName: "Madeup", grade: "3" },
+    });
+    expect(rows[0]).toMatchObject({
+      firstName: "Ivy",
+      lastName: "Madeup",
+      status: { kind: "ready" },
+    });
+  });
+});
