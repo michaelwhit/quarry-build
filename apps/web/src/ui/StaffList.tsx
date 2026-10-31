@@ -3,6 +3,7 @@ import {
   FILTERS,
   ROLE_LINES,
   type StaffFilter,
+  STATUS_WORDS,
   TEXT,
   accessCsv,
   accessRoster,
@@ -70,6 +71,12 @@ export function StaffList() {
               <div className="meta">
                 {[r.position, r.detail].filter((x) => x !== "").join(" · ")}
               </div>
+              <div className="meta">
+                {[`Status: ${STATUS_WORDS[r.status]}`, r.roleEnds]
+                  .filter((x) => x !== "")
+                  .join(" · ")}
+              </div>
+              {r.status === "paused" && <div className="meta">{TEXT.pausedLine}</div>}
               <div className="meta">{ROLE_LINES[r.role]}</div>
             </li>
           ))}
