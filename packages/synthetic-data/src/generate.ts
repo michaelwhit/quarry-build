@@ -190,6 +190,9 @@ const TEMPLATES: GoalTemplate[] = [
 ];
 
 const DAY_MS = 86_400_000;
+/** Student index 3 gets an annual review due 2026-11-24 (meeting 364 days earlier). */
+const DEMO_REVIEW_STUDENT = 3;
+const DEMO_REVIEW_MEETING = "2025-11-25";
 
 function parseDate(d: string): number {
   return Date.parse(`${d}T00:00:00Z`);
@@ -314,7 +317,11 @@ export function generateDistrict(opts: GenerateOptions = {}): SyntheticDistrict 
     assign(caseManager.id, "caseload");
     if (elementary && i % 2 === 0) assign(genEd.id, "class_roster");
 
-    const meeting = parseDate("2026-03-02") + rng.int(0, 150) * DAY_MS;
+    const drawn = parseDate("2026-03-02") + rng.int(0, 150) * DAY_MS;
+    // One invented annual review falls on 2026-11-24, inside the 30 days after both the Oct 30 and
+    // Nov 16 demos, so "coming up" lists an IEP date as well as progress reports. The draw above
+    // is still consumed, so nothing else in the seeded run moves.
+    const meeting = i === DEMO_REVIEW_STUDENT ? parseDate(DEMO_REVIEW_MEETING) : drawn;
     const iep: Iep = {
       id: rng.uuidv7(meeting),
       tenant_id: t,

@@ -30,6 +30,19 @@ export interface StaffRow {
   position: string;
   /** "6 students", "2 delegated goals · ends Jun 2027", or "" for the director. */
   detail: string;
+  /** Only active people may see student records; a paused person stays on the list. */
+  status: "active" | "paused";
+  /** "Role ends Jun 2027" when the roster gives an end date, otherwise "". */
+  roleEnds: string;
+}
+
+/** The roster fields this list reads; the end date is absent from the practice district. */
+export interface StaffPerson {
+  id: string;
+  display_name: string;
+  role: string;
+  status: string;
+  role_end_date?: string | null;
 }
 
 const ROLE_NAMES: Record<string, string> = {
@@ -59,11 +72,17 @@ export const ROLE_LINES: Record<string, string> = {
   gen_ed_teacher: "Sees a read-only At a glance for the goals a case manager gives them.",
 };
 
+export const STATUS_WORDS: Record<StaffRow["status"], string> = {
+  active: "Active",
+  paused: "Paused",
+};
+
 export const TEXT = {
   title: "Staff and roles",
   searchLabel: "Search staff",
   roleHelp: "Role is set by you. Role changes are made in the full app; this view is read only.",
   empty: "No staff match.",
+  pausedLine: "Access is paused.",
   rosterTitle: "Who can see student records",
   rosterNote: "Keep this list current. It shows who may see student records.",
   rosterExport: "Export who can see student records",
@@ -79,13 +98,16 @@ const monthYear = (iso: string): string =>
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 /** Staff rows from the demo district, director first, then by role, then by name. */
-export function staffRows(today: string = isoToday()): StaffRow[] {
+export function staffRows(
+  today: string = isoToday(),
+  people: readonly StaffPerson[] = staff,
+): StaffRow[] {
   const schoolName = new Map(schools.map((s) => [s.id, s.name.replace(" (synthetic)", "")]));
   const studentSchool = new Map(students.map((s) => [s.id, s.school_id]));
   const iepStudent = new Map(ieps.map((i) => [i.id, i.student_id]));
   const goalStudent = new Map(goals.map((g) => [g.id, iepStudent.get(g.iep_id)]));
-  const rows = staff
-    .filter((p) => p.status === "active")
+  const rows = people
+    .filter((p) => p.status === "active" || p.status === "paused")
     .map((p): StaffRow => {
       const mine = caseload_assignments.filter(
         (a) => a.staff_id === p.id && activeOn(a.end_date, today),
@@ -118,7 +140,9 @@ export function staffRows(today: string = isoToday()): StaffRow[] {
         const ends = delegated.flatMap((d) => (d.expires_at ? [d.expires_at] : [])).sort();
         if (ends[0]) detail += ` · ends ${monthYear(ends[0])}`;
       }
-      return { id: p.id, name: p.display_name, role: p.role, position, detail };
+      const status = p.status === "paused" ? "paused" : "active";
+      const roleEnds = p.role_end_date ? `Role ends ${monthYear(p.role_end_date)}` : "";
+      return { id: p.id, name: p.display_name, role: p.role, position, detail, status, roleEnds };
     });
   const rank = (r: string) => {
     const i = ROLE_ORDER.indexOf(r);
@@ -152,13 +176,15 @@ export interface AccessRow {
 // is real or leaves the browser.
 
 /** Everyone who may see student records: active staff with building and role name. */
-export const accessRoster = (today?: string): AccessRow[] =>
-  staffRows(today).map((r) => ({
-    id: r.id,
-    name: r.name,
-    position: r.position,
-    role: roleName(r.role),
-  }));
+export const accessRoster = (today?: string, people?: readonly StaffPerson[]): AccessRow[] =>
+  staffRows(today, people)
+    .filter((r) => r.status === "active")
+    .map((r) => ({
+      id: r.id,
+      name: r.name,
+      position: r.position,
+      role: roleName(r.role),
+    }));
 
 /**
  * A CSV the director can save. Every field is quoted, and a field that starts like a spreadsheet

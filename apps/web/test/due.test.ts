@@ -71,7 +71,10 @@ describe("IEP dates", () => {
     expect(wide.length).toBeGreaterThan(0);
     expect(wide.every((i) => i.dueDate <= "2027-04-28")).toBe(true);
     const narrow = items(dueView("2026-10-30", 30)).filter((i) => i.kind !== "report");
-    expect(narrow).toHaveLength(0);
+    // One invented annual review is due Nov 24: inside 30 days of both demo days.
+    expect(narrow.map((i) => [i.kind, i.dueDate])).toEqual([["annual_review", "2026-11-24"]]);
+    const nov16 = items(dueView("2026-11-16", 30)).filter((i) => i.kind !== "report");
+    expect(nov16.map((i) => i.dueDate)).toContain("2026-11-24");
   });
 
   it("calls a passed date overdue and a future date coming up", () => {

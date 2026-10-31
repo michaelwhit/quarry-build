@@ -3,6 +3,7 @@ import {
   FILTERS,
   ROLE_LINES,
   type StaffFilter,
+  STATUS_WORDS,
   TEXT,
   accessCsv,
   accessRoster,
@@ -70,6 +71,12 @@ export function StaffList() {
               <div className="meta">
                 {[r.position, r.detail].filter((x) => x !== "").join(" · ")}
               </div>
+              <div className="meta">
+                {[`Status: ${STATUS_WORDS[r.status]}`, r.roleEnds]
+                  .filter((x) => x !== "")
+                  .join(" · ")}
+              </div>
+              {r.status === "paused" && <div className="meta">{TEXT.pausedLine}</div>}
               <div className="meta">{ROLE_LINES[r.role]}</div>
             </li>
           ))}
@@ -83,8 +90,11 @@ export function StaffList() {
 }
 
 /** Who may see student records, with a button to save the list as a CSV file. */
-export function AccessReview() {
-  const rows = accessRoster();
+export function AccessReview({
+  rows = accessRoster(),
+}: {
+  rows?: ReturnType<typeof accessRoster>;
+}) {
   const save = () => {
     const url = URL.createObjectURL(new Blob([accessCsv(rows)], { type: "text/csv" }));
     const a = document.createElement("a");
@@ -100,20 +110,35 @@ export function AccessReview() {
       </a>
       <h2 className="page-title">{TEXT.rosterTitle}</h2>
       <p className="meta">{TEXT.rosterNote}</p>
-      <ul className="cards" aria-label={TEXT.rosterTitle}>
-        {rows.map((r) => (
-          <li key={r.id} className="card">
-            <div className="name">{r.name}</div>
-            <div className="meta">
-              {r.role} · {r.position}
-            </div>
-          </li>
-        ))}
-      </ul>
+      {rows.length === 0 ? (
+        <p className="empty">No one is listed as able to see student records.</p>
+      ) : (
+        <ul className="cards" aria-label={TEXT.rosterTitle}>
+          {rows.map((r) => (
+            <li key={r.id} className="card">
+              <div className="name">{r.name}</div>
+              <div className="meta">
+                {r.role} · {r.position}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
       <div className="actions stack">
-        <button type="button" className="save" onClick={save} disabled={rows.length === 0}>
+        <button
+          type="button"
+          className="save"
+          onClick={save}
+          disabled={rows.length === 0}
+          aria-describedby={rows.length === 0 ? "csv-off" : undefined}
+        >
           {TEXT.saveCsv}
         </button>
+        {rows.length === 0 && (
+          <p id="csv-off" className="meta">
+            Nothing to save until someone is listed.
+          </p>
+        )}
       </div>
     </>
   );
