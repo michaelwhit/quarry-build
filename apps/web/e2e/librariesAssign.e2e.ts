@@ -171,4 +171,47 @@ test.describe("assign from the library", () => {
     await expect(page.getByRole("button", { name: /^Remove / })).toHaveCount(3);
     expect(errors).toEqual([]);
   });
+
+  test("My items are saved to a file and loaded back, and a wrong file is refused", async ({
+    page,
+  }) => {
+    const errors = watchErrors(page);
+    await signIn(page, "director");
+    await tabBar(page).getByRole("link", { name: "Libraries" }).click();
+    await page.getByRole("button", { name: "Accommodations", exact: true }).click();
+    const save = page.getByRole("button", { name: "Save My items to a file" });
+    await expect(save).toBeDisabled();
+    await expect(save).toHaveAccessibleDescription(/^Nothing in My items yet/);
+
+    await page
+      .getByRole("list", { name: "Accommodations" })
+      .locator("li.lib-item > button")
+      .nth(1)
+      .click();
+    const detail = page.locator("section.lib-detail");
+    await detail.getByLabel("Frequency").fill("Every timed test");
+    await detail.getByRole("button", { name: "Save to My items" }).click();
+    await expect(save).toBeEnabled();
+    const [download] = await Promise.all([page.waitForEvent("download"), save.click()]);
+    expect(download.suggestedFilename()).toBe("my-items.json");
+    const text = await (
+      await import("node:fs/promises")
+    ).readFile((await download.path())!, "utf8");
+    expect(JSON.parse(text).accommodations[0].frequency).toBe("Every timed test");
+
+    const load = page.getByLabel("Load My items from a file");
+    await load.setInputFiles({
+      name: "x.json",
+      mimeType: "application/json",
+      buffer: Buffer.from("{}"),
+    });
+    await expect(page.getByText("That is not a My items file.")).toBeVisible();
+    await load.setInputFiles({
+      name: "my-items.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(text),
+    });
+    await expect(page.getByText(/^Nothing was added\. Left out 1/)).toBeVisible();
+    expect(errors).toEqual([]);
+  });
 });

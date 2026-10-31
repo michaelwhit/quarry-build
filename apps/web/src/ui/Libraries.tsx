@@ -36,6 +36,7 @@ import { can, getRole } from "../data/roles.ts";
 import { addAccommodation, addGoal, getWorkspace, removeAccommodation } from "../data/workspace.ts";
 import { AccommodationBulk } from "./AccommodationBulk.tsx";
 import { DeleteButton } from "./Forms.tsx";
+import { MyItemsFile } from "./MyItemsFile.tsx";
 import "./libraries.css";
 
 const copyStatus = (title: string, kept: boolean) =>
@@ -257,6 +258,7 @@ export function Libraries({ start = "goals" }: { start?: Tab }) {
         <input type="checkbox" checked={mineOnly} onChange={(e) => setMineOnly(e.target.checked)} />
         My items only ({mineSet.size})
       </label>
+      <MyItemsFile />
       <p className="lib-note" role="status">
         {status}
         {startHref ? (
