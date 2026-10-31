@@ -315,11 +315,15 @@ export interface KnownStudent {
 const identity = (f: string, l: string, g: string) =>
   [f, l, g].map((x) => x.toLowerCase()).join("|");
 
-/** Decides, row by row, what confirming the import would do. */
+/** What the person typed to repair a row in the preview, by position in the file's rows. */
+export type RowFixes = Record<number, { firstName: string; lastName: string; grade: string }>;
+
+/** Decides, row by row, what confirming the import would do. A fix replaces the file's name and grade for that row. */
 export function planImport(
   table: CsvTable,
   mapping: Mapping,
   existing: KnownStudent[],
+  fixes: RowFixes = {},
 ): PlannedRow[] {
   const seen = new Set(existing.map((e) => identity(e.firstName, e.lastName, e.grade)));
   const cell = (row: string[], f: ImportField) => {
@@ -329,10 +333,11 @@ export function planImport(
   return table.rows.map((row, i) => {
     const useSeparate = mapping.firstName !== undefined && mapping.lastName !== undefined;
     const split = useSeparate ? null : splitFullName(cell(row, "fullName"));
-    const firstName = split ? split.firstName : cell(row, "firstName");
-    const lastName = split ? split.lastName : cell(row, "lastName");
+    const fix = fixes[i];
+    const firstName = fix ? fix.firstName.trim() : split ? split.firstName : cell(row, "firstName");
+    const lastName = fix ? fix.lastName.trim() : split ? split.lastName : cell(row, "lastName");
     const preferredName = cell(row, "preferredName");
-    const gradeText = cell(row, "grade");
+    const gradeText = fix ? fix.grade.trim() : cell(row, "grade");
     const grade = normalizeGrade(gradeText);
     let why: string | null = null;
     if (!firstName) why = "No first name.";

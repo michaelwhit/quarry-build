@@ -5,7 +5,9 @@ import { displayName, goalById, studentById, students } from "../data/district.t
 import {
   FIELDS,
   MAX_FILE_BYTES,
+  MAX_NAME,
   type Mapping,
+  type RowFixes,
   type PlannedRow,
   type CsvTable,
   detectMapping,
@@ -487,6 +489,52 @@ const statusText = (r: PlannedRow) =>
       ? "Already on the list"
       : r.status.why;
 
+/** Three boxes to repair one row of the file in place. Nothing changes in the file itself. */
+function RowFix({
+  line,
+  value,
+  onChange,
+}: {
+  line: number;
+  value: { firstName: string; lastName: string; grade: string };
+  onChange: (v: { firstName: string; lastName: string; grade: string }) => void;
+}) {
+  return (
+    <span className="row-fix" role="group" aria-label={`Fix line ${line}`}>
+      <label>
+        <span>First name</span>
+        <input
+          value={value.firstName}
+          maxLength={MAX_NAME}
+          onChange={(e) => onChange({ ...value, firstName: e.target.value })}
+        />
+      </label>
+      <label>
+        <span>Last name</span>
+        <input
+          value={value.lastName}
+          maxLength={MAX_NAME}
+          onChange={(e) => onChange({ ...value, lastName: e.target.value })}
+        />
+      </label>
+      <label>
+        <span>Grade</span>
+        <select
+          value={GRADES.includes(value.grade) ? value.grade : ""}
+          onChange={(e) => onChange({ ...value, grade: e.target.value })}
+        >
+          <option value="">Choose a grade</option>
+          {GRADES.map((g) => (
+            <option key={g} value={g}>
+              {g}
+            </option>
+          ))}
+        </select>
+      </label>
+    </span>
+  );
+}
+
 const IMPORT_STEPS = ["Choose file", "Match columns", "Review and fix", "Add"];
 
 /** Add many students at once from a spreadsheet saved as CSV: pick the file, check the columns, preview, confirm. */
@@ -496,18 +544,21 @@ export function ImportStudents() {
   const [mapping, setMapping] = useState<Mapping>({});
   const [error, setError] = useState("");
   const [added, setAdded] = useState<number | null>(null);
+  // Repairs typed into the preview. Cleared whenever the file or the column choices change.
+  const [fixes, setFixes] = useState<RowFixes>({});
 
   const known = students.map((v) => ({
     firstName: v.student.first_name,
     lastName: v.student.last_name,
     grade: v.student.grade,
   }));
-  const plan = table && isComplete(mapping) ? planImport(table, mapping, known) : null;
+  const plan = table && isComplete(mapping) ? planImport(table, mapping, known, fixes) : null;
   const ready = plan ? readyRows(plan) : [];
 
   const load = (text: string, name: string) => {
     setError("");
     setAdded(null);
+    setFixes({});
     const result = parseCsv(text);
     if (!result.ok) {
       setTable(null);
@@ -638,6 +689,7 @@ export function ImportStudents() {
                   else next[f.key] = Number(e.target.value);
                   setMapping(next);
                   setAdded(null);
+                  setFixes({});
                 }}
               >
                 <option value="">Not in the file</option>
@@ -669,15 +721,20 @@ export function ImportStudents() {
               : `${ready.length} to add, ${plan.filter((r) => r.status.kind === "duplicate").length} already on the list, ${plan.filter((r) => r.status.kind === "problem").length} to fix in the file`}
           </p>
           {added !== null && (
-            <p>
-              <a className="btn" href="#/caseload">
-                View the caseload
-              </a>
-            </p>
+            <>
+              <p className="meta">
+                Delete the downloaded file from your computer now. GoalLine did not keep a copy.
+              </p>
+              <p>
+                <a className="btn" href="#/caseload">
+                  View the caseload
+                </a>
+              </p>
+            </>
           )}
           {added === null && (
             <ul className="import-list">
-              {plan.map((r) => (
+              {plan.map((r, i) => (
                 <li key={r.line}>
                   <span>
                     {`${r.firstName} ${r.lastName}`.trim() || "(no name)"}
@@ -689,6 +746,18 @@ export function ImportStudents() {
                   <span className={r.status.kind === "problem" ? "form-error" : "meta"}>
                     {statusText(r)}
                   </span>
+                  {(r.status.kind === "problem" || fixes[i] !== undefined) && (
+                    <RowFix
+                      line={r.line}
+                      value={
+                        fixes[i] ?? { firstName: r.firstName, lastName: r.lastName, grade: r.grade }
+                      }
+                      onChange={(v) => {
+                        setAdded(null);
+                        setFixes({ ...fixes, [i]: v });
+                      }}
+                    />
+                  )}
                 </li>
               ))}
             </ul>
