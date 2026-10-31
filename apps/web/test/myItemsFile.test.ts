@@ -107,4 +107,13 @@ describe("My items file", () => {
     expect(getMyGoals()).toHaveLength(1);
     expect(Object.keys(getMyGoals()[0]!)).not.toContain("extra");
   });
+  it("keeps only the known fields of a loaded accommodation", () => {
+    addMyAccommodation(acc);
+    const file = JSON.parse(exportMyItems());
+    file.accommodations[0].extra = "not stored";
+    resetMyAccommodationsForTests();
+    importMyItems(JSON.stringify(file));
+    expect(getMyAccommodations()).toHaveLength(1);
+    expect(Object.keys(getMyAccommodations()[0]!)).not.toContain("extra");
+  });
 });
