@@ -69,9 +69,11 @@ struct WhatsDueTests {
             .filter { $0.kind != .report }
         #expect(!wide.isEmpty)
         #expect(wide.allSatisfy { $0.dueDate <= day("2027-04-28") })
-        #expect(
-            items(store.whatsDue(today: day("2026-10-30"), windowDays: 30))
-                .filter { $0.kind != .report }.isEmpty)
+        // One invented annual review is due 2026-11-24: inside 30 days of Oct 30 and of Nov 16.
+        let narrow = items(store.whatsDue(today: day("2026-10-30"), windowDays: 30))
+            .filter { $0.kind != .report }
+        #expect(narrow.count == 1)
+        #expect(narrow.allSatisfy { $0.kind == .annualReview && $0.dueDate == day("2026-11-24") })
         let later = items(store.whatsDue(today: day("2027-03-10"), windowDays: 30))
             .filter { $0.kind == .annualReview }
         #expect(later.contains { $0.overdue && $0.dueDate < day("2027-03-10") })

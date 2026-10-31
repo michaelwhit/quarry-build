@@ -20,6 +20,7 @@ test.describe("staff and roles, and the access review", () => {
     await expect(cards).toHaveCount(6);
     await expect(cards.first()).toContainText("SPED director");
     await expect(cards.first()).toContainText("District office");
+    await expect(cards.first()).toContainText("Status: Active");
     expect(errors).toEqual([]);
   });
 

@@ -113,4 +113,40 @@ test.describe("flexible roster file", () => {
     await expect(page.getByRole("alert")).toHaveCount(0);
     await expect(page.getByRole("status")).toContainText("4 to add");
   });
+
+  test("a row with a problem is repaired in the preview and then added", async ({ page }) => {
+    const errors = watchErrors(page);
+    await signIn(page, "director");
+    await tabBar(page).getByRole("link", { name: "Caseload" }).click();
+    await page.getByRole("link", { name: "Import from file" }).click();
+    await page
+      .locator('input[type="file"]')
+      .setInputFiles(
+        file("First,Last,Grade\nAvery,Examplewood,3\n,Samplefield,K\nCasey,Teststone,13\n"),
+      );
+    await expect(page.getByRole("status")).toContainText(
+      "1 to add, 0 already on the list, 2 to fix",
+    );
+    const fixLine3 = page.getByRole("group", { name: "Fix line 3" });
+    await fixLine3.getByLabel("First name").fill("Blake");
+    await fixLine3.getByLabel("First name").press("Tab");
+    await expect(page.getByRole("status")).toContainText(
+      "2 to add, 0 already on the list, 1 to fix",
+    );
+    await expect(fixLine3).toBeVisible();
+    await page.getByRole("group", { name: "Fix line 4" }).getByLabel("Grade").selectOption("5");
+    await expect(page.getByRole("status")).toContainText(
+      "3 to add, 0 already on the list, 0 to fix",
+    );
+    await page.getByRole("button", { name: "Add students" }).click();
+    await expect(page.getByRole("status")).toContainText("3 students added.");
+    await expect(page.getByText(/Delete the downloaded file from your computer now/)).toBeVisible();
+    await tabBar(page).getByRole("link", { name: "Caseload" }).click();
+    await expect(page.locator("ul.cards .name")).toHaveText([
+      "Avery Examplewood",
+      "Blake Samplefield",
+      "Casey Teststone",
+    ]);
+    expect(errors).toEqual([]);
+  });
 });
