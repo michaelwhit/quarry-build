@@ -195,3 +195,41 @@ test.describe("the director approves a sign-up", () => {
     await expect(page.getByText("SETUP-AAAA-1111")).toHaveCount(0);
   });
 });
+
+test.describe("the director's Home card", () => {
+  const signedIn = (signups: unknown[]) => ({
+    "POST /v0/auth/web/refresh": { body: token() },
+    "GET /v0/me": { body: person("sped_director", "Sample Director") },
+    "GET /v0/staff/signups": { body: { signups } },
+  });
+  const waiting = {
+    id: "u1",
+    email: "new@example.test",
+    display_name: "New Person",
+    created_at: "2026-10-20T10:00:00Z",
+    expires_at: "2026-11-20T10:00:00Z",
+    via: "school",
+    email_domain_matched: true,
+  };
+
+  test("says how many are waiting, with no names, and links to Staff and roles", async ({
+    page,
+  }) => {
+    await fakeApi(page, signedIn([waiting]));
+    await page.goto("/");
+    await page.getByRole("button", { name: "I understand" }).click();
+    await expect(page.getByText("1 person asked to join and is waiting for you.")).toBeVisible();
+    await expect(page.getByText("New Person")).toHaveCount(0);
+    await expect(page.getByText("new@example.test")).toHaveCount(0);
+    await page.getByRole("link", { name: "Review who is waiting" }).click();
+    await expect(page.getByRole("heading", { name: "Waiting for approval (1)" })).toBeVisible();
+  });
+
+  test("shows nothing when no one is waiting", async ({ page }) => {
+    await fakeApi(page, signedIn([]));
+    await page.goto("/");
+    await page.getByRole("button", { name: "I understand" }).click();
+    await expect(page.getByRole("heading", { level: 2, name: "Home" })).toBeVisible();
+    await expect(page.getByText("Waiting for your approval")).toHaveCount(0);
+  });
+});

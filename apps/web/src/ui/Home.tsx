@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { practiceFileName } from "../data/localDay.ts";
 import { dueFor } from "../data/derive.ts";
 import { type Action, can, getRole, isDelegateRole, roleById, setRole } from "../data/roles.ts";
@@ -86,12 +86,22 @@ const TILES: Tile[] = [
   },
 ];
 
+// Asks the sign-in server who is waiting, so it exists only in a build made with a server address.
+const SetupCard = import.meta.env.VITE_GOALLINE_API_ORIGIN
+  ? lazy(() => import("../auth/SetupCard.tsx").then((m) => ({ default: m.SetupCard })))
+  : null;
+
 export function Home() {
   const c = goalCounts();
   return (
     <>
       <p className="eyebrow">{districtName.replace(" (synthetic)", "")}</p>
       <h2 className="page-title">Home</h2>
+      {SetupCard && can(getRole(), "staffRoles") && (
+        <Suspense fallback={null}>
+          <SetupCard />
+        </Suspense>
+      )}
       <a className="card numbers" href="#/caseload" aria-label="Open the caseload summary">
         <div className="name">
           {students.length} students · {c.goals} goals
