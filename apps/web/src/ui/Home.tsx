@@ -5,6 +5,7 @@ import { type Action, can, getRole, isDelegateRole, roleById, setRole } from "..
 import { displayName, districtName, goalCounts, students } from "../data/district.ts";
 import { canSeeOverdue } from "../data/overdue.ts";
 import { clearPracticeStorageAndReload, hasPracticeData } from "../data/practiceStorage.ts";
+import { FirstRunTour } from "./FirstRunTour.tsx";
 import { OverdueHomeLine } from "./Overdue.tsx";
 import { canUsePresentLevels } from "./PresentLevels.tsx";
 import { ReportsDue } from "./ProgressReport.tsx";
@@ -92,6 +93,7 @@ export function Home() {
     <>
       <p className="eyebrow">{districtName.replace(" (synthetic)", "")}</p>
       <h2 className="page-title">Home</h2>
+      <FirstRunTour />
       <a className="card numbers" href="#/caseload" aria-label="Open the caseload summary">
         <div className="name">
           {students.length} students · {c.goals} goals
