@@ -7,6 +7,7 @@ const FIXED_TITLE_ROUTES = new Set([
   "#/libraries",
   "#/libraries/accommodations",
   "#/more",
+  "#/help",
   "#/due",
   "#/overdue",
   "#/add-student",
