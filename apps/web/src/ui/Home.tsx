@@ -303,6 +303,13 @@ export function More() {
           Sign out
         </button>
       </section>
+      <section className="card" style={{ marginTop: 12 }}>
+        <h3 className="sec">Help</h3>
+        <p className="meta">What GoalLine does, what it does not do, and who to ask.</p>
+        <a className="btn" href="#/help">
+          Open Help
+        </a>
+      </section>
       {!can(role, "manageData") ? (
         <section className="card" style={{ marginTop: 12 }}>
           <h3 className="sec">Practice data</h3>
