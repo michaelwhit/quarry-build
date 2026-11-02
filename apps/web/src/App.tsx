@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { STATUS_LABEL, type GoalStatus } from "./data/derive.ts";
 import { dataTotals, displayName, districtName, studentById, students } from "./data/district.ts";
 import { Chip } from "./ui/Chip.tsx";
+import { Accessibility } from "./ui/Accessibility.tsx";
 import { Help } from "./ui/Help.tsx";
 import { Home, More, Today } from "./ui/Home.tsx";
 import { Libraries } from "./ui/Libraries.tsx";
@@ -78,7 +79,8 @@ const TABS = [
 ];
 
 function activeTab(hash: string, delegate = false): string {
-  if (delegate) return hash === "#/more" || hash === "#/help" ? "more" : "today";
+  if (delegate)
+    return hash === "#/more" || hash === "#/help" || hash === "#/accessibility" ? "more" : "today";
   if (
     hash.startsWith("#/student") ||
     hash === "#/caseload" ||
@@ -88,7 +90,7 @@ function activeTab(hash: string, delegate = false): string {
     return "caseload";
   if (hash === "#/today") return "today";
   if (hash === "#/libraries" || hash === "#/libraries/accommodations") return "libraries";
-  if (hash === "#/more" || hash === "#/help") return "more";
+  if (hash === "#/more" || hash === "#/help" || hash === "#/accessibility") return "more";
   // Track screens (#/track...) are reached from Home, so Home stays highlighted on purpose.
   return "home";
 }
@@ -346,6 +348,7 @@ export function App() {
     hash === "#/today" ||
     hash === "#/more" ||
     hash === "#/help" ||
+    hash === "#/accessibility" ||
     (role === "gen_ed_teacher" && glance?.[1]) ||
     (role === "paraprofessional" && t?.[1] && t[2]);
   const brokenAddress = [
@@ -471,6 +474,8 @@ export function App() {
     <More />
   ) : hash === "#/help" ? (
     <Help />
+  ) : hash === "#/accessibility" ? (
+    <Accessibility />
   ) : (
     <Home />
   );
