@@ -15,3 +15,13 @@ test("More opens Help, which names the page and keeps More current", async ({ pa
   await expect(page.getByText("Ask your case manager first.")).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test("More opens the accessibility statement", async ({ page }) => {
+  const errors = watchErrors(page);
+  await signIn(page, "director");
+  await tabBar(page).getByRole("link", { name: "More" }).click();
+  await page.getByRole("link", { name: "Accessibility" }).click();
+  await expect(page.getByRole("heading", { level: 2, name: "Accessibility" })).toBeVisible();
+  await expect(page).toHaveTitle("Accessibility · GoalLine");
+  expect(errors).toEqual([]);
+});
