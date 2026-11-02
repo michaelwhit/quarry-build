@@ -34,7 +34,10 @@ export const header = (page: Page) => page.locator("header.top");
 export const tabBar = (page: Page) => page.getByRole("navigation", { name: "Main" });
 
 /** Landing page, then the picker, then one practice person, past the notices. */
-export async function signIn(page: Page, role: RoleKey) {
+export async function signIn(page: Page, role: RoleKey, opts: { tour?: boolean } = {}) {
+  // The first-run tour is a card on Home; other specs start with it already dismissed.
+  if (!opts.tour)
+    await page.addInitScript(() => window.localStorage.setItem("goalline-tour-seen", "1"));
   await page.goto("/");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   if (role === "director") {

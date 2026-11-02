@@ -5,6 +5,7 @@ import { type Action, can, getRole, isDelegateRole, roleById, setRole } from "..
 import { displayName, districtName, goalCounts, students } from "../data/district.ts";
 import { canSeeOverdue } from "../data/overdue.ts";
 import { clearPracticeStorageAndReload, hasPracticeData } from "../data/practiceStorage.ts";
+import { FirstRunTour } from "./FirstRunTour.tsx";
 import { OverdueHomeLine } from "./Overdue.tsx";
 import { canUsePresentLevels } from "./PresentLevels.tsx";
 import { ReportsDue } from "./ProgressReport.tsx";
@@ -102,6 +103,7 @@ export function Home() {
           <SetupCard />
         </Suspense>
       )}
+      <FirstRunTour />
       <a className="card numbers" href="#/caseload" aria-label="Open the caseload summary">
         <div className="name">
           {students.length} students · {c.goals} goals
@@ -315,9 +317,14 @@ export function More() {
       </section>
       <section className="card" style={{ marginTop: 12 }}>
         <h3 className="sec">Help</h3>
-        <p className="meta">What GoalLine does, what it does not do, and who to ask.</p>
+        <p className="meta">
+          What GoalLine does, what it does not do, who to ask, and how accessibility is checked.
+        </p>
         <a className="btn" href="#/help">
           Open Help
+        </a>{" "}
+        <a className="btn" href="#/accessibility">
+          Accessibility
         </a>
       </section>
       {!can(role, "manageData") ? (

@@ -17,6 +17,10 @@ describe("Help page", () => {
     expect(html).toContain("SRS stays the official record");
     expect(html).toContain("Placeholder wording");
   });
+  it("says literally what it does not send", () => {
+    expect(html).toContain("does not send reports, notices or messages to anyone for you");
+    expect(html).not.toContain("send anything");
+  });
   it("makes no security, compliance or review claims", () => {
     for (const w of ["secure", "compliant", "FERPA", "guarantee", "approved by", "reviewed"])
       expect(html.toLowerCase()).not.toContain(w.toLowerCase());

@@ -16,7 +16,7 @@ export function Help() {
         <h3 className="sec">What it does not do</h3>
         <ul className="meta">
           <li>It does not file anything in SRS. SRS stays the official record.</li>
-          <li>It does not send anything to anyone for you.</li>
+          <li>It does not send reports, notices or messages to anyone for you.</li>
           <li>It does not decide anything for the IEP team. You and the team decide.</li>
         </ul>
       </section>
