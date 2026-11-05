@@ -23,7 +23,7 @@ describe("plain-language page text hygiene", () => {
       if (line.split(" ").length >= 7) expect(line, line).toMatch(/[.?]$/);
     }
   });
-  it("step counter reads the same for every step", () => {
+  it("step counter is distinct and numeric for every step", () => {
     const total = t.tour.steps.length;
     const seen = t.tour.steps.map((_, i) => t.tour.stepOf(i + 1, total));
     expect(new Set(seen).size).toBe(total);
