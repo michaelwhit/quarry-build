@@ -47,7 +47,7 @@ export function FamilyPreview({ summary }: { summary: Summary }) {
 }
 
 export function FamilySummary({ studentId }: { studentId: string }) {
-  useSyncExternalStore(subscribeRole, getRoleVersion);
+  useSyncExternalStore(subscribeRole, getRoleVersion, getRoleVersion);
   const [lang, setLang] = useState<Lang>("en");
   const [periodId, setPeriodId] = useState(() => defaultPeriod().id);
   const [approved, setApproved] = useState(false);

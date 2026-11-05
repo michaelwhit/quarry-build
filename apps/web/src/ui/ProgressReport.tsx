@@ -69,7 +69,7 @@ function CopyButton({
 
 /** The students whose report for the next period is not filed yet (Today, case manager). */
 export function ReportsDue() {
-  useSyncExternalStore(subscribeReports, getReportsVersion);
+  useSyncExternalStore(subscribeReports, getReportsVersion, getReportsVersion);
   const role = getRole();
   if (!canUseReports(role)) return null;
   const period = defaultPeriod();
@@ -97,8 +97,8 @@ export function ReportsDue() {
 }
 
 export function ProgressReport({ studentId }: { studentId: string }) {
-  useSyncExternalStore(subscribeReports, getReportsVersion);
-  useSyncExternalStore(subscribeRole, getRoleVersion);
+  useSyncExternalStore(subscribeReports, getReportsVersion, getReportsVersion);
+  useSyncExternalStore(subscribeRole, getRoleVersion, getRoleVersion);
   const [periodId, setPeriodId] = useState(() => openingPeriod(studentId).id);
   const [confirming, setConfirming] = useState(false);
   const role = getRole();
