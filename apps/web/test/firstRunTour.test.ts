@@ -6,7 +6,7 @@ import { FirstRunTour, TOUR_STEPS } from "../src/ui/FirstRunTour.tsx";
 describe("First-run tour", () => {
   const html = renderToString(createElement(FirstRunTour));
   it("starts on step one with a way to skip", () => {
-    expect(html).toMatch(/Step <!-- -->1<!-- --> of <!-- -->4/);
+    expect(html.replace(/<!-- -->/g, "")).toContain("Step 1 of 4");
     expect(html).toContain("Skip the tour");
     expect(html).toContain("Next");
   });
