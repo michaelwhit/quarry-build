@@ -27,15 +27,15 @@ describe("Help, Accessibility and the tour read well with a screen reader", () =
     it(`${name}: headings never skip a level and the page adds no h1`, () => {
       const ls = levels(html);
       expect(ls.length).toBeGreaterThan(0);
-      // The app shell (App.tsx) holds the only h1; these screens start at h2.
-      expect(ls.filter((l) => l === 1).length).toBeLessThanOrEqual(0);
+      // The app shell (App.tsx) holds the only h1; these screens sit below it (the tour card sits under the Home h2).
+      expect(ls).not.toContain(1);
       for (let i = 1; i < ls.length; i++) expect(ls[i]! - ls[i - 1]!).toBeLessThanOrEqual(1);
     });
     it(`${name}: no link or button without a name`, () => {
       expect(emptyControls(html)).toEqual([]);
     });
     it(`${name}: no image without alt text`, () => {
-      for (const m of html.matchAll(/<img\b[^>]*>/g)) expect(m[0]).toMatch(/\balt="/);
+      for (const m of html.matchAll(/<img\b[^>]*>/g)) expect(m[0]).toMatch(/\salt="/);
     });
   }
 });
