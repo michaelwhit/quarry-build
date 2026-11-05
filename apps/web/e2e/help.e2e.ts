@@ -31,11 +31,18 @@ for (const width of [320, 390]) {
     const errors = watchErrors(page);
     await page.setViewportSize({ width, height: 800 });
     await signIn(page, "case_manager");
-    for (const hash of ["#/help", "#/accessibility"]) {
+    for (const [hash, name] of [
+      ["#/help", "Help"],
+      ["#/accessibility", "Accessibility"],
+    ] as const) {
       await page.evaluate((h) => {
         window.location.hash = h;
       }, hash);
-      await expect(page.getByRole("heading", { level: 2 }).first()).toBeVisible();
+      await page.evaluate(() => {
+        document.documentElement.style.fontSize = "";
+      });
+      await expect(page.getByRole("heading", { level: 2, name })).toBeVisible();
+      await expect(page).toHaveTitle(`${name} · GoalLine`);
       await noHorizontalScroll(page);
       // Set through the DOM: the page policy refuses injected style elements.
       await page.evaluate(() => {
