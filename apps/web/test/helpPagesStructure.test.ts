@@ -24,9 +24,10 @@ describe("Help, Accessibility and the tour read well with a screen reader", () =
     ["FirstRunTour", renderToString(createElement(FirstRunTour))],
   ];
   for (const [name, html] of pages) {
-    it(`${name}: headings never skip a level and there is no second h1`, () => {
+    it(`${name}: headings never skip a level and the page adds no h1`, () => {
       const ls = levels(html);
       expect(ls.length).toBeGreaterThan(0);
+      // The app shell (App.tsx) holds the only h1; these screens start at h2.
       expect(ls.filter((l) => l === 1).length).toBeLessThanOrEqual(0);
       for (let i = 1; i < ls.length; i++) expect(ls[i]! - ls[i - 1]!).toBeLessThanOrEqual(1);
     });
